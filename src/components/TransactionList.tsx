@@ -35,7 +35,11 @@ const getIcon = (description: string | null) => {
     return ShoppingBag;
 };
 
-export const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
+import React, { memo } from 'react';
+
+// ... imports ...
+
+export const TransactionList = memo(({ transactions, onRefresh }: TransactionListProps) => {
     const supabase = createClientComponentClient();
 
     const handleDelete = async (id: string) => {
@@ -64,7 +68,7 @@ export const TransactionList = ({ transactions, onRefresh }: TransactionListProp
                 const [title, note] = (tx.description || "").split('\n');
                 const Icon = getIcon(title || tx.description || "");
                 return (
-                    <div key={tx.id} className="glass p-4 rounded-2xl flex items-center justify-between group">
+                    <div key={tx.id} className="glass p-4 rounded-2xl flex items-center justify-between group border border-white/10 shadow-xl shadow-black/5 active:scale-95 transition-transform duration-200">
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/70 shrink-0">
                                 <Icon className="w-5 h-5" />
@@ -110,4 +114,6 @@ export const TransactionList = ({ transactions, onRefresh }: TransactionListProp
             })}
         </div>
     );
-};
+});
+
+TransactionList.displayName = "TransactionList";
