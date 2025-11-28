@@ -1,0 +1,43 @@
+import type { Metadata } from "next";
+import { Heebo } from "next/font/google";
+import "./globals.css";
+import { LiquidBackground } from "@/components/LiquidBackground";
+import { AuthProvider } from "@/components/AuthProvider";
+import { Toaster } from "sonner";
+import { BottomNav } from "@/components/BottomNav";
+import { FinancialTherapist } from "@/components/FinancialTherapist";
+
+const heebo = Heebo({
+  subsets: ["hebrew", "latin"],
+  variable: "--font-heebo",
+});
+
+export const metadata: Metadata = {
+  title: "OurGlass",
+  description: "Couple Finance Tracker",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="he" dir="rtl">
+      <body className={`${heebo.variable} antialiased font-sans text-white`}>
+        <AuthProvider>
+          <LiquidBackground />
+          <main className="relative z-10 min-h-screen p-4 pb-24">
+            {children}
+          </main>
+          <FinancialTherapist />
+          <BottomNav />
+          <Toaster position="top-center" toastOptions={{
+            className: "glass border-white/20 text-white",
+            style: { background: "rgba(255,255,255,0.1)", backdropFilter: "blur(10px)" }
+          }} />
+        </AuthProvider>
+      </body>
+    </html>
+  );
+}
