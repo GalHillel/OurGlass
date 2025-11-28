@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowRightLeft, Wallet, Rocket, Shield, User } from "lucide-react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { toast } from "sonner";
+import { triggerHaptic } from "@/utils/haptics";
 
 interface MoneyMoverProps {
     isOpen: boolean;
@@ -23,6 +24,7 @@ export const MoneyMover = ({ isOpen, onClose, onSuccess }: MoneyMoverProps) => {
     const supabase = createClientComponentClient();
 
     const handleMove = async () => {
+        triggerHaptic();
         if (!amount) return;
         setLoading(true);
 

@@ -2,6 +2,7 @@
 
 import { Coffee, ShoppingCart, Fuel, Utensils, ShoppingBag, Film, Car, FileText } from "lucide-react";
 import { motion } from "framer-motion";
+import { triggerHaptic } from "@/utils/haptics";
 
 const actions = [
     { id: "coffee", label: "קפה", icon: Coffee, color: "bg-amber-500/20" },
@@ -22,7 +23,10 @@ export const QuickActions = ({ onAction }: { onAction: (id: string) => void }) =
                     key={action.id}
                     whileHover={{ scale: 1.05, y: -5 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => onAction(action.id)}
+                    onClick={() => {
+                        triggerHaptic();
+                        onAction(action.id);
+                    }}
                     className={`flex flex-col items-center justify-center p-4 rounded-2xl glass border border-white/10 ${action.color} backdrop-blur-md shadow-lg transition-colors hover:bg-white/20`}
                 >
                     <action.icon className="w-6 h-6 text-white mb-2" />

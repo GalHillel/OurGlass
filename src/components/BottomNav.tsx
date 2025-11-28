@@ -20,7 +20,7 @@ export const BottomNav = () => {
     if (pathname === "/login") return null;
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 p-4 z-50">
+        <div className="fixed bottom-0 left-0 right-0 p-4 z-50 pb-[calc(1rem+env(safe-area-inset-bottom))]">
             <div className="glass rounded-2xl flex justify-around items-center p-2 backdrop-blur-xl bg-black/20 border-white/10">
                 {navItems.map((item) => {
                     const isActive = pathname === item.path;

@@ -130,7 +130,7 @@ export default function WishlistPage() {
     };
 
     return (
-        <div className="flex flex-col gap-6 max-w-md mx-auto pt-8 pb-20">
+        <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto pt-8 pb-20 px-4">
             <div className="text-center space-y-2">
                 <h1 className="text-3xl font-bold text-white">רשימת משאלות</h1>
                 <p className="text-white/60">דברים שבא לנו לקנות</p>

@@ -15,6 +15,7 @@ import Link from "next/link";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
+import { triggerHaptic } from "@/utils/haptics";
 
 interface AddTransactionDrawerProps {
     isOpen: boolean;
@@ -57,6 +58,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, onSuccess }: A
     const showWorkHours = numericAmount > 200;
 
     const handleSave = async () => {
+        triggerHaptic();
         if (!amount || !user) return;
         setLoading(true);
 

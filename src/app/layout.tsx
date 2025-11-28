@@ -27,7 +27,7 @@ export default function RootLayout({
       <body className={`${heebo.variable} antialiased font-sans text-white`}>
         <AuthProvider>
           <LiquidBackground />
-          <main className="relative z-10 min-h-screen p-4 pb-24">
+          <main className="relative z-10 min-h-screen p-4 pb-24 pt-[calc(1rem+env(safe-area-inset-top))]">
             {children}
           </main>
           <FinancialTherapist />
