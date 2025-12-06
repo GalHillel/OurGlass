@@ -8,53 +8,48 @@ interface RealNumberDisplayProps {
 }
 
 export const RealNumberDisplay = ({ amount }: RealNumberDisplayProps) => {
+
+    // Dynamic Color Logic
+    let ringColor = "border-white/10";
+    let glowColor = "shadow-white/5";
+    let textColor = "text-white";
+
+    if (amount > 0) {
+        ringColor = "border-emerald-500/30";
+        glowColor = "shadow-emerald-500/20";
+        textColor = "text-emerald-400";
+    } else if (amount < 0) {
+        ringColor = "border-red-500/30";
+        glowColor = "shadow-red-500/20";
+        textColor = "text-red-400";
+    } else {
+        ringColor = "border-yellow-500/30";
+        glowColor = "shadow-yellow-500/20";
+        textColor = "text-yellow-400";
+    }
+
     return (
         <div className="flex flex-col items-center justify-center py-8 relative z-20">
-            {/* App Name Label */}
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-6 text-center"
-            >
-                <h1 className="text-2xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-white/80 to-white/60 drop-shadow-sm">
-                    OurGlass
-                </h1>
-            </motion.div>
-
-            {/* Power Ring */}
+            {/* Power Ring (The Orb) */}
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="glass p-1 rounded-full w-72 h-72 flex items-center justify-center relative shadow-[0_0_60px_rgba(255,255,255,0.05)]"
+                className={`glass w-56 h-56 rounded-full flex items-center justify-center relative backdrop-blur-xl border-2 ${ringColor} shadow-[0_0_80px_rgba(255,255,255,0.08)] ${glowColor}`}
             >
-                {/* Outer Glow Ring */}
-                <div className="absolute inset-0 rounded-full border border-white/10 shadow-inner" />
-                <div className="absolute -inset-4 rounded-full border border-white/5 opacity-50 animate-pulse" />
-
-                {/* Inner Content Container */}
-                <div className="w-full h-full rounded-full bg-gradient-to-b from-white/5 to-transparent flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-sm">
-
-                    {/* Budget Streak Badge */}
-                    <div className="absolute top-10 flex items-center gap-1.5 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.2)]">
-                        <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400 animate-pulse" />
-                        <span className="text-[11px] font-bold text-orange-200 tracking-wide">3 ימים</span>
-                    </div>
-
-                    <div className="mt-4 space-y-1">
-                        <span className="text-xs uppercase tracking-[0.2em] text-white/50 font-medium block mb-2">
-                            לביזבוזים
-                        </span>
-                        <div className="relative">
-                            <span className="text-6xl font-black text-white tracking-tight drop-shadow-2xl">
-                                ₪{amount.toLocaleString()}
-                            </span>
-                            {/* Shine effect on text */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent w-full h-full -skew-x-12 translate-x-[-100%] animate-shimmer" />
-                        </div>
-                        <span className="text-xs text-white/40 font-medium block mt-2">
-                            אחרי הוצאות קבועות
-                        </span>
-                    </div>
+                {/* Inner Content */}
+                <div className="flex flex-col items-center justify-center text-center">
+                    <span className="text-xs uppercase tracking-[0.2em] text-white/50 font-medium block mb-1">
+                        לביזבוזים
+                    </span>
+                    <span
+                        dir="ltr"
+                        className={`text-3xl md:text-4xl font-black ${textColor} tracking-tight drop-shadow-2xl break-all`}
+                    >
+                        ₪{amount.toLocaleString()}
+                    </span>
+                    <span className="text-[10px] text-white/30 font-medium block mt-1">
+                        אחרי הוצאות
+                    </span>
                 </div>
             </motion.div>
         </div>

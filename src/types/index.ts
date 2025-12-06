@@ -57,5 +57,6 @@ export interface WishlistItem {
     price: number;
     link: string | null;
     status: 'pending' | 'approved' | 'purchased';
+    saved_amount: number;
     created_at: string;
 }

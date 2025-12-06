@@ -27,10 +27,10 @@ export const QuickActions = ({ onAction }: { onAction: (id: string) => void }) =
                         triggerHaptic();
                         onAction(action.id);
                     }}
-                    className={`flex flex-col items-center justify-center p-4 rounded-2xl glass border border-white/10 ${action.color} backdrop-blur-md shadow-lg transition-colors hover:bg-white/20`}
+                    className={`flex flex-col items-center justify-center w-20 h-20 p-2 rounded-2xl glass border border-white/10 ${action.color} backdrop-blur-md shadow-lg transition-colors hover:bg-white/20`}
                 >
-                    <action.icon className="w-6 h-6 text-white mb-2" />
-                    <span className="text-xs font-medium text-white">{action.label}</span>
+                    <action.icon className="w-8 h-8 text-white mb-1 stroke-[1.5]" />
+                    <span className="text-[10px] font-medium text-white/90 text-center leading-tight">{action.label}</span>
                 </motion.button>
             ))}
         </div>

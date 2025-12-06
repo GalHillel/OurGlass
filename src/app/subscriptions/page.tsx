@@ -91,14 +91,25 @@ export default function SubscriptionsPage() {
             </div>
 
             {/* Total Card */}
-            <div className="glass p-8 rounded-3xl text-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent pointer-events-none" />
-                <span className="text-sm uppercase tracking-widest text-white/60 mb-2 block">
-                    סה״כ חודשי
-                </span>
-                <span className="text-5xl font-bold text-white drop-shadow-lg">
-                    ₪{totalMonthly.toLocaleString()}
-                </span>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="glass p-6 rounded-3xl text-center relative overflow-hidden flex flex-col justify-center">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent pointer-events-none" />
+                    <span className="text-xs uppercase tracking-widest text-white/60 mb-1 block">
+                        חודשי
+                    </span>
+                    <span className="text-3xl font-bold text-white drop-shadow-lg">
+                        ₪{totalMonthly.toLocaleString()}
+                    </span>
+                </div>
+                <div className="glass p-6 rounded-3xl text-center relative overflow-hidden flex flex-col justify-center border-red-500/20">
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent pointer-events-none" />
+                    <span className="text-xs uppercase tracking-widest text-red-200/60 mb-1 block">
+                        שנתי (וואו!)
+                    </span>
+                    <span className="text-3xl font-bold text-red-200 drop-shadow-lg">
+                        ₪{(totalMonthly * 12).toLocaleString()}
+                    </span>
+                </div>
             </div>
 
             {/* List */}

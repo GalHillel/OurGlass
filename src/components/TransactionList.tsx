@@ -74,7 +74,7 @@ export const TransactionList = memo(({ transactions, onRefresh }: TransactionLis
                                 <Icon className="w-5 h-5" />
                             </div>
                             <div className="min-w-0">
-                                <h4 className="font-bold text-white truncate">{title || "ללא תיאור"}</h4>
+                                <h4 className="font-bold text-white line-clamp-1 md:line-clamp-2 break-words">{title || "ללא תיאור"}</h4>
                                 {note && (
                                     <p className="text-sm text-white/70 break-words line-clamp-2">{note}</p>
                                 )}

@@ -64,6 +64,22 @@ export const MoneyMover = ({ isOpen, onClose, onSuccess }: MoneyMoverProps) => {
                 if (error) throw error;
             }
 
+            // 2. Create Transaction to update Daily Budget
+            const isDeposit = numericAmount > 0;
+            const description = isDeposit
+                ? `העברה ל${destination}`
+                : `משיכה מ${destination}`;
+
+            const { error: txError } = await supabase.from('transactions').insert({
+                amount: numericAmount,
+                description: description,
+                date: new Date().toISOString(),
+                category_id: null,
+                is_surprise: false
+            });
+
+            if (txError) throw txError;
+
             toast.success("הכסף עבר בהצלחה! 💸");
             onSuccess();
             onClose();

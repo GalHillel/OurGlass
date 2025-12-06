@@ -6,6 +6,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { Toaster } from "sonner";
 import { BottomNav } from "@/components/BottomNav";
 import { FinancialTherapist } from "@/components/FinancialTherapist";
+import { AIChatButton } from "@/components/AIChatButton";
 
 const heebo = Heebo({
   subsets: ["hebrew", "latin"],
@@ -31,6 +32,8 @@ export default function RootLayout({
             {children}
           </main>
           <FinancialTherapist />
+          <AIChatButton />
+
           <BottomNav />
           <Toaster position="top-center" toastOptions={{
             className: "glass border-white/20 text-white",

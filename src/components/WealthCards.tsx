@@ -24,7 +24,7 @@ export const WealthCards = memo(({ cashGoals, stockGoals }: WealthCardsProps) =>
                 <div className="space-y-4">
                     {cashGoals.map(goal => (
                         <div key={goal.id}>
-                            <div className="text-4xl font-black text-white tracking-tight">
+                            <div className="text-3xl md:text-4xl font-black text-white tracking-tight break-all">
                                 ₪<CountUp end={goal.current_amount} separator="," duration={2} />
                             </div>
                             <p className="text-white/40 text-sm mt-1 font-medium">{goal.name}</p>
@@ -49,7 +49,7 @@ export const WealthCards = memo(({ cashGoals, stockGoals }: WealthCardsProps) =>
                 <div className="space-y-6">
                     {stockGoals.map(goal => (
                         <div key={goal.id} className="relative z-10">
-                            <div className="text-4xl font-black text-white tracking-tight">
+                            <div className="text-3xl md:text-4xl font-black text-white tracking-tight break-all">
                                 ₪<CountUp end={goal.current_amount} separator="," duration={2.5} />
                             </div>
                             <div className="flex items-center gap-2 mt-1">

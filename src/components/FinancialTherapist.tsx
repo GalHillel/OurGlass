@@ -106,8 +106,8 @@ export const FinancialTherapist = () => {
                                 >
                                     <div
                                         className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.sender === "user"
-                                                ? "bg-indigo-500 text-white rounded-br-none"
-                                                : "bg-white/10 text-white rounded-bl-none"
+                                            ? "bg-indigo-500 text-white rounded-br-none"
+                                            : "bg-white/10 text-white rounded-bl-none"
                                             }`}
                                     >
                                         {msg.text}

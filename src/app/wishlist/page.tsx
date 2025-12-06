@@ -130,7 +130,7 @@ export default function WishlistPage() {
     };
 
     return (
-        <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto pt-8 pb-20 px-4">
+        <div className="flex flex-col gap-6 w-full max-w-5xl mx-auto pt-8 pb-20 px-2 sm:px-4">
             <div className="text-center space-y-2">
                 <h1 className="text-3xl font-bold text-white">רשימת משאלות</h1>
                 <p className="text-white/60">דברים שבא לנו לקנות</p>
@@ -185,7 +185,80 @@ export default function WishlistPage() {
                     <WishlistGrid
                         items={items}
                         onDelete={handleDelete}
-                        onCheckOracle={checkOracle}
+                        onDeposit={async (item, amount) => {
+                            try {
+                                const newAmount = (item.saved_amount || 0) + amount;
+                                // 1. Update Wishlist
+                                const { error: wishError } = await supabase
+                                    .from('wishlist')
+                                    .update({ saved_amount: newAmount })
+                                    .eq('id', item.id);
+                                if (wishError) throw wishError;
+
+                                // 2. Create Transaction (Expense)
+                                const { error: txError } = await supabase.from('transactions').insert({
+                                    amount: amount,
+                                    description: `חיסכון ל${item.name}`,
+                                    date: new Date().toISOString(),
+                                    category_id: null, // or a specific savings category ID if available
+                                    is_surprise: false
+                                });
+                                if (txError) throw txError;
+
+                                toast.success(`הפקדת ₪${amount} ל${item.name}`);
+                                fetchData();
+                            } catch (e: any) {
+                                toast.error("שגיאה בהפקדה", { description: e.message });
+                            }
+                        }}
+                        onWithdraw={async (item, amount) => {
+                            try {
+                                const newAmount = (item.saved_amount || 0) - amount;
+                                if (newAmount < 0) return;
+
+                                // 1. Update Wishlist
+                                const { error: wishError } = await supabase
+                                    .from('wishlist')
+                                    .update({ saved_amount: newAmount })
+                                    .eq('id', item.id);
+                                if (wishError) throw wishError;
+
+                                // 2. Create Transaction (Refund/Income - Negative Expense)
+                                const { error: txError } = await supabase.from('transactions').insert({
+                                    amount: -amount,
+                                    description: `משיכה מ${item.name}`,
+                                    date: new Date().toISOString(),
+                                    category_id: null,
+                                    is_surprise: false
+                                });
+                                if (txError) throw txError;
+
+                                toast.success(`משכת ₪${amount} מ${item.name}`);
+                                fetchData();
+                            } catch (e: any) {
+                                toast.error("שגיאה במשיכה", { description: e.message });
+                            }
+                        }}
+                        onPurchase={async (item) => {
+                            try {
+                                const { error } = await supabase
+                                    .from('wishlist')
+                                    .update({ status: 'purchased' })
+                                    .eq('id', item.id);
+
+                                if (error) throw error;
+
+                                confetti({
+                                    particleCount: 200,
+                                    spread: 100,
+                                    origin: { y: 0.6 }
+                                });
+                                toast.success("תתחדשו! 🎉");
+                                fetchData();
+                            } catch (e: any) {
+                                toast.error("שגיאה ברכישה", { description: e.message });
+                            }
+                        }}
                     />
                 )}
             </div>
