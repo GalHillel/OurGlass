@@ -9,6 +9,8 @@ import { FuelTanks } from "@/components/FuelTanks";
 import { VaultDoor } from "@/components/VaultDoor";
 import { MoneyMover } from "@/components/MoneyMover";
 import { Building2, Wallet, ArrowRightLeft } from "lucide-react";
+import { StockPortfolio } from "@/components/StockPortfolio";
+import { JourneyMap } from "@/components/JourneyMap";
 
 export default function WealthPage() {
     const [assets, setAssets] = useState<Goal[]>([]);
@@ -60,7 +62,6 @@ export default function WealthPage() {
                         </div>
 
                         {/* 3. Wealth Grid (Glass Cards) */}
-                        {/* 3. Wealth Grid (Mega-Glass Cards) */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 w-full">
                             {assets
                                 .filter(a => a.type === 'stock' || a.type === 'cash')
@@ -111,6 +112,16 @@ export default function WealthPage() {
                                         </div>
                                     );
                                 })}
+                        </div>
+
+                        {/* 4. Journey Map (Story Mode) */}
+                        <div className="w-full mt-8">
+                            <JourneyMap currentNetWorth={totalNetWorth} />
+                        </div>
+
+                        {/* 5. Real-Time Stock Portfolio */}
+                        <div className="w-full mt-4">
+                            <StockPortfolio />
                         </div>
                     </>
                 )}

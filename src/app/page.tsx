@@ -10,8 +10,9 @@ import { FutureSlider } from "@/components/FutureSlider";
 import { Confetti } from "@/components/Confetti";
 import { TransactionList } from "@/components/TransactionList";
 import { StockRocket } from "@/components/StockRocket";
+import { FinancialWisdom } from "@/components/FinancialWisdom";
 import { ParticleBackground } from "@/components/ParticleBackground"; // Added
-import { getDaysRemainingInCycle } from "@/lib/billing"; // Added
+import { getDaysRemainingInCycle, getCurrentBillingPeriod } from "@/lib/billing"; // Added
 import { useState, useEffect, useCallback } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Transaction, Goal } from "@/types";
@@ -43,15 +44,14 @@ export default function Home() {
       // Only set it on initial load if data is missing
       if (balance === null) setLoading(true);
 
-      // 1. Fetch Transactions for current month
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
+      // 1. Fetch Transactions for current BILLING CYCLE (10th - 10th)
+      const { start, end } = getCurrentBillingPeriod();
 
       const { data: txData, error: txError } = await supabase
         .from('transactions')
         .select('*')
-        .gte('date', startOfMonth.toISOString())
+        .gte('date', start.toISOString())
+        .lt('date', end.toISOString())
         .order('date', { ascending: false });
 
       if (txError) throw txError;
@@ -214,10 +214,13 @@ export default function Home() {
         {/* Streak Counter */}
         {/* Streak Counter - Floating Glass */}
         <div className="w-full px-6 mt-4">
-          <div className="glass p-1 rounded-2xl border border-white/5 bg-slate-900/30">
-            <StreakCounter />
+          <div className="glass p-1 rounded-2xl border border-white/5 bg-slate-900/30 flex justify-center">
+            <StreakCounter transactions={transactions} />
           </div>
         </div>
+
+        {/* Daily Tip */}
+        <FinancialWisdom />
 
         <Confetti trigger={goals.some(g => g.current_amount >= g.target_amount)} />
 

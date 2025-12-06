@@ -32,11 +32,25 @@ export default function LoginPage() {
         }
     }, [pin]);
 
+    const [cooldown, setCooldown] = useState(0);
+
+    useEffect(() => {
+        if (cooldown > 0) {
+            const timer = setTimeout(() => setCooldown(c => c - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [cooldown]);
+
     const handleLogin = async () => {
+        if (cooldown > 0) {
+            toast.error("נסו שוב בעוד כמה שניות");
+            return;
+        }
+
         setLoading(true);
 
         // DELAY for dramatic effect
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 800));
 
         if (pin === "1103") {
             try {
@@ -52,12 +66,20 @@ export default function LoginPage() {
                 router.refresh();
                 router.push("/");
             } catch (error: any) {
-                toast.error("שגיאה בהתחברות", { description: error.message });
+                // If we get a rate limit error, force a longer cooldown
+                if (error.message?.includes("rate limit") || error.status === 429) {
+                    setCooldown(60); // 1 minute cooldown for actual rate limits
+                    toast.error("יותר מדי ניסיונות", { description: "נא להמתין דקה" });
+                } else {
+                    toast.error("שגיאה בהתחברות", { description: error.message });
+                    setCooldown(5); // 5 second cooldown for other errors
+                }
                 shakeError();
             }
         } else {
             shakeError();
             toast.error("קוד שגוי", { description: "נסו שוב" });
+            setCooldown(2); // Short cooldown for wrong PIN to prevent spamming
         }
         setLoading(false);
     };

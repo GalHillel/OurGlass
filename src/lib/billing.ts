@@ -44,6 +44,18 @@ export const getDaysRemainingInCycle = (): number => {
 };
 
 /**
+ * Returns the progress of the current billing cycle as a percentage (0-100).
+ */
+export const getBillingCycleProgress = (): number => {
+    const { start, end } = getCurrentBillingPeriod();
+    const today = new Date();
+    const totalDays = differenceInDays(end, start);
+    const daysPassed = differenceInDays(today, start);
+
+    return Math.min(100, Math.max(0, (daysPassed / totalDays) * 100));
+};
+
+/**
  * Filters a list of items (transactions/goals) to only include those strictly within the current billing cycle.
  * Assumes items have a 'created_at' or 'date' property.
  */

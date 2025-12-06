@@ -13,7 +13,7 @@ interface WishlistGridProps {
 
 export const WishlistGrid = memo(({ items, onDelete, onDeposit, onWithdraw, onPurchase }: WishlistGridProps) => {
     return (
-        <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24">
+        <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-32 px-4">
             {items.map((item, index) => (
                 <WishlistCard
                     key={item.id}

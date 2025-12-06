@@ -138,9 +138,12 @@ export const WishlistCard = ({ item, onDelete, onDeposit, onWithdraw, onPurchase
                         </p>
                         {/* Time Travel / Opportunity Cost Tag */}
                         {item.price > 100 && !isCoolingOff && (
-                            <span className="bg-red-500/10 text-red-200 px-3 py-1 rounded-full text-xs font-bold mt-2 border border-red-500/10">
-                                🐢 מעכב את החופשה ב-{Math.ceil(item.price / 300)} ימים
-                            </span>
+                            <div className="mt-3 flex flex-wrap justify-center gap-2">
+                                <span className="bg-red-500/10 text-red-200 px-3 py-1.5 rounded-full text-xs font-bold border border-red-500/10 flex items-center gap-1.5">
+                                    <Clock className="w-3 h-3" />
+                                    מעכב את החופשה ב-{Math.ceil(item.price / 300)} ימים
+                                </span>
+                            </div>
                         )}
 
                         {/* Boost Button */}
@@ -166,7 +169,7 @@ export const WishlistCard = ({ item, onDelete, onDeposit, onWithdraw, onPurchase
                     </div>
                 </div>
 
-                <div className="h-6 bg-slate-900/50 rounded-full overflow-hidden border border-white/5 relative shadow-inner">
+                <div className="h-4 bg-slate-900/80 rounded-full overflow-hidden border border-white/5 relative shadow-inner mt-2">
                     <div
                         className={cn(
                             "h-full transition-all duration-1000 ease-out relative overflow-hidden",

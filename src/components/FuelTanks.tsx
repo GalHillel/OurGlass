@@ -26,13 +26,15 @@ export const FuelTanks = ({ himBalance, herBalance, maxCapacity = 2000, himName 
 
     return (
         <div className="w-full max-w-md p-4">
-            <div className="glass p-6 rounded-3xl flex justify-around items-end h-64 relative border border-white/10 shadow-lg">
+            <div className="glass p-6 rounded-3xl flex justify-around items-end h-72 relative border border-white/10 shadow-lg">
 
                 {/* Gal's Tank (Him) */}
-                <div className="flex flex-col items-center gap-3 w-24 relative z-10 group">
-                    <div className={`text-white font-bold text-xl tracking-tight transition-all duration-500 drop-shadow-md z-20 relative ${isLowBalance(himPercentage) ? 'text-red-400 scale-110' : ''}`}>
-                        ₪{himBalance.toLocaleString()}
+                <div className="flex flex-col items-center gap-2 relative z-10 group">
+                    <div className="flex items-center gap-1.5 text-blue-200 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 backdrop-blur-md mb-1">
+                        <User className="w-3.5 h-3.5" />
+                        <span className="text-sm font-bold">הכיס של גל</span>
                     </div>
+
                     <div className={`w-16 h-40 bg-slate-900/50 rounded-full relative overflow-hidden border-2 border-white/10 shadow-inner transition-colors duration-500 ${isLowBalance(himPercentage) ? 'border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.3)]' : 'group-hover:border-blue-400/30'}`}>
                         {/* Liquid */}
                         <motion.div
@@ -49,17 +51,19 @@ export const FuelTanks = ({ himBalance, herBalance, maxCapacity = 2000, himName 
                         {/* Bubbles / shine */}
                         <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
                     </div>
-                    <div className="flex items-center gap-1.5 text-blue-200 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 backdrop-blur-md">
-                        <User className="w-3.5 h-3.5" />
-                        <span className="text-sm font-bold">הכיס של גל</span>
+
+                    <div className={`text-white font-bold text-xl tracking-tight transition-all duration-500 drop-shadow-md relative ${isLowBalance(himPercentage) ? 'text-red-400 scale-110' : ''}`}>
+                        ₪{himBalance.toLocaleString()}
                     </div>
                 </div>
 
                 {/* Iris's Tank (Her) */}
-                <div className="flex flex-col items-center gap-3 w-24 relative z-10 group">
-                    <div className={`text-white font-bold text-xl tracking-tight transition-all duration-500 drop-shadow-md z-20 relative ${isLowBalance(herPercentage) ? 'text-red-400 scale-110' : ''}`}>
-                        ₪{herBalance.toLocaleString()}
+                <div className="flex flex-col items-center gap-2 relative z-10 group">
+                    <div className="flex items-center gap-1.5 text-pink-200 bg-pink-500/10 px-3 py-1 rounded-full border border-pink-500/20 backdrop-blur-md mb-1">
+                        <UserCheck className="w-3.5 h-3.5" />
+                        <span className="text-sm font-bold">הכיס של איריס</span>
                     </div>
+
                     <div className={`w-16 h-40 bg-slate-900/50 rounded-full relative overflow-hidden border-2 border-white/10 shadow-inner transition-colors duration-500 ${isLowBalance(herPercentage) ? 'border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.3)]' : 'group-hover:border-pink-400/30'}`}>
                         {/* Liquid */}
                         <motion.div
@@ -76,9 +80,9 @@ export const FuelTanks = ({ himBalance, herBalance, maxCapacity = 2000, himName 
                         {/* Bubbles / shine */}
                         <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
                     </div>
-                    <div className="flex items-center gap-1.5 text-pink-200 bg-pink-500/10 px-3 py-1 rounded-full border border-pink-500/20 backdrop-blur-md">
-                        <UserCheck className="w-3.5 h-3.5" />
-                        <span className="text-sm font-bold">הכיס של איריס</span>
+
+                    <div className={`text-white font-bold text-xl tracking-tight transition-all duration-500 drop-shadow-md relative ${isLowBalance(herPercentage) ? 'text-red-400 scale-110' : ''}`}>
+                        ₪{herBalance.toLocaleString()}
                     </div>
                 </div>
 
