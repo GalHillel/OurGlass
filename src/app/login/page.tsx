@@ -94,7 +94,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* PIN Dots */}
-                <div className="flex justify-center gap-4 mb-12 h-4">
+                <div dir="ltr" className="flex justify-center gap-4 mb-12 h-4">
                     <AnimatePresence mode="wait">
                         {[0, 1, 2, 3].map((i) => (
                             <motion.div
@@ -113,6 +113,7 @@ export default function LoginPage() {
 
                 {/* Keypad */}
                 <motion.div
+                    dir="ltr"
                     animate={error ? { x: [-10, 10, -10, 10, 0] } : {}}
                     transition={{ duration: 0.4 }}
                     className="grid grid-cols-3 gap-6 px-4"
