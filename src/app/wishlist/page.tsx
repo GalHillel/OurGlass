@@ -175,12 +175,12 @@ export default function WishlistPage() {
                 </Dialog>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="w-full mt-4">
                 {loading ? (
-                    <>
-                        <Skeleton className="h-48 rounded-3xl bg-white/5" />
-                        <Skeleton className="h-48 rounded-3xl bg-white/5" />
-                    </>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <Skeleton className="h-64 rounded-[2rem] bg-white/5 w-full" />
+                        <Skeleton className="h-64 rounded-[2rem] bg-white/5 w-full" />
+                    </div>
                 ) : (
                     <WishlistGrid
                         items={items}
@@ -200,7 +200,7 @@ export default function WishlistPage() {
                                     amount: amount,
                                     description: `חיסכון ל${item.name}`,
                                     date: new Date().toISOString(),
-                                    category_id: null, // or a specific savings category ID if available
+                                    category_id: null,
                                     is_surprise: false
                                 });
                                 if (txError) throw txError;

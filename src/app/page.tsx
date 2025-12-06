@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactorCore } from "@/components/ReactorCore"; // NEW
+import { ReactorCore } from "@/components/ReactorCore";
 import { QuickActions } from "@/components/QuickActions";
 import { AddTransactionDrawer } from "@/components/AddTransactionDrawer";
 import { MonthlyCalendar } from "@/components/MonthlyCalendar";
@@ -10,6 +10,8 @@ import { FutureSlider } from "@/components/FutureSlider";
 import { Confetti } from "@/components/Confetti";
 import { TransactionList } from "@/components/TransactionList";
 import { StockRocket } from "@/components/StockRocket";
+import { ParticleBackground } from "@/components/ParticleBackground"; // Added
+import { getDaysRemainingInCycle } from "@/lib/billing"; // Added
 import { useState, useEffect, useCallback } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Transaction, Goal } from "@/types";
@@ -27,6 +29,8 @@ export default function Home() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
+
+  const daysRemaining = getDaysRemainingInCycle();
 
   const supabase = createClientComponentClient();
   const { user, profile } = useAuth();
