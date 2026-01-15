@@ -47,7 +47,7 @@ export const WishlistCard = ({ item, onDelete, onDeposit, onWithdraw, onPurchase
 
     if (item.status === 'purchased') {
         return (
-            <div className="glass p-6 rounded-[2rem] flex flex-col justify-between gap-4 w-full min-h-[250px] relative overflow-hidden border border-green-500/30">
+            <div className="neon-card p-6 rounded-[2rem] flex flex-col justify-between gap-4 w-full min-h-[250px] relative overflow-hidden border border-green-500/30 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
                 <div className="absolute inset-0 bg-green-500/10 pointer-events-none" />
                 <div className="flex flex-col items-center justify-center h-full gap-4 z-10">
                     <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
@@ -73,8 +73,8 @@ export const WishlistCard = ({ item, onDelete, onDeposit, onWithdraw, onPurchase
 
     return (
         <div className={cn(
-            "glass p-6 md:p-8 rounded-[2.5rem] flex flex-col justify-between gap-6 group relative overflow-hidden border transition-all duration-300 w-full h-auto min-h-[200px]",
-            isCoolingOff ? "border-blue-300/30 shadow-[0_0_30px_rgba(59,130,246,0.1)]" : "border-white/10 shadow-xl shadow-black/5 hover:border-white/20"
+            "neon-card p-6 md:p-8 rounded-[2.5rem] flex flex-col justify-between gap-6 group relative overflow-hidden border transition-all duration-300 w-full h-auto min-h-[200px]",
+            isCoolingOff ? "border-blue-400/30 shadow-[0_0_30px_rgba(59,130,246,0.15)]" : "border-white/5 hover:border-white/20 hover:shadow-[0_0_30px_rgba(0,0,0,0.5)]"
         )}>
             {/* Icebox / Cooling Overlay */}
             {isCoolingOff && (

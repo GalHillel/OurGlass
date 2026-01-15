@@ -1,59 +1,131 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, RefreshCcw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
+import { Goal } from "@/types";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
-interface Stock {
-    symbol: string;
-    shares: number;
-    avgPrice: number;
-    currentPrice: number;
+interface StockPortfolioProps {
+    assets?: Goal[];
 }
 
-export const StockPortfolio = () => {
-    // Mock Data - In real app, fetch from DB
-    const [stocks, setStocks] = useState<Stock[]>([
-        { symbol: "AAPL", shares: 10, avgPrice: 180, currentPrice: 220 },
-        { symbol: "NVDA", shares: 5, avgPrice: 900, currentPrice: 1200 },
-    ]);
+interface StockDisplay {
+    id: string;
+    symbol: string;
+    shares: number;
+    // avgPrice removed, calculated from costBasis / shares if needed
+    costBasis: number;
+    currentPrice: number; // Live per share
+    currency: string;
+}
+
+export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
+    const supabase = createClientComponentClient();
+    const [stocks, setStocks] = useState<StockDisplay[]>([]);
+    const [usdToIls, setUsdToIls] = useState(3.7);
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [newSymbol, setNewSymbol] = useState("");
     const [newShares, setNewShares] = useState("");
+    const [newCost, setNewCost] = useState("");
+    const [loading, setLoading] = useState(false);
 
-    // Mock Real-Time Updates
+    // Filter only stock assets that have a symbol
+    const stockAssets = assets.filter(a => a.type === 'stock' && a.symbol);
+
+    const fetchPrices = async () => {
+        if (stockAssets.length === 0) return;
+        setLoading(true);
+
+        try {
+            const symbols = stockAssets.map(a => a.symbol);
+            const res = await fetch('/api/stocks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbols })
+            });
+
+            if (!res.ok) throw new Error("Failed to fetch prices");
+            const data = await res.json();
+
+            setUsdToIls(data.usdToIls || 3.75);
+
+            // Merge DB data with Live Data
+            const mapped: StockDisplay[] = stockAssets.map(asset => {
+                const liveData = data.stocks.find((s: any) => s.symbol === asset.symbol);
+                const currentPrice = liveData?.price || 0;
+
+                return {
+                    id: asset.id,
+                    symbol: asset.symbol!,
+                    shares: asset.quantity || 1,
+                    costBasis: asset.current_amount, // DB holds Cost Basis
+                    currentPrice: currentPrice,
+                    currency: liveData?.currency || 'USD'
+                };
+            });
+
+            setStocks(mapped);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const interval = setInterval(() => {
-            setStocks(prev => prev.map(stock => ({
-                ...stock,
-                currentPrice: stock.currentPrice * (1 + (Math.random() * 0.02 - 0.01)) // Random +/- 1%
-            })));
-        }, 3000); // Update every 3 seconds
+        if (stockAssets.length > 0) {
+            fetchPrices();
+            // Poll every 30 seconds
+            const interval = setInterval(fetchPrices, 30000);
+            return () => clearInterval(interval);
+        } else {
+            setStocks([]);
+        }
+    }, [assets]); // Re-run when assets change (e.g. added new stock)
 
-        return () => clearInterval(interval);
-    }, []);
+    const totalValueILS = stocks.reduce((sum, s) => {
+        const val = s.shares * s.currentPrice;
+        return sum + (s.currency === 'USD' ? val * usdToIls : val);
+    }, 0);
 
-    const totalValueUSD = stocks.reduce((sum, s) => sum + (s.shares * s.currentPrice), 0);
-    const totalCostUSD = stocks.reduce((sum, s) => sum + (s.shares * s.avgPrice), 0);
-    const totalGain = totalValueUSD - totalCostUSD;
-    const gainPercent = (totalGain / totalCostUSD) * 100;
+    const totalCostILS = stocks.reduce((sum, s) => sum + s.costBasis, 0); // Assuming stored is ILS
+    const totalGain = totalValueILS - totalCostILS;
+    const gainPercent = totalCostILS > 0 ? (totalGain / totalCostILS) * 100 : 0;
 
-    const EXCHANGE_RATE = 3.75; // USD to ILS
+    const handleAdd = async () => {
+        if (!newSymbol || !newShares || !newCost) return;
 
-    const handleAdd = () => {
-        if (!newSymbol || !newShares) return;
-        setStocks(prev => [...prev, {
-            symbol: newSymbol.toUpperCase(),
-            shares: Number(newShares),
-            avgPrice: Math.random() * 1000, // Mock price
-            currentPrice: Math.random() * 1000
-        }]);
-        setNewSymbol("");
-        setNewShares("");
-        setIsAddOpen(false);
+        setLoading(true);
+        try {
+            const { error } = await supabase.from('goals').insert({
+                name: `Stock ${newSymbol}`,
+                target_amount: 0, // Not relevant for stock wrapper
+                current_amount: Number(newCost), // Store Cost Basis
+                type: 'stock',
+                symbol: newSymbol.toUpperCase(),
+                quantity: Number(newShares),
+                growth_rate: 0, // Will be calculated dynamically
+                brick_color: '#A855F7'
+            });
+
+            if (error) throw error;
+            setIsAddOpen(false);
+            setNewSymbol("");
+            setNewShares("");
+            setNewCost("");
+            // Parent component (WealthPage) needs to refresh?
+            // Ideally we call a callback prop `onRefresh`, but for now we rely on Supabase subscription or manual refresh.
+            // Since we don't have real-time subscription set up in WealthPage, we might need to Trigger reload.
+            window.location.reload(); // Brute force refresh to verify
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -69,14 +141,15 @@ export const StockPortfolio = () => {
                             תיק מניות בזמן אמת
                         </h2>
                         <div className="mt-2 text-4xl font-black text-white tracking-tight">
-                            ₪{(totalValueUSD * EXCHANGE_RATE).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            ₪{totalValueILS.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </div>
                         <div className={`flex items-center gap-2 mt-1 text-sm font-bold ${totalGain >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {totalGain >= 0 ? '+' : ''}{(totalGain * EXCHANGE_RATE).toLocaleString(undefined, { maximumFractionDigits: 0 })} ₪
+                            {totalGain >= 0 ? '+' : ''}{totalGain.toLocaleString(undefined, { maximumFractionDigits: 0 })} ₪
                             <span className="bg-white/10 px-1.5 py-0.5 rounded text-xs">
                                 {gainPercent.toFixed(2)}%
                             </span>
                         </div>
+                        <div className="text-xs text-white/30 mt-1">שער דולר: ₪{usdToIls.toFixed(2)}</div>
                     </div>
                     <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                         <DialogTrigger asChild>
@@ -102,8 +175,15 @@ export const StockPortfolio = () => {
                                     onChange={e => setNewShares(e.target.value)}
                                     className="bg-white/5 border-white/10 text-white"
                                 />
-                                <Button onClick={handleAdd} className="w-full bg-purple-600 hover:bg-purple-500 font-bold">
-                                    הוסף לתיק ההרפתקאות
+                                <Input
+                                    placeholder="עלות כוללת (בשקלים)"
+                                    type="number"
+                                    value={newCost}
+                                    onChange={e => setNewCost(e.target.value)}
+                                    className="bg-white/5 border-white/10 text-white"
+                                />
+                                <Button onClick={handleAdd} disabled={loading} className="w-full bg-purple-600 hover:bg-purple-500 font-bold">
+                                    {loading ? "מוסיף..." : "הוסף לתיק ההרפתקאות"}
                                 </Button>
                             </div>
                         </DialogContent>
@@ -114,12 +194,13 @@ export const StockPortfolio = () => {
                 <div className="space-y-3">
                     <AnimatePresence>
                         {stocks.map((stock) => {
-                            const stockGain = (stock.currentPrice - stock.avgPrice) * stock.shares;
-                            const isPositive = stockGain >= 0;
+                            const val = stock.shares * stock.currentPrice * (stock.currency === 'USD' ? usdToIls : 1);
+                            const gain = val - stock.costBasis;
+                            const isPositive = gain >= 0;
 
                             return (
                                 <motion.div
-                                    key={stock.symbol}
+                                    key={stock.id}
                                     layout
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
@@ -137,17 +218,22 @@ export const StockPortfolio = () => {
 
                                     <div className="text-left">
                                         <div className="font-bold text-white">
-                                            ₪{(stock.currentPrice * stock.shares * EXCHANGE_RATE).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                            ₪{val.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                         </div>
                                         <div className={`text-xs font-medium flex justify-end items-center gap-1 ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
                                             {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                                            {Math.abs((stockGain / (stock.avgPrice * stock.shares)) * 100).toFixed(1)}%
+                                            {stock.costBasis > 0 ? (Math.abs(gain / stock.costBasis) * 100).toFixed(1) : 0}%
                                         </div>
                                     </div>
                                 </motion.div>
                             )
                         })}
                     </AnimatePresence>
+                    {stockAssets.length === 0 && (
+                        <div className="text-center text-white/40 text-sm py-4">
+                            התיק ריק... זמן להתחיל להשקיע? 🚀
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

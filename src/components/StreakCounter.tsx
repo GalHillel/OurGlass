@@ -1,14 +1,16 @@
 import { Flame, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 import { Transaction } from "@/types";
-import { calculateStreak } from "@/lib/gamification";
+import { calculateSmartStreak } from "@/lib/smartStreak";
 
 interface StreakCounterProps {
     transactions: Transaction[];
+    monthlyBudget?: number;
+    fixedExpenses?: number;
 }
 
-export const StreakCounter = ({ transactions }: StreakCounterProps) => {
-    const streakDays = calculateStreak(transactions || []);
+export const StreakCounter = ({ transactions, monthlyBudget = 20000, fixedExpenses = 0 }: StreakCounterProps) => {
+    const streakDays = calculateSmartStreak(transactions || [], monthlyBudget, fixedExpenses);
 
     return (
         <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 px-4 py-2 rounded-full shadow-[0_0_15px_rgba(249,115,22,0.15)] backdrop-blur-md">

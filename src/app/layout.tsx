@@ -5,13 +5,22 @@ import { LiquidBackground } from "@/components/LiquidBackground";
 import { AuthProvider } from "@/components/AuthProvider";
 import { Toaster } from "sonner";
 import { BottomNav } from "@/components/BottomNav";
-import { FinancialTherapist } from "@/components/FinancialTherapist";
 import { AIChatButton } from "@/components/AIChatButton";
 
 const heebo = Heebo({
   subsets: ["hebrew", "latin"],
   variable: "--font-heebo",
 });
+
+import { Viewport } from "next";
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+}
 
 export const metadata: Metadata = {
   title: "OurGlass",
@@ -24,16 +33,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="he" dir="rtl">
-      <body className={`${heebo.variable} antialiased font-sans text-white`}>
+    <html lang="he" dir="rtl" className="dark">
+      <body className={`${heebo.variable} bg-slate-950 text-white antialiased font-sans min-h-screen`}>
         <AuthProvider>
           <LiquidBackground />
-          <main className="relative z-10 min-h-screen p-4 pb-24 pt-[calc(1rem+env(safe-area-inset-top))]">
+          <main className="relative z-10 min-h-[100dvh] p-4 pb-24 pt-[calc(1rem+env(safe-area-inset-top))]">
             {children}
           </main>
-          <FinancialTherapist />
-          <AIChatButton />
-
           <BottomNav />
           <Toaster position="top-center" toastOptions={{
             className: "glass border-white/20 text-white",

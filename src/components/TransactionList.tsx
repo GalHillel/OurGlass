@@ -21,6 +21,7 @@ import {
 interface TransactionListProps {
     transactions: Transaction[];
     onRefresh: () => void;
+    onEdit?: (tx: Transaction) => void;
 }
 
 const getIcon = (description: string | null) => {
@@ -39,7 +40,7 @@ import React, { memo } from 'react';
 
 // ... imports ...
 
-export const TransactionList = memo(({ transactions, onRefresh }: TransactionListProps) => {
+export const TransactionList = memo(({ transactions, onRefresh, onEdit }: TransactionListProps) => {
     const supabase = createClientComponentClient();
 
     const handleDelete = async (id: string) => {
@@ -68,7 +69,7 @@ export const TransactionList = memo(({ transactions, onRefresh }: TransactionLis
                 const [title, note] = (tx.description || "").split('\n');
                 const Icon = getIcon(title || tx.description || "");
                 return (
-                    <div key={tx.id} className="glass p-4 rounded-2xl flex items-center justify-between group border border-white/10 shadow-xl shadow-black/5 active:scale-95 transition-transform duration-200">
+                    <div key={tx.id} className="neon-card p-4 rounded-2xl flex items-center justify-between group active:scale-95 transition-transform duration-200">
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/70 shrink-0">
                                 <Icon className="w-5 h-5" />
@@ -86,6 +87,13 @@ export const TransactionList = memo(({ transactions, onRefresh }: TransactionLis
 
                         <div className="flex items-center gap-4">
                             <span className="font-bold text-white">₪{tx.amount}</span>
+
+                            <button
+                                onClick={() => onEdit && onEdit(tx)}
+                                className="p-3 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-colors flex-shrink-0"
+                            >
+                                <Edit2 className="w-5 h-5" />
+                            </button>
 
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>

@@ -62,56 +62,58 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="flex flex-col gap-6 max-w-md mx-auto pt-8">
-            <h1 className="text-3xl font-bold text-white text-center mb-4">הגדרות</h1>
+        <div className="flex flex-col gap-6 max-w-md mx-auto pt-8 pb-32 px-4">
+            <h1 className="text-3xl font-black text-white text-center mb-4 neon-text tracking-tight">הגדרות</h1>
 
-            <div className="glass p-6 rounded-3xl space-y-6">
-                <div className="flex items-center gap-4 mb-2">
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                        <User className="w-6 h-6 text-white" />
+            <div className="neon-card p-6 rounded-3xl space-y-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+                <div className="flex items-center gap-4 mb-2 relative z-10">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-white/5 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                        <User className="w-6 h-6 text-blue-200" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-bold text-white">הפרופיל שלי</h2>
-                        <p className="text-sm text-white/60">{user?.email}</p>
+                        <h2 className="text-xl font-bold text-white">הפרופיל שלי</h2>
+                        <p className="text-xs text-blue-200/60 font-mono tracking-wide">{user?.email}</p>
                     </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-5 relative z-10">
                     <div className="space-y-2">
-                        <Label className="text-white/80">שם תצוגה</Label>
+                        <Label className="text-slate-400 text-xs font-bold uppercase tracking-wider">שם תצוגה</Label>
                         <Input
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="bg-white/5 border-white/10 text-white"
+                            className="bg-slate-950/50 border-white/10 text-white focus:border-blue-500/50 transition-colors h-11"
                             placeholder="השם שלך"
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-white/80">שכר שעתי (לחישוב עלות עבודה)</Label>
+                        <Label className="text-slate-400 text-xs font-bold uppercase tracking-wider">שכר שעתי (לחישוב עלות)</Label>
                         <div className="relative">
                             <Input
                                 type="number"
                                 value={hourlyWage}
                                 onChange={(e) => setHourlyWage(e.target.value)}
-                                className="bg-white/5 border-white/10 text-white pl-10"
+                                className="bg-slate-950/50 border-white/10 text-white pl-10 text-lg font-mono h-11"
                                 placeholder="0.00"
                             />
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">₪</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">₪</span>
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-white/80">תקציב חודשי (לחישוב המספר האמיתי)</Label>
+                        <Label className="text-slate-400 text-xs font-bold uppercase tracking-wider">תקציב חודשי</Label>
                         <div className="relative">
                             <Input
                                 type="number"
                                 value={budget}
                                 onChange={(e) => setBudget(e.target.value)}
-                                className="bg-white/5 border-white/10 text-white pl-10"
+                                className="bg-slate-950/50 border-white/10 text-white pl-10 text-lg font-mono font-bold h-11"
                                 placeholder="20000"
                             />
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">₪</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">₪</span>
                         </div>
                     </div>
                 </div>
@@ -119,7 +121,7 @@ export default function SettingsPage() {
                 <Button
                     onClick={handleSave}
                     disabled={loading}
-                    className="w-full bg-white text-black hover:bg-white/90 font-bold h-12 rounded-xl mt-4"
+                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-12 rounded-xl mt-4 shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all hover:scale-[1.02]"
                 >
                     <Save className="w-4 h-4 ml-2" />
                     {loading ? "שומר..." : "שמור שינויים"}
@@ -127,9 +129,9 @@ export default function SettingsPage() {
             </div>
 
             <Button
-                variant="destructive"
+                variant="outline"
                 onClick={handleLogout}
-                className="w-full bg-red-500/20 text-red-200 hover:bg-red-500/30 border border-red-500/30 h-12 rounded-xl"
+                className="w-full bg-transparent border-red-500/20 text-red-400 hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/40 h-12 rounded-xl transition-all"
             >
                 <LogOut className="w-4 h-4 ml-2" />
                 התנתק

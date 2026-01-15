@@ -132,15 +132,15 @@ export default function WishlistPage() {
     return (
         <div className="flex flex-col gap-6 w-full max-w-5xl mx-auto pt-8 pb-20 px-2 sm:px-4">
             <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold text-white">רשימת משאלות</h1>
-                <p className="text-white/60">דברים שבא לנו לקנות</p>
+                <h1 className="text-3xl font-black text-white neon-text">רשימת משאלות</h1>
+                <p className="text-blue-200/60 font-medium">יעדים, חלומות ודברים שבא לנו</p>
             </div>
 
             <div className="flex justify-center">
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-white text-black hover:bg-white/90 font-bold rounded-full px-8 shadow-[0_0_20px_rgba(255,255,255,0.3)]">
-                            <Plus className="w-4 h-4 mr-2" /> הוסף משאלה
+                        <Button className="bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-full px-8 shadow-[0_0_25px_rgba(147,51,234,0.4)] transition-all hover:scale-105">
+                            <Plus className="w-5 h-5 mr-2" /> הוסף משאלה
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 text-white">

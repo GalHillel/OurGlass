@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bot, Sparkles, X } from "lucide-react";
+import { Bot, Sparkles, X, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ChatInterface } from "./ChatInterface";
@@ -11,6 +11,8 @@ import { motion, AnimatePresence } from "framer-motion";
 export const AIChatButton = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [context, setContext] = useState<any>(null);
+    const [error, setError] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [bubbleMessage, setBubbleMessage] = useState<string | null>(null);
     const supabase = createClientComponentClient();
 
@@ -24,31 +26,62 @@ export const AIChatButton = () => {
                 "יש לך ₪400 פנויים, אולי נשקיע אותם?"
             ];
             setBubbleMessage(msgs[Math.floor(Math.random() * msgs.length)]);
-        }, 5000); // 5 seconds delay
+        }, 5000); // 5 seconds delay before showing
 
         return () => clearTimeout(timer);
     }, []);
 
+    // Auto-hide bubble after 8 seconds of appearing
     useEffect(() => {
-        if (isOpen) {
-            // Fetch context when opening
-            const fetchContext = async () => {
-                const { data: txs } = await supabase.from('transactions').select('*').limit(10).order('date', { ascending: false });
-                const { data: subs } = await supabase.from('subscriptions').select('amount');
+        if (!bubbleMessage) return;
 
-                // Calculate quick balance for context (simplified)
-                const totalFixed = subs?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0;
+        const hideTimer = setTimeout(() => {
+            setBubbleMessage(null);
+        }, 8000);
 
-                setContext({
-                    recentTransactions: txs,
-                    fixedExpenses: totalFixed,
-                    balance: "Dynamic"
-                });
-            };
+        return () => clearTimeout(hideTimer);
+    }, [bubbleMessage]);
+
+    const fetchContext = async () => {
+        setLoading(true);
+        setError(false);
+        try {
+            const { data: txs, error: txError } = await supabase
+                .from('transactions')
+                .select('*')
+                .limit(5)
+                .order('date', { ascending: false });
+
+            if (txError) throw txError;
+
+            const { data: subs, error: subError } = await supabase.from('subscriptions').select('amount');
+            if (subError) throw subError;
+
+            const { data: profile } = await supabase.from('profiles').select('budget').single();
+
+            // Calculate quick balance for context
+            const totalFixed = subs?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0;
+
+            setContext({
+                recentTransactions: txs,
+                fixedExpenses: totalFixed,
+                budget: profile?.budget || 20000,
+                balance: "Dynamic" // This could be calculated if needed, but Context usually enough
+            });
+        } catch (err) {
+            console.error("Failed to fetch context", err);
+            setError(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isOpen && !context) {
             fetchContext();
             setBubbleMessage(null); // Clear bubble when opened
         }
-    }, [isOpen, supabase]);
+    }, [isOpen]);
 
     return (
         <>
@@ -61,7 +94,8 @@ export const AIChatButton = () => {
                             initial={{ opacity: 0, scale: 0.8, x: 20 }}
                             animate={{ opacity: 1, scale: 1, x: 0 }}
                             exit={{ opacity: 0, scale: 0.8, x: 20 }}
-                            className="bg-white text-slate-900 px-4 py-3 rounded-2xl rounded-tr-none shadow-xl border border-white/20 max-w-[200px] relative text-sm font-medium mb-2 mx-1"
+                            className="bg-white text-slate-900 px-4 py-3 rounded-2xl rounded-tr-none shadow-xl border border-white/20 max-w-[200px] relative text-sm font-medium mb-2 mx-1 cursor-pointer"
+                            onClick={() => setIsOpen(true)}
                         >
                             {bubbleMessage}
                             <button
@@ -89,7 +123,23 @@ export const AIChatButton = () => {
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogContent className="sm:max-w-md h-[80vh] p-0 gap-0 bg-slate-950/90 border-white/10 overflow-hidden" aria-describedby={undefined}>
                     <DialogTitle className="sr-only">AI Chat Helper</DialogTitle>
-                    <ChatInterface context={context} onClose={() => setIsOpen(false)} />
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center h-full text-white gap-4">
+                            <Bot className="w-12 h-12 animate-bounce text-blue-400" />
+                            <p>מכין את ההקשר הפיננסי...</p>
+                        </div>
+                    ) : error ? (
+                        <div className="flex flex-col items-center justify-center h-full text-white gap-4 p-6 text-center">
+                            <X className="w-12 h-12 text-red-400" />
+                            <p>אופס, לא הצלחתי לטעון את הנתונים.</p>
+                            <Button onClick={fetchContext} variant="outline" className="gap-2">
+                                <RefreshCw className="w-4 h-4" />
+                                נסה שוב
+                            </Button>
+                        </div>
+                    ) : (
+                        <ChatInterface context={context} onClose={() => setIsOpen(false)} />
+                    )}
                 </DialogContent>
             </Dialog>
         </>

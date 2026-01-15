@@ -30,6 +30,7 @@ export interface Transaction {
     location_lng: number | null;
     mood_rating: number | null;
     created_at: string;
+    payer?: 'him' | 'her' | 'joint'; // Added joint
 }
 
 export interface Subscription {
@@ -49,6 +50,15 @@ export interface Goal {
     type: 'cash' | 'stock' | 'pocket_him' | 'pocket_her';
     growth_rate: number;
     created_at: string;
+    // New fields for Wealth/Stocks
+    interest_rate?: number; // Annual interest rate (e.g., 0.05 for 5%)
+    last_interest_calc?: string; // ISO date
+    symbol?: string; // Stock symbol (e.g., TSLA)
+    currency?: string; // USD, ILS
+    quantity?: number; // Number of shares
+    owner?: string; // 'him', 'her', 'joint'
+    investment_type?: string;
+    last_updated?: string;
 }
 
 export interface WishlistItem {

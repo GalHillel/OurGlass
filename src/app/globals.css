@@ -39,6 +39,13 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+html,
+body {
+  background-color: #020617;
+  /* slate-950 */
+  overscroll-behavior-y: none;
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
@@ -163,4 +170,29 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+@layer utilities {
+  .neon-text {
+    text-shadow:
+      0 0 5px theme('colors.purple.500'),
+      0 0 10px theme('colors.purple.500');
+  }
+
+  .neon-border {
+    border-color: theme('colors.blue.400');
+    box-shadow:
+      0 0 5px theme('colors.blue.500'),
+      inset 0 0 5px theme('colors.blue.500');
+  }
+
+  .neon-card {
+    background: rgba(10, 10, 30, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    box-shadow:
+      0 0 15px rgba(139, 92, 246, 0.1),
+      inset 0 0 20px rgba(139, 92, 246, 0.05);
+  }
 }

@@ -67,3 +67,30 @@ export const filterByBillingCycle = <T extends { created_at?: string; date?: str
         return isAfter(itemDate, start) && isBefore(itemDate, end);
     });
 };
+
+/**
+ * Calculates the billing period containing the given date (10th to 10th).
+ */
+export const getBillingPeriodForDate = (date: Date): BillingPeriod => {
+    const targetDate = new Date(date);
+    const targetMonth10th = setDate(targetDate, 10);
+
+    let start: Date;
+    let end: Date;
+
+    if (isBefore(targetDate, targetMonth10th)) {
+        // Early in the month (e.g., 5th), so cycle started last month
+        start = setDate(addMonths(targetDate, -1), 10);
+        end = targetMonth10th;
+    } else {
+        // Past the 10th, so cycle started this month
+        start = targetMonth10th;
+        end = setDate(addMonths(targetDate, 1), 10);
+    }
+
+    // Set times to boundary of day
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+
+    return { start, end };
+};
