@@ -139,7 +139,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData }: AddA
                         <Input
                             value={name} onChange={(e) => setName(e.target.value)}
                             placeholder="לדוגמה: קרן השתלמות, טסלה..."
-                            className="bg-slate-950 border-white/10 text-white"
+                            className="bg-slate-950 border-white/10 text-white text-base h-11"
                         />
                     </div>
 
@@ -150,7 +150,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData }: AddA
                                 <Input
                                     value={symbol} onChange={(e) => setSymbol(e.target.value)}
                                     placeholder="AAPL, BTC..."
-                                    className="bg-slate-950 border-white/10 text-white uppercase font-mono"
+                                    className="bg-slate-950 border-white/10 text-white uppercase font-mono text-base h-11"
                                 />
                             </div>
                             <div className="space-y-2 flex-1">
@@ -159,7 +159,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData }: AddA
                                     type="number"
                                     value={quantity} onChange={(e) => setQuantity(e.target.value)}
                                     placeholder="0.00"
-                                    className="bg-slate-950 border-white/10 text-white"
+                                    className="bg-slate-950 border-white/10 text-white text-base h-11"
                                 />
                             </div>
                         </div>
@@ -171,7 +171,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData }: AddA
                             <Input
                                 type="number"
                                 value={amount} onChange={(e) => setAmount(e.target.value)}
-                                className="bg-slate-950 border-white/10 text-white text-lg pl-10"
+                                className="bg-slate-950 border-white/10 text-white text-base h-11 pl-10"
                             />
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">₪</span>
                         </div>
@@ -185,7 +185,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData }: AddA
                                 type="number"
                                 value={interestRate} onChange={(e) => setInterestRate(e.target.value)}
                                 placeholder="0"
-                                className="bg-slate-950 border-white/10 text-white pl-10"
+                                className="bg-slate-950 border-white/10 text-white pl-10 text-base h-11"
                             />
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">%</span>
                         </div>

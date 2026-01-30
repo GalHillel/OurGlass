@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Subscription } from "@/types";
-import { Plus, Trash2, Calendar, Edit2, CreditCard } from "lucide-react";
+import { Plus, Calendar, CreditCard } from "lucide-react"; // Removed Trash2, Edit2 as they are in SwipeableRow
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,22 +12,13 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
     DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { SwipeableRow } from "@/components/SwipeableRow";
+import { AppHeader } from "@/components/AppHeader";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function SubscriptionsPage() {
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -37,9 +28,10 @@ export default function SubscriptionsPage() {
     const [name, setName] = useState("");
     const [amount, setAmount] = useState("");
     const [day, setDay] = useState("");
+    const [owner, setOwner] = useState<'him' | 'her' | 'joint'>('joint');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingSub, setEditingSub] = useState<Subscription | null>(null);
-
+    const { profile } = useAuth();
     const supabase = createClientComponentClient();
 
     const fetchSubscriptions = async () => {
@@ -68,6 +60,7 @@ export default function SubscriptionsPage() {
         setName("");
         setAmount("");
         setDay("");
+        setOwner('joint');
         setIsDialogOpen(true);
     };
 
@@ -76,6 +69,7 @@ export default function SubscriptionsPage() {
         setName(sub.name);
         setAmount(sub.amount.toString());
         setDay(sub.billing_day?.toString() || "1");
+        setOwner(sub.owner || 'joint');
         setIsDialogOpen(true);
     };
 
@@ -90,6 +84,7 @@ export default function SubscriptionsPage() {
                 name: name,
                 amount: parseFloat(amount),
                 billing_day: parseInt(day) || 1,
+                owner: owner,
             };
 
             if (editingSub) {
@@ -108,7 +103,12 @@ export default function SubscriptionsPage() {
             setIsDialogOpen(false);
             fetchSubscriptions();
         } catch (error: any) {
-            toast.error("שגיאה בשמירה", { description: error.message });
+            console.error("Save error:", error);
+            if (error.message?.includes("subscriptions_owner_check") || error.details?.includes("subscriptions_owner_check")) {
+                toast.error("שגיאה: אי תאימות בבסיס הנתונים", { description: "נא לעדכן את אילוצי הטבלה (CHECK constraint)" });
+            } else {
+                toast.error("שגיאה בשמירה", { description: error.message });
+            }
         }
     };
 
@@ -126,13 +126,51 @@ export default function SubscriptionsPage() {
     const totalMonthly = subscriptions.reduce((sum, sub) => sum + Number(sub.amount), 0);
 
     return (
-        <div className="flex flex-col gap-6 w-full max-w-md mx-auto pt-8 pb-24 px-4">
-            <div className="text-center space-y-2">
-                <h1 className="text-2xl font-black text-white neon-text flex items-center justify-center gap-2">
-                    <CreditCard className="w-6 h-6 text-purple-400" />
-                    הוצאות <span className="text-purple-500">קבועות</span>
-                </h1>
-            </div>
+        <div className="flex flex-col gap-6 w-full mx-auto pt-8 pb-24 px-4">
+            <AppHeader
+                title="הוצאות"
+                subtitle="קבועות"
+                icon={CreditCard}
+                iconColor="text-purple-400"
+                titleColor="text-purple-500"
+            />
+            {/* Spacing for fixed header */}
+            <div className="h-4" />
+
+            {/* Vampire Index Analysis */}
+            {profile?.budget && (
+                (() => {
+                    const ratio = (totalMonthly / (profile.budget || 20000)) * 100;
+                    const isVampire = ratio > 50;
+
+                    return (
+                        <div className={`p-4 rounded-3xl border mb-2 relative overflow-hidden transition-all ${isVampire ? 'bg-red-950/40 border-red-500/30' : 'bg-emerald-950/40 border-emerald-500/30'}`}>
+                            <div className="flex justify-between items-start relative z-10">
+                                <div>
+                                    <h3 className={`text-sm font-bold uppercase tracking-wider ${isVampire ? 'text-red-300' : 'text-emerald-300'}`}>
+                                        מדד הערפד 🧛
+                                    </h3>
+                                    <p className="text-xs text-white/60 mt-1 max-w-[200px]">
+                                        {isVampire
+                                            ? "ההוצאות הקבועות מדממות את ההכנסה שלך. בטל מנוי אחד כדי לנשום."
+                                            : "מצב מעולה! ההוצאות הקבועות בשליטה."}
+                                    </p>
+                                </div>
+                                <div className={`text-3xl font-black ${isVampire ? 'text-red-400' : 'text-emerald-400'}`}>
+                                    {ratio.toFixed(0)}%
+                                </div>
+                            </div>
+                            {/* Progress Bar */}
+                            <div className="mt-3 h-2 w-full bg-black/20 rounded-full overflow-hidden">
+                                <div
+                                    className={`h-full rounded-full ${isVampire ? 'bg-red-500' : 'bg-emerald-500'}`}
+                                    style={{ width: `${Math.min(ratio, 100)}%` }}
+                                />
+                            </div>
+                        </div>
+                    );
+                })()
+            )}
 
             {/* Total Card */}
             <div className="grid grid-cols-2 gap-4">
@@ -148,7 +186,7 @@ export default function SubscriptionsPage() {
                 <div className="neon-card p-6 rounded-3xl text-center relative overflow-hidden flex flex-col justify-center border-red-500/20 group">
                     <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent pointer-events-none" />
                     <span className="text-xs uppercase tracking-widest text-red-200/60 mb-1 block">
-                        שנתי (וואו!)
+                        שנתי
                     </span>
                     <span className="text-3xl font-black text-red-200 drop-shadow-lg">
                         ₪{(totalMonthly * 12).toLocaleString()}
@@ -174,51 +212,31 @@ export default function SubscriptionsPage() {
                 ) : (
                     <div className="space-y-3">
                         {subscriptions.map((sub) => (
-                            <div key={sub.id} className="neon-card p-4 rounded-2xl flex items-center justify-between group relative overflow-hidden">
-                                <div className="flex items-center gap-4 relative z-10">
-                                    <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-300 font-bold text-lg shadow-[0_0_10px_rgba(99,102,241,0.1)]">
-                                        {sub.name.charAt(0)}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-white text-lg">{sub.name}</h3>
-                                        <div className="flex items-center text-xs text-slate-400 gap-1 font-mono">
-                                            <Calendar className="w-3 h-3" />
-                                            חיוב ב-{sub.billing_day || 1} לחודש
+                            <SwipeableRow
+                                key={sub.id}
+                                onEdit={() => openEditDialog(sub)}
+                                onDelete={() => handleDelete(sub.id)}
+                                deleteMessage="האם להסיר את המנוי הזה מהחישוב החודשי?"
+                                className="mb-3 rounded-2xl overflow-hidden"
+                            >
+                                <div className="neon-card p-4 flex items-center justify-between group relative overflow-hidden">
+                                    <div className="flex items-center gap-4 relative z-10">
+                                        <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-300 font-bold text-lg shadow-[0_0_10px_rgba(99,102,241,0.1)]">
+                                            {sub.name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-white text-lg">{sub.name}</h3>
+                                            <div className="flex items-center text-xs text-slate-400 gap-1 font-mono">
+                                                <Calendar className="w-3 h-3" />
+                                                חיוב ב-{sub.billing_day || 1} לחודש
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-3 relative z-10">
-                                    <span className="font-black text-white text-xl tracking-tight">₪{sub.amount}</span>
-
-                                    {/* Actions */}
-                                    <div className="flex gap-1 ml-2 opacity-100 transition-opacity">
-                                        <button
-                                            onClick={() => openEditDialog(sub)}
-                                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <button className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-white/50 hover:text-red-400 transition-colors">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent className="bg-slate-900 border-white/10 text-white">
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>למחוק מנוי זה?</AlertDialogTitle>
-                                                    <AlertDialogDescription>פעולה זו תסיר את המנוי מהחישוב החודשי.</AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel className="bg-white/5 border-white/10 text-white">ביטול</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDelete(sub.id)} className="bg-red-600">מחק</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
+                                    <div className="flex items-center gap-3 relative z-10">
+                                        <span className="font-black text-white text-xl tracking-tight">₪{sub.amount}</span>
                                     </div>
                                 </div>
-                            </div>
+                            </SwipeableRow>
                         ))}
                         {subscriptions.length === 0 && (
                             <div className="text-center py-10 text-slate-500 text-sm bg-white/5 rounded-3xl border border-white/5 border-dashed">
@@ -251,6 +269,7 @@ export default function SubscriptionsPage() {
                             <Label>סכום חודשי (₪)</Label>
                             <Input
                                 type="number"
+                                inputMode="decimal"
                                 placeholder="0.00"
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
@@ -261,11 +280,36 @@ export default function SubscriptionsPage() {
                             <Label>יום חיוב בחודש (1-31)</Label>
                             <Input
                                 type="number"
+                                inputMode="numeric"
                                 placeholder="1"
                                 value={day}
                                 onChange={(e) => setDay(e.target.value)}
                                 className="bg-slate-950 border-white/10 text-white"
                             />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>שיוך</Label>
+                            <div className="flex bg-slate-950 p-1 rounded-xl border border-white/10">
+                                <button
+                                    onClick={() => setOwner('joint')}
+                                    className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${owner === 'joint' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                                >
+                                    משותף
+                                </button>
+                                <button
+                                    onClick={() => setOwner('her')}
+                                    className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${owner === 'her' ? 'bg-pink-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                                >
+                                    איריס
+                                </button>
+                                <button
+                                    onClick={() => setOwner('him')}
+                                    className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${owner === 'him' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                                >
+                                    גל
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <DialogFooter>
@@ -275,6 +319,6 @@ export default function SubscriptionsPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     );
 }

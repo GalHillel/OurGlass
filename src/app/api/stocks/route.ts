@@ -2,77 +2,90 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-async function fetchStockData(symbols: string[]) {
-    try {
-        if (symbols.length === 0) return {};
+const API_KEY = process.env.FINNHUB_API_KEY;
 
-        const joinedSymbols = symbols.join(',');
-        const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${joinedSymbols}`;
+// Global Cache for Exchange Rate
+let cachedRate = {
+    value: 3.65,
+    lastUpdated: 0
+};
 
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Yahoo API failed');
+async function getExchangeRate() {
+    const now = Date.now();
+    const CACHE_DURATION = 3600000; // 1 Hour
 
-        const data = await response.json();
-        const results = data.quoteResponse?.result || [];
-
-        // Map to Object keyed by symbol for O(1) lookup
-        const stocksMap: Record<string, any> = {};
-        results.forEach((stock: any) => {
-            stocksMap[stock.symbol] = {
-                symbol: stock.symbol,
-                price: stock.regularMarketPrice,
-                currency: stock.currency,
-                changePercent: stock.regularMarketChangePercent,
-                dayHigh: stock.regularMarketDayHigh,
-                dayLow: stock.regularMarketDayLow,
-            };
-        });
-
-        return stocksMap;
-    } catch (e) {
-        console.error("Fetch Stocks Error:", e);
-        return {};
+    if (now - cachedRate.lastUpdated < CACHE_DURATION) {
+        return cachedRate.value;
     }
-}
 
-async function fetchUsdIls() {
     try {
-        const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=ILS=X`;
-        const res = await fetch(url);
-        if (!res.ok) return 3.7; // Fallback
+        const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+        if (!res.ok) throw new Error('Exchange Rate API failed');
+
         const data = await res.json();
-        return data.quoteResponse?.result?.[0]?.regularMarketPrice || 3.7;
-    } catch {
-        return 3.7;
+        const rate = data.rates?.ILS || 3.65;
+
+        cachedRate = {
+            value: rate,
+            lastUpdated: now
+        };
+        return rate;
+    } catch (e) {
+        console.error("Failed to fetch exchange rate:", e);
+        return cachedRate.value; // Return stale or default on error
     }
 }
 
-export async function GET() {
-    // Default "Market Watch" list for GET request
-    const defaultSymbols = ['AAPL', 'MSFT', 'TSLA', 'SPY', 'QQQ', 'BTC-USD'];
-    const stocks = await fetchStockData(defaultSymbols);
-    const usdToIls = await fetchUsdIls();
-
-    return NextResponse.json({ stocks, usdToIls });
+async function getQuote(symbol: string) {
+    if (!API_KEY) return null;
+    try {
+        // Finnhub Quote API
+        const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`);
+        const data = await res.json();
+        return {
+            price: data.c || 0, // Current price
+            changePercent: data.dp || 0
+        };
+    } catch (e) {
+        console.error(`Error fetching ${symbol}`, e);
+        return null;
+    }
 }
 
 export async function POST(request: Request) {
     try {
-        const body = await request.json();
-        const symbols = body.symbols || [];
+        const { symbols } = await request.json();
 
-        if (!Array.isArray(symbols)) {
-            return NextResponse.json({ error: 'Symbols must be an array' }, { status: 400 });
-        }
+        // 1. Fetch USD/ILS Rate (from Cache or ExchangeRate-API)
+        const usdToIls = await getExchangeRate();
 
-        const stocks = await fetchStockData(symbols);
-        const usdToIls = await fetchUsdIls();
+        // 2. Fetch Stocks in Parallel
+        const stockPromises = symbols.map(async (sym: string) => {
+            const data = await getQuote(sym);
+            return {
+                symbol: sym,
+                price: data?.price || 0,
+                currency: 'USD',
+                changePercent: data?.changePercent || 0
+            };
+        });
 
-        return NextResponse.json({ stocks, usdToIls });
+        const stocks = await Promise.all(stockPromises);
+
+        // Transform array back to object for frontend { 'AAPL': { ... } }
+        const stocksMap: Record<string, any> = {};
+        stocks.forEach(s => {
+            stocksMap[s.symbol] = s;
+        });
+
+        return NextResponse.json({
+            stocks: stocksMap,
+            exchangeRate: usdToIls,
+            usdToIls
+        });
 
     } catch (error) {
-        console.error('Stock API Error:', error);
-        // Return valid JSON even on error to prevent Client crash
-        return NextResponse.json({ stocks: {}, usdToIls: 3.7 });
+        console.error("API Error:", error);
+        return NextResponse.json({ error: 'Failed' }, { status: 500 });
     }
 }

@@ -16,23 +16,46 @@ const actions = [
 ];
 
 export const QuickActions = ({ onAction }: { onAction: (id: string) => void }) => {
+    const container = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const item = {
+        hidden: { opacity: 0, y: 20 },
+        show: { opacity: 1, y: 0 }
+    };
+
     return (
-        <div className="grid grid-cols-4 gap-4 px-4 w-full max-w-md mx-auto">
+        <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="flex gap-4 px-4 w-full overflow-x-auto snap-x hide-scrollbar pb-4 mask-gradient-right"
+        >
             {actions.map((action) => (
                 <motion.button
                     key={action.id}
+                    variants={item}
                     whileHover={{ scale: 1.05, y: -5 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => {
                         triggerHaptic();
                         onAction(action.id);
                     }}
-                    className={`flex flex-col items-center justify-center w-20 h-20 p-2 rounded-2xl glass border border-white/10 ${action.color} backdrop-blur-md shadow-lg transition-colors hover:bg-white/20`}
+                    className={`flex flex-col items-center justify-center min-w-[5rem] h-20 p-2 rounded-2xl glass border border-white/10 ${action.color} backdrop-blur-md shadow-lg transition-colors hover:bg-white/20 snap-start`}
                 >
                     <action.icon className="w-8 h-8 text-white mb-1 stroke-[1.5]" />
                     <span className="text-[10px] font-medium text-white/90 text-center leading-tight">{action.label}</span>
                 </motion.button>
             ))}
-        </div>
+            {/* Spacer for end of list */}
+            <div className="min-w-[1rem]" />
+        </motion.div>
     );
 };

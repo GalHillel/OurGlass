@@ -6,17 +6,7 @@ import { he } from "date-fns/locale";
 import { Trash2, Edit2, ShoppingBag, Coffee, Car, Film, FileText, Utensils, Fuel, ShoppingCart } from "lucide-react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { toast } from "sonner";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { SwipeableRow } from "@/components/SwipeableRow";
 
 interface TransactionListProps {
     transactions: Transaction[];
@@ -40,9 +30,15 @@ import React, { memo } from 'react';
 
 // ... imports ...
 
+import { motion } from "framer-motion";
+import { ActivePress } from "@/components/ui/ActivePress";
+
+// ... imports ...
+
 export const TransactionList = memo(({ transactions, onRefresh, onEdit }: TransactionListProps) => {
     const supabase = createClientComponentClient();
 
+    // ... handleDelete ... (keep existing)
     const handleDelete = async (id: string) => {
         try {
             const { error } = await supabase.from('transactions').delete().eq('id', id);
@@ -55,72 +51,70 @@ export const TransactionList = memo(({ transactions, onRefresh, onEdit }: Transa
     };
 
     if (transactions.length === 0) {
-        return (
+        return ( // ...
             <div className="text-center text-white/40 py-8">
                 אין עסקאות להצגה
             </div>
         );
     }
 
+    const container = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: { staggerChildren: 0.05 }
+        }
+    };
+
+    const item = {
+        hidden: { opacity: 0, y: 15 },
+        show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
+    };
+
     return (
-        <div className="w-full max-w-md space-y-3 px-4">
+        <motion.div
+            className="w-full max-w-md space-y-3 px-4"
+            variants={container}
+            initial="hidden"
+            animate="show"
+        >
             <h3 className="text-white/80 text-lg font-medium mb-2">פירוט עסקאות</h3>
             {transactions.map((tx) => {
                 const [title, note] = (tx.description || "").split('\n');
                 const Icon = getIcon(title || tx.description || "");
                 return (
-                    <div key={tx.id} className="neon-card p-4 rounded-2xl flex items-center justify-between group active:scale-95 transition-transform duration-200">
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/70 shrink-0">
-                                <Icon className="w-5 h-5" />
-                            </div>
-                            <div className="min-w-0">
-                                <h4 className="font-bold text-white line-clamp-1 md:line-clamp-2 break-words">{title || "ללא תיאור"}</h4>
-                                {note && (
-                                    <p className="text-sm text-white/70 break-words line-clamp-2">{note}</p>
-                                )}
-                                <p className="text-xs text-white/50 mt-0.5">
-                                    {format(new Date(tx.date), "d בMMMM, HH:mm", { locale: he })}
-                                </p>
-                            </div>
-                        </div>
+                    <motion.div key={tx.id} variants={item}>
+                        <SwipeableRow
+                            className="mb-3 rounded-2xl overflow-hidden"
+                            onEdit={() => onEdit && onEdit(tx)}
+                            onDelete={() => handleDelete(tx.id)}
+                            deleteMessage="פעולה זו תמחק את העסקה לצמיתות."
+                        >
+                            <ActivePress className="neon-card p-4 flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/70 shrink-0">
+                                        <Icon className="w-5 h-5" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h4 className="font-bold text-white line-clamp-1 md:line-clamp-2 break-words text-right">{title || "ללא תיאור"}</h4>
+                                        {note && (
+                                            <p className="text-sm text-white/70 break-words line-clamp-2 text-right">{note}</p>
+                                        )}
+                                        <p className="text-xs text-white/50 mt-0.5 text-right">
+                                            {format(new Date(tx.date), "d בMMMM, HH:mm", { locale: he })}
+                                        </p>
+                                    </div>
+                                </div>
 
-                        <div className="flex items-center gap-4">
-                            <span className="font-bold text-white">₪{tx.amount}</span>
-
-                            <button
-                                onClick={() => onEdit && onEdit(tx)}
-                                className="p-3 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-colors flex-shrink-0"
-                            >
-                                <Edit2 className="w-5 h-5" />
-                            </button>
-
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <button className="p-3 rounded-full bg-white/5 hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors flex-shrink-0">
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 text-white">
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>למחוק את העסקה?</AlertDialogTitle>
-                                        <AlertDialogDescription className="text-white/60">
-                                            פעולה זו לא ניתנת לביטול.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel className="bg-white/10 border-white/10 text-white hover:bg-white/20">ביטול</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDelete(tx.id)} className="bg-red-500 hover:bg-red-600 text-white">
-                                            מחק
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    </div>
+                                <div className="flex items-center gap-4">
+                                    <span className="font-bold text-white">₪{tx.amount}</span>
+                                </div>
+                            </ActivePress>
+                        </SwipeableRow>
+                    </motion.div>
                 );
             })}
-        </div>
+        </motion.div>
     );
 });
 

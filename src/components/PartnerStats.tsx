@@ -1,28 +1,39 @@
 "use client";
 
 import { useMemo } from "react";
-import { Transaction } from "@/types";
+import { Transaction, Subscription } from "@/types";
 import { motion } from "framer-motion";
 import { PAYERS } from "@/lib/constants";
 
 interface PartnerStatsProps {
     transactions: Transaction[];
+    subscriptions?: Subscription[];
+    monthlyBudget?: number;
 }
 
-export const PartnerStats = ({ transactions }: PartnerStatsProps) => {
+export const PartnerStats = ({ transactions, subscriptions = [], monthlyBudget = 0 }: PartnerStatsProps) => {
     // Calculate totals safely
     const stats = useMemo(() => {
         const himTotal = transactions
             .filter(t => t.payer === "him")
-            .reduce((sum, t) => sum + Number(t.amount), 0);
+            .reduce((sum, t) => sum + Number(t.amount), 0) +
+            subscriptions
+                .filter(s => s.owner === 'him')
+                .reduce((sum, s) => sum + Number(s.amount), 0);
 
         const herTotal = transactions
             .filter(t => t.payer === "her")
-            .reduce((sum, t) => sum + Number(t.amount), 0);
+            .reduce((sum, t) => sum + Number(t.amount), 0) +
+            subscriptions
+                .filter(s => s.owner === 'her')
+                .reduce((sum, s) => sum + Number(s.amount), 0);
 
         const jointTotal = transactions
             .filter(t => t.payer === "joint")
-            .reduce((sum, t) => sum + Number(t.amount), 0);
+            .reduce((sum, t) => sum + Number(t.amount), 0) +
+            subscriptions
+                .filter(s => !s.owner || s.owner === 'joint')
+                .reduce((sum, s) => sum + Number(s.amount), 0);
 
         const total = himTotal + herTotal + jointTotal;
 
@@ -32,9 +43,9 @@ export const PartnerStats = ({ transactions }: PartnerStatsProps) => {
         const jointPct = total > 0 ? (jointTotal / total) * 100 : 0;
 
         return { himTotal, herTotal, jointTotal, himPct, herPct, jointPct, total };
-    }, [transactions]);
+    }, [transactions, subscriptions]);
 
-    if (transactions.length === 0) return null;
+    if (transactions.length === 0 && subscriptions.length === 0) return null;
 
     return (
         <div className="w-full px-6 mt-4">
@@ -60,49 +71,83 @@ export const PartnerStats = ({ transactions }: PartnerStatsProps) => {
                     </div>
                 </div>
 
-                {/* 3-Segment Neon Progress Bar */}
-                <div className="relative h-5 bg-slate-900 rounded-full overflow-hidden border border-white/10 shadow-inner flex">
-                    {/* Background Grid for Texture */}
-                    <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_49%,rgba(255,255,255,0.05)_50%,transparent_51%)] bg-[length:10px_100%] z-0 pointer-events-none" />
-
+                {/* 3-Segment Single Flex Bar */}
+                <div className="relative h-4 w-full bg-slate-800/50 rounded-full overflow-hidden flex">
                     {/* HIM Segment */}
                     {stats.himPct > 0 && (
                         <motion.div
-                            className="bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.5)] h-full relative z-10 first:rounded-l-full last:rounded-r-full"
                             initial={{ width: 0 }}
                             animate={{ width: `${stats.himPct}%` }}
-                            transition={{ duration: 1, ease: "easeOut" }}
+                            transition={{ duration: 1.5, ease: "easeOut" }}
+                            className="bg-gradient-to-r from-blue-600 to-blue-500 h-full"
                         />
                     )}
 
                     {/* JOINT Segment */}
                     {stats.jointPct > 0 && (
                         <motion.div
-                            className="bg-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.5)] h-full relative z-10 first:rounded-l-full last:rounded-r-full"
                             initial={{ width: 0 }}
                             animate={{ width: `${stats.jointPct}%` }}
-                            transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+                            transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
+                            className="bg-gradient-to-r from-purple-600 to-purple-500 h-full"
                         />
                     )}
 
                     {/* HER Segment */}
                     {stats.herPct > 0 && (
                         <motion.div
-                            className="bg-pink-600 shadow-[0_0_15px_rgba(219,39,119,0.5)] h-full relative z-10 first:rounded-l-full last:rounded-r-full"
                             initial={{ width: 0 }}
                             animate={{ width: `${stats.herPct}%` }}
-                            transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
+                            transition={{ duration: 1.5, ease: "easeOut", delay: 0.4 }}
+                            className="bg-gradient-to-r from-pink-600 to-pink-500 h-full"
                         />
                     )}
                 </div>
 
-                {/* Visual Legend / Breakdown Text */}
-                <div className="flex justify-between text-[10px] text-white/30 uppercase tracking-widest px-1">
-                    <span className="text-blue-300/50">{Math.round(stats.himPct)}%</span>
-                    <span className="text-purple-300/50">{Math.round(stats.jointPct)}%</span>
-                    <span className="text-pink-300/50">{Math.round(stats.herPct)}%</span>
+                {/* Legend Dots */}
+                <div className="flex justify-between text-[10px] text-white/40 font-mono pt-1">
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                        <span>{Math.round(stats.himPct)}%</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+                        <span>{Math.round(stats.jointPct)}%</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-pink-500 shadow-[0_0_8px_rgba(236,72,153,0.5)]" />
+                        <span>{Math.round(stats.herPct)}%</span>
+                    </div>
                 </div>
             </div>
+
+            {/* Subscription Fatigue Alert */}
+            {(() => {
+                if (subscriptions.length === 0 || !monthlyBudget) return null;
+                const totalSubs = subscriptions.reduce((sum, s) => sum + Number(s.amount), 0);
+                const ratio = totalSubs / monthlyBudget;
+
+                if (ratio > 0.4) {
+                    return (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="mt-2 bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex items-start gap-3"
+                        >
+                            <div className="p-1.5 bg-red-500/20 rounded-full shrink-0 animate-pulse">
+                                <span className="text-xs">⚠️</span>
+                            </div>
+                            <div>
+                                <h4 className="text-xs font-bold text-red-300 mb-0.5">עייפות מנויים מזוהה</h4>
+                                <p className="text-[10px] text-red-200/70 leading-tight">
+                                    ההוצאות הקבועות שלך מהוות {Math.round(ratio * 100)}% מההכנסה הפנויה. זה גבוה מהמומלץ (30%).
+                                </p>
+                            </div>
+                        </motion.div>
+                    );
+                }
+                return null;
+            })()}
         </div>
     );
 };

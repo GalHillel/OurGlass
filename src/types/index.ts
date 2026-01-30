@@ -38,6 +38,7 @@ export interface Subscription {
     name: string;
     amount: number;
     billing_day: number | null;
+    owner?: 'him' | 'her' | 'joint';
     created_at: string;
 }
 

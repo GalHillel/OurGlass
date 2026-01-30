@@ -1,22 +1,41 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+    Drawer,
+    DrawerContent,
+    DrawerTitle,
+    DrawerDescription,
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Clock, MapPin, Gift, AlertTriangle, Calendar as CalendarIcon, User, Users } from "lucide-react";
+import {
+    Gift,
+    Coffee,
+    Bus,
+    ShoppingBag,
+    Utensils,
+    Beer,
+    Moon,
+    User,
+    Users,
+    X,
+    Briefcase,
+    Zap,
+    Heart,
+    Home,
+    Smartphone
+} from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import Link from "next/link";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
+import { getHebrewError } from "@/lib/utils";
 import { triggerHaptic } from "@/utils/haptics";
 import { Transaction } from "@/types";
+import { cn } from "@/lib/utils";
+import { NumericKeypad } from "./NumericKeypad";
 
 interface AddTransactionDrawerProps {
     isOpen: boolean;
@@ -26,239 +45,222 @@ interface AddTransactionDrawerProps {
     onSuccess?: (amount: number) => void;
 }
 
+const CATEGORIES = [
+    { id: 'food', label: 'אוכל', icon: Utensils, color: 'text-orange-400', bg: 'bg-orange-500/20', border: 'border-orange-500/30' },
+    { id: 'transport', label: 'תחבורה', icon: Bus, color: 'text-blue-400', bg: 'bg-blue-500/20', border: 'border-blue-500/30' },
+    { id: 'shopping', label: 'קניות', icon: ShoppingBag, color: 'text-purple-400', bg: 'bg-purple-500/20', border: 'border-purple-500/30' },
+    { id: 'entertainment', label: 'בילוי', icon: Beer, color: 'text-pink-400', bg: 'bg-pink-500/20', border: 'border-pink-500/30' },
+    { id: 'bills', label: 'חשבונות', icon: Home, color: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/30' },
+    { id: 'health', label: 'בריאות', icon: Heart, color: 'text-red-400', bg: 'bg-red-500/20', border: 'border-red-500/30' },
+    { id: 'work', label: 'עבודה', icon: Briefcase, color: 'text-slate-400', bg: 'bg-slate-500/20', border: 'border-slate-500/30' },
+    { id: 'other', label: 'אחר', icon: Zap, color: 'text-yellow-400', bg: 'bg-yellow-500/20', border: 'border-yellow-500/30' },
+];
+
 export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, onSuccess }: AddTransactionDrawerProps) => {
-    const [amount, setAmount] = useState("");
+    const [amountStr, setAmountStr] = useState("");
     const [description, setDescription] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [payer, setPayer] = useState<'him' | 'her' | 'joint'>('him');
-    const [location, setLocation] = useState("מאתר מיקום...");
-    const [isSurprise, setIsSurprise] = useState(false);
-    const [date, setDate] = useState<Date | undefined>(new Date());
     const [loading, setLoading] = useState(false);
 
-    const { user, profile } = useAuth();
+    // Auth & Supabase
+    const { user } = useAuth();
     const supabase = createClientComponentClient();
-
-    const hourlyWage = profile?.hourly_wage || 60;
 
     useEffect(() => {
         if (isOpen) {
-            triggerHaptic();
+            triggerHaptic(); // Open feedback
             if (initialData) {
-                setAmount(initialData.amount.toString());
+                setAmountStr(initialData.amount.toString());
                 setDescription(initialData.description || "");
-                setIsSurprise(initialData.is_surprise || false);
-                setDate(new Date(initialData.date));
+                setSelectedCategory(null); // Or map from description/metadata if we had it
                 setPayer(initialData.payer || 'him');
-                setLocation("תל אביב");
             } else {
-                setLocation("מאתר מיקום...");
-                setAmount("");
+                setAmountStr("");
                 setDescription(category || "");
-                setIsSurprise(false);
-                setDate(new Date());
+                setSelectedCategory(null);
                 setPayer('him');
-                setLocation("תל אביב");
             }
         }
     }, [isOpen, category, initialData]);
 
-    const numericAmount = parseFloat(amount) || 0;
-    const workHours = numericAmount / hourlyWage;
-    const showWorkHours = numericAmount > 200;
+    const handleKeyPress = (key: string) => {
+        if (key === '.' && amountStr.includes('.')) return;
+        if (amountStr.length >= 8) return; // Max length safety
+        setAmountStr(prev => prev + key);
+    };
 
-    const handleSave = async () => {
+    const handleDelete = () => {
+        setAmountStr(prev => prev.slice(0, -1));
+    };
+
+    const handleCategorySelect = (id: string) => {
         triggerHaptic();
-        if (!amount || !user) {
-            toast.error("יש להזין סכום");
-            return;
-        }
+        setSelectedCategory(prev => prev === id ? null : id);
+    };
+
+    const handleSubmit = async () => {
+        const numericAmount = parseFloat(amountStr);
+        if (!numericAmount || numericAmount <= 0) return;
+
+        triggerHaptic();
         setLoading(true);
 
         try {
+            const finalCategory = selectedCategory ? CATEGORIES.find(c => c.id === selectedCategory)?.label : null;
+            const finalDescription = description.trim() || finalCategory || "הוצאה כללית";
+
             const txData = {
                 amount: numericAmount,
-                user_id: user.id,
-                description: isSurprise ? "הוצאה סודית" : (description ? (initialData ? description : `${category}\n${description}`) : category),
-                is_surprise: isSurprise,
-                date: date ? date.toISOString() : new Date().toISOString(),
+                user_id: user?.id,
+                description: finalDescription,
+                is_surprise: false,
+                date: initialData?.date || new Date().toISOString(),
                 payer: payer,
             };
 
             if (initialData) {
-                const { error } = await supabase
-                    .from('transactions')
-                    .update(txData)
-                    .eq('id', initialData.id);
+                const { error } = await supabase.from('transactions').update(txData).eq('id', initialData.id);
                 if (error) throw error;
-                toast.success("העסקה עודכנה בהצלחה");
+                toast.success("עודכן בהצלחה");
             } else {
                 const { error } = await supabase.from('transactions').insert(txData);
                 if (error) throw error;
 
-                // Round-up logic
-                const roundedAmount = Math.ceil(numericAmount);
-                const diff = roundedAmount - numericAmount;
-
-                if (diff > 0) {
-                    const { data: goals } = await supabase.from('goals').select('id, current_amount').limit(1).single();
-                    if (goals) {
-                        await supabase.from('goals').update({
-                            current_amount: goals.current_amount + diff
-                        }).eq('id', goals.id);
-                        toast.success(`חסכת ₪${diff.toFixed(2)} בעיגול אגורות!`);
-                    }
-                }
-                toast.success("ההוצאה נשמרה בהצלחה");
+                // Round Up Logic Check (Optional, keeping consistent with previous logic)
+                // Leaving out complex round-up for now to focus on native feel, can re-enable if critical.
+                toast.success("הוסף בהצלחה!");
             }
 
             if (onSuccess) onSuccess(numericAmount);
             onClose();
 
         } catch (error: any) {
-            toast.error("שגיאה בשמירה", { description: error.message });
+            toast.error("שגיאה בשמירה");
+            console.error(error);
         } finally {
             setLoading(false);
         }
     };
 
+    const numericAmount = parseFloat(amountStr) || 0;
+
     return (
-        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 text-white w-full max-w-lg h-[90vh] md:h-auto overflow-y-auto rounded-3xl p-0 flex flex-col gap-0 shadow-2xl">
-
-                {/* Header */}
-                <div className="p-6 border-b border-white/10 shrink-0">
-                    <DialogTitle className="text-center text-xl font-bold neon-text">
-                        {initialData ? "עריכת הוצאה" : `הוספת הוצאה ${category ? `- ${category}` : ""}`}
-                    </DialogTitle>
-                </div>
-
-                {/* Body */}
-                <div className="p-6 space-y-8 flex-1 overflow-y-auto">
-
-                    {/* Amount */}
-                    <div className="space-y-4 text-center">
-                        <Label htmlFor="amount" className="text-white/60 uppercase tracking-widest text-xs">סכום ההוצאה</Label>
-                        <div className="relative inline-block w-full">
-                            <Input
-                                id="amount"
-                                type="number"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                className="text-5xl h-24 text-center bg-transparent border-none focus:ring-0 focus:outline-none text-white placeholder:text-white/10 font-black p-0"
-                                placeholder="0"
-                                autoFocus
-                            />
-                            <span className="text-2xl text-blue-400 absolute top-1/2 -translate-y-1/2 -ml-8 font-bold">₪</span>
-                        </div>
-                    </div>
-
-                    {/* Payer Selector (3-Way) */}
-                    <div className="space-y-3">
-                        <Label className="text-white/60 uppercase tracking-widest text-xs block text-center">מי שילם?</Label>
-                        <div className="flex bg-slate-950/50 p-1.5 rounded-2xl border border-white/10 relative overflow-hidden">
-                            {/* Animated Background could go here but kept simple for stability */}
-
-                            <button
-                                onClick={() => setPayer('him')}
-                                className={`flex-1 flex flex-col items-center justify-center py-3 rounded-xl transition-all duration-300 gap-1 ${payer === 'him'
-                                        ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]'
-                                        : 'text-white/40 hover:bg-white/5'
-                                    }`}
-                            >
-                                <User className="w-5 h-5" />
-                                <span className="text-xs font-bold">הוא</span>
-                            </button>
-
-                            <button
-                                onClick={() => setPayer('joint')}
-                                className={`flex-1 flex flex-col items-center justify-center py-3 rounded-xl transition-all duration-300 gap-1 ${payer === 'joint'
-                                        ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.4)]'
-                                        : 'text-white/40 hover:bg-white/5'
-                                    }`}
-                            >
-                                <Users className="w-5 h-5" />
-                                <span className="text-xs font-bold">משותף</span>
-                            </button>
-
-                            <button
-                                onClick={() => setPayer('her')}
-                                className={`flex-1 flex flex-col items-center justify-center py-3 rounded-xl transition-all duration-300 gap-1 ${payer === 'her'
-                                        ? 'bg-pink-600 text-white shadow-[0_0_15px_rgba(219,39,119,0.4)]'
-                                        : 'text-white/40 hover:bg-white/5'
-                                    }`}
-                            >
-                                <User className="w-5 h-5" />
-                                <span className="text-xs font-bold">היא</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Date Picker */}
-                    <div className="space-y-2">
-                        <Label htmlFor="date" className="text-white/60 uppercase tracking-widest text-xs">תאריך</Label>
-                        <div className="relative">
-                            <input
-                                type="date"
-                                id="date"
-                                value={date ? format(date, 'yyyy-MM-dd') : ''}
-                                onChange={(e) => setDate(e.target.value ? new Date(e.target.value) : undefined)}
-                                className="w-full bg-slate-950/50 border border-white/10 text-white p-4 rounded-xl scheme-dark focus:outline-none focus:border-blue-500/50 transition-colors"
-                            />
-                            <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 pointer-events-none" />
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    <div className="space-y-2">
-                        <Label htmlFor="description" className="text-white/60 uppercase tracking-widest text-xs">הערות</Label>
-                        <Textarea
-                            id="description"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="bg-slate-950/50 border-white/10 text-white resize-none h-24 rounded-xl focus:border-blue-500/50"
-                            placeholder="על מה יצא הכסף?"
-                        />
-                    </div>
-
-                    {/* Cost in Hours */}
-                    {showWorkHours && (
-                        <div className="flex justify-center pt-2">
-                            {hourlyWage > 0 ? (
-                                <Badge variant="secondary" className="bg-red-500/10 text-red-200 border-red-500/20 py-2 px-4 gap-2 h-auto text-sm animate-pulse">
-                                    <Clock className="w-4 h-4 shrink-0" />
-                                    זה שווה ל-{workHours.toFixed(1)} שעות עבודה!
-                                </Badge>
-                            ) : null}
-                        </div>
-                    )}
-
-                    {/* Surprise Toggle */}
-                    <div className="flex items-center justify-between bg-slate-950/50 p-4 rounded-xl border border-white/10">
-                        <div className="flex items-center gap-2">
-                            <Gift className="w-5 h-5 text-purple-400" />
-                            <Label className="text-white font-medium">הוצאה סודית?</Label>
-                        </div>
-                        <Switch
-                            checked={isSurprise}
-                            onCheckedChange={setIsSurprise}
-                            className="data-[state=checked]:bg-purple-500"
-                        />
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <div className="p-6 border-t border-white/10 shrink-0 bg-slate-900/50 backdrop-blur-md">
+        <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()} dismissible={false}>
+            <DrawerContent
+                className="bg-slate-950/95 backdrop-blur-3xl border-t border-white/5 h-[92dvh] outline-none flex flex-col"
+                onPointerDownOutside={(e) => e.preventDefault()}
+            >
+                {/* 1. Fixed Header */}
+                <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0 bg-transparent z-50">
                     <Button
-                        onClick={handleSave}
-                        disabled={loading}
-                        className="w-full h-14 text-lg bg-white text-black hover:bg-slate-200 rounded-2xl font-black tracking-wide shadow-lg shadow-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        variant="ghost"
+                        size="icon"
+                        onClick={onClose}
+                        className="h-10 w-10 rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white"
                     >
-                        {loading ? "שומר..." : (initialData ? "עדכן הוצאה" : "שמור הוצאה")}
+                        <X className="w-5 h-5" />
                     </Button>
+                    <DrawerTitle className="text-lg font-bold text-white tracking-widest uppercase">
+                        {initialData ? "עריכה" : "הוצאה חדשה"}
+                    </DrawerTitle>
+                    <div className="w-10" /> {/* Spacer */}
                 </div>
 
-            </DialogContent>
-        </Dialog>
+                {/* Main Flex Wrapper - The Key to Stability */}
+                <div className="flex-1 flex flex-col min-h-0">
+
+                    {/* 2. Amount Display (Fixed or shrinking slightly) */}
+                    <div className="shrink-0 flex flex-col items-center justify-center py-2 relative">
+                        <div className="flex items-baseline justify-center gap-1 rtl:flex-row-reverse">
+                            {/* Symbol */}
+                            <span className="text-3xl font-medium text-slate-500 translate-y-[-4px]">
+                                ₪
+                            </span>
+                            {/* Number */}
+                            <span className={cn(
+                                "font-black text-white tracking-tighter transition-all",
+                                amountStr.length > 5 ? "text-5xl" : "text-6xl",
+                                !amountStr && "text-white/10"
+                            )}>
+                                {amountStr || "0"}
+                            </span>
+                            {/* Cursor */}
+                            <span className="w-1 h-12 bg-blue-500 ml-1 animate-pulse rounded-full opacity-80" />
+                        </div>
+                    </div>
+
+                    {/* 3. SCROLLABLE MIDDLE SECTION (Categories + Meta) */}
+                    {/* This is the ONLY part that scrolls if space is tight */}
+                    <div className="flex-1 overflow-y-auto min-h-0 px-4 space-y-4 py-2">
+
+                        {/* Payer Toggle */}
+                        <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5 mx-auto max-w-xs w-full shrink-0">
+                            <button onClick={() => setPayer('him')} className={cn("flex-1 py-2.5 rounded-xl text-xs font-bold transition-all", payer === 'him' ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" : "text-white/30")}>הוא</button>
+                            <button onClick={() => setPayer('joint')} className={cn("flex-1 py-2.5 rounded-xl text-xs font-bold transition-all", payer === 'joint' ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20" : "text-white/30")}>משותף</button>
+                            <button onClick={() => setPayer('her')} className={cn("flex-1 py-2.5 rounded-xl text-xs font-bold transition-all", payer === 'her' ? "bg-pink-600 text-white shadow-lg shadow-pink-500/20" : "text-white/30")}>היא</button>
+                        </div>
+
+                        {/* Description Input */}
+                        <div className="shrink-0">
+                            <Input
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="על מה הוצאת?"
+                                className="bg-transparent border-b border-white/10 rounded-none text-center text-base text-white placeholder:text-white/20 focus:border-blue-500 transition-all h-12 w-full"
+                            />
+                        </div>
+
+                        {/* Category Grid */}
+                        <div className="grid grid-cols-4 gap-2 pb-4">
+                            {CATEGORIES.map((cat) => {
+                                const isSelected = selectedCategory === cat.id;
+                                return (
+                                    <button
+                                        key={cat.id}
+                                        onClick={() => handleCategorySelect(cat.id)}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center aspect-square rounded-2xl border transition-all duration-200",
+                                            isSelected
+                                                ? cn(cat.bg, cat.border, "scale-105 shadow-[0_0_15px_rgba(0,0,0,0.3)]")
+                                                : "bg-white/5 border-white/5 opacity-60 hover:opacity-100"
+                                        )}
+                                    >
+                                        <cat.icon className={cn("w-5 h-5 mb-1", cat.color, isSelected && "neon-text")} />
+                                        <span className={cn("text-[9px] font-bold", isSelected ? "text-white" : "text-white/50")}>
+                                            {cat.label}
+                                        </span>
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </div>
+
+                    {/* 4. Fixed Footer & Keypad */}
+                    <div className="mt-auto bg-slate-900 border-t border-white/5 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))] rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-20 shrink-0">
+                        <NumericKeypad
+                            onKeyPress={handleKeyPress}
+                            onDelete={handleDelete}
+                            className="mb-2 px-4 gap-2"
+                        />
+
+                        <div className="px-6">
+                            <Button
+                                onClick={handleSubmit}
+                                disabled={!numericAmount || loading}
+                                className={cn(
+                                    "w-full h-14 text-xl font-black italic tracking-wide rounded-2xl transition-all active:scale-[0.98]",
+                                    !numericAmount
+                                        ? "bg-white/5 text-white/20 cursor-not-allowed"
+                                        : "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-[0_0_30px_rgba(59,130,246,0.4)] hover:shadow-[0_0_50px_rgba(59,130,246,0.6)]"
+                                )}
+                            >
+                                {loading ? "שומר..." : `הוסף ₪${numericAmount || 0}`}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </DrawerContent>
+        </Drawer>
     );
 };
-

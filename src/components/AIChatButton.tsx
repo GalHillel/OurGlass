@@ -60,7 +60,7 @@ export const AIChatButton = () => {
             const { data: profile } = await supabase.from('profiles').select('budget').single();
 
             // Calculate quick balance for context
-            const totalFixed = subs?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0;
+            const totalFixed = subs?.reduce((acc: number, curr: any) => acc + Number(curr.amount), 0) || 0;
 
             setContext({
                 recentTransactions: txs,

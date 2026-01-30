@@ -6,6 +6,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { Toaster } from "sonner";
 import { BottomNav } from "@/components/BottomNav";
 import { AIChatButton } from "@/components/AIChatButton";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 
 const heebo = Heebo({
   subsets: ["hebrew", "latin"],
@@ -34,17 +35,28 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="he" dir="rtl" className="dark">
-      <body className={`${heebo.variable} bg-slate-950 text-white antialiased font-sans min-h-screen`}>
+      <body className={`${heebo.variable} bg-slate-950 text-white antialiased font-sans h-full overflow-x-hidden overflow-y-auto`}>
         <AuthProvider>
           <LiquidBackground />
-          <main className="relative z-10 min-h-[100dvh] p-4 pb-24 pt-[calc(1rem+env(safe-area-inset-top))]">
+          <main className="native-scroll relative z-10 w-full p-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(6rem+env(safe-area-inset-bottom))]">
             {children}
           </main>
           <BottomNav />
-          <Toaster position="top-center" toastOptions={{
-            className: "glass border-white/20 text-white",
-            style: { background: "rgba(255,255,255,0.1)", backdropFilter: "blur(10px)" }
-          }} />
+          <PWAInstallPrompt />
+          <Toaster
+            position="top-center"
+            theme="dark"
+            richColors
+            toastOptions={{
+              className: "border-white/20 text-white font-sans",
+              style: {
+                background: "rgba(15, 23, 42, 0.9)", // slate-900/90
+                backdropFilter: "blur(10px)",
+                color: "white",
+                borderColor: "rgba(255,255,255,0.1)"
+              }
+            }}
+          />
         </AuthProvider>
       </body>
     </html>
