@@ -1,120 +1,67 @@
-import { useState, useEffect, useCallback } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Goal } from "@/types";
 
+// DEMO MODE: Static mock data for portfolio demonstration
+const MOCK_ASSETS: Goal[] = [
+    {
+        id: "demo-1",
+        name: "Apple Inc.",
+        symbol: "AAPL",
+        type: "stock",
+        quantity: 50,
+        current_amount: 350000,
+        target_amount: 500000,
+        brick_color: "#A855F7",
+        investment_type: "stock",
+        created_at: new Date().toISOString(),
+        growth_rate: 0.12
+    },
+    {
+        id: "demo-2",
+        name: "Tesla",
+        symbol: "TSLA",
+        type: "stock",
+        quantity: 100,
+        current_amount: 300000,
+        target_amount: 400000,
+        brick_color: "#10B981",
+        investment_type: "stock",
+        created_at: new Date().toISOString(),
+        growth_rate: 0.15
+    },
+    {
+        id: "demo-3",
+        name: "S&P 500 Index",
+        symbol: "SPY",
+        type: "stock",
+        quantity: 20,
+        current_amount: 200000,
+        target_amount: 300000,
+        brick_color: "#3B82F6",
+        investment_type: "stock",
+        created_at: new Date().toISOString(),
+        growth_rate: 0.10
+    },
+    {
+        id: "demo-4",
+        name: "חיסכון בבנק",
+        type: "cash",
+        current_amount: 400000,
+        target_amount: 500000,
+        brick_color: "#10B981",
+        investment_type: "cash",
+        created_at: new Date().toISOString(),
+        growth_rate: 0.03
+    }
+];
+
 export const useWealth = () => {
-    const [netWorth, setNetWorth] = useState<number>(0);
-    const [investmentsValue, setInvestmentsValue] = useState<number>(0);
-    const [cashValue, setCashValue] = useState<number>(0);
-    const [assets, setAssets] = useState<Goal[]>([]);
-    const [loading, setLoading] = useState(true);
-    const supabase = createClientComponentClient();
-
-    const fetchWealth = useCallback(async () => {
-        setLoading(true);
-        try {
-            const { data: goals, error } = await supabase
-                .from('goals')
-                .select('*')
-                .order('created_at', { ascending: true });
-
-            if (error || !goals) {
-                setLoading(false);
-                return;
-            }
-
-            const stockSymbols = goals
-                .filter(g => g.type === 'stock' && g.symbol)
-                .map(g => g.symbol);
-
-            let livePrices: Record<string, { price: number; changePercent: number }> = {};
-            let usdToIls = 3.65;
-
-            if (stockSymbols.length > 0) {
-                try {
-                    const res = await fetch('/api/stocks', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ symbols: stockSymbols })
-                    });
-
-                    if (res.ok) {
-                        const data = await res.json();
-                        livePrices = data.stocks || {};
-                        usdToIls = data.usdToIls || data.exchangeRate || 3.65;
-                    }
-                } catch (apiError) {
-                    console.error("Failed to fetch stock prices:", apiError);
-                }
-            }
-
-            let totalNetWorth = 0;
-            let totalInvestments = 0;
-            let totalCash = 0;
-
-            const calculatedAssets = goals.map((asset: any) => {
-                let calculatedValue = 0;
-
-                if (asset.type === 'stock' && asset.symbol) {
-                    const priceData = livePrices[asset.symbol];
-                    if (priceData && priceData.price) {
-                        const quantity = Number(asset.quantity) || 0;
-                        const livePriceUSD = priceData.price;
-                        calculatedValue = quantity * livePriceUSD * usdToIls;
-                    } else {
-                        calculatedValue = Number(asset.current_amount) || 0;
-                    }
-                } else if (asset.investment_type === 'crypto' && asset.symbol) {
-                    const priceData = livePrices[asset.symbol];
-                    if (priceData && priceData.price) {
-                        const quantity = Number(asset.quantity) || 0;
-                        const livePriceUSD = priceData.price;
-                        calculatedValue = quantity * livePriceUSD * usdToIls;
-                    } else {
-                        calculatedValue = Number(asset.current_amount) || 0;
-                    }
-                } else {
-                    calculatedValue = Number(asset.current_amount) || 0;
-                }
-
-                totalNetWorth += calculatedValue;
-
-                const isInvestment =
-                    asset.type === 'stock' ||
-                    asset.investment_type === 'crypto' ||
-                    asset.investment_type === 'real_estate';
-
-                if (isInvestment) {
-                    totalInvestments += calculatedValue;
-                } else {
-                    totalCash += calculatedValue;
-                }
-
-                return { ...asset, calculatedValue };
-            });
-
-            setAssets(calculatedAssets);
-            setNetWorth(totalNetWorth);
-            setInvestmentsValue(totalInvestments);
-            setCashValue(totalCash);
-
-        } catch (error) {
-            console.error("useWealth Error:", error);
-        } finally {
-            setLoading(false);
-        }
-    }, [supabase]);
-
-    useEffect(() => {
-        fetchWealth();
-    }, [fetchWealth]);
-
+    // Return static impressive demo data immediately
     return {
-        netWorth,
-        investmentsValue,
-        cashValue,
-        assets,
-        loading,
-        refetch: fetchWealth
+        netWorth: 1250000,
+        investmentsValue: 850000,
+        cashValue: 400000,
+        assets: MOCK_ASSETS,
+        loading: false,
+        refetch: () => Promise.resolve()
     };
 };

@@ -22,6 +22,7 @@ import { Shield, Rocket, ChevronLeft, ChevronRight, LayoutGrid } from "lucide-re
 import { AppHeader } from "@/components/AppHeader";
 import { toast } from "sonner";
 import CountUp from "react-countup";
+import { MOCK_TRANSACTIONS } from "@/data/mockTransactions";
 
 import { SmartInsights } from "@/components/SmartInsights";
 import { useScroll, useTransform, useMotionValue } from "framer-motion";
@@ -86,107 +87,65 @@ export default function Home() {
   const { netWorth, investmentsValue, cashValue, loading: wealthLoading } = useWealth();
 
   const fetchData = useCallback(async () => {
-    // 1. Wait for Auth to be ready
+    // DEMO MODE: Using hardcoded mock data instead of database
     if (authLoading) return;
-
-    // 2. If no user, we can't fetch. 
-    if (!user) {
-      setLoading(false);
-      return;
-    }
 
     try {
       if (balance === null) setLoading(true);
 
-      // 3. Billing Period for VIEWING DATE
-      const { start, end } = getBillingPeriodForDate(viewingDate);
+      // Use mock transactions
+      const txData = MOCK_TRANSACTIONS;
+      setTransactions(txData);
 
-      const { data: txData, error: txError } = await supabase
-        .from('transactions')
-        .select('*')
-        .gte('date', start.toISOString())
-        .lt('date', end.toISOString())
-        .order('date', { ascending: false });
-
-      if (txError) throw txError;
-      setTransactions(txData || []);
-
-      // 2. Calculate "Real Number"
-      const MONTHLY_BUDGET = profile?.budget || 20000;
-
-      // Fetch subscriptions to subtract fixed costs
-      const { data: subsData } = await supabase.from('subscriptions').select('*');
-      const totalFixed = subsData?.reduce((sum: number, sub: any) => sum + Number(sub.amount), 0) || 0;
-      setSubscriptions(subsData || []);
+      // Calculate "Real Number"
+      const MONTHLY_BUDGET = 20000;
+      const totalFixed = 0; // No subscriptions in demo
+      setSubscriptions([]);
       setBudgetInfo({ budget: MONTHLY_BUDGET, fixed: totalFixed });
 
-      const totalExpenses = txData?.reduce((sum: number, tx: Transaction) => sum + Number(tx.amount), 0) || 0;
+      const totalExpenses = txData.reduce((sum: number, tx: Transaction) => sum + Number(tx.amount), 0);
       setBalance(Math.round((MONTHLY_BUDGET - totalFixed - totalExpenses) * 100) / 100);
 
-      // --- Comparison Logic ---
-      // Compare "Spending so far this month" vs "Spending at same point last month"
-      // Only meaningful if viewing current month (or close to it), but we can always show diff vs prev month same timeframe.
+      // Comparison diff (demo: show positive result)
+      setComparisonDiff(-1200); // Demo shows user spending less
 
-      // Calculate how many days passed in this viewed period relative to its start
-      // If viewing Date is "Now" (current month), limit to Now. 
-      // If viewing past month, take full month? 
-      // The prompt says "if today is Jan 30, fetch Dec 1 - Dec 30". This implies "Same relative point".
-
-      const now = new Date();
-      let limitDate = end; // Default full month
-      if (viewingDate.getMonth() === now.getMonth() && viewingDate.getFullYear() === now.getFullYear()) {
-        limitDate = now;
-      }
-
-      const daysIntoPeriod = differenceInDays(limitDate, start);
-
-      const prevStart = subMonths(start, 1);
-      const prevLimit = addDays(prevStart, daysIntoPeriod);
-      // We want transactions GTE prevStart AND LTE prevLimit
-      // Actually LTE is tricky with times, let's use LT (prevLimit + 1 day) or just naive comparison.
-      // Let's use End of Day concept if needed, but ISO string comparison works fine.
-
-      const { data: prevTxData } = await supabase
-        .from('transactions')
-        .select('amount')
-        .gte('date', prevStart.toISOString())
-        .lte('date', prevLimit.toISOString()); // lte covers up to the exact timestamp
-
-      const prevExpenses = prevTxData?.reduce((sum: number, tx: any) => sum + Number(tx.amount), 0) || 0;
-
-      // Filter current transactions to the same limitDate for fair comparison if we fetched full month but are mid-month?
-      // Actually txData is already for the full viewing period.
-      // If we are looking at specific timeframe calculation:
-      const currentExpensesSoFar = txData
-        ?.filter(tx => new Date(tx.date) <= limitDate)
-        .reduce((sum: number, tx: Transaction) => sum + Number(tx.amount), 0) || 0;
-
-      const diff = currentExpensesSoFar - prevExpenses;
-      setComparisonDiff(diff);
-
-
-      // 3. Fetch Goals
-      const { data: goalsData, error: goalsError } = await supabase
-        .from('goals')
-        .select('*')
-        .order('created_at', { ascending: true });
-
-      if (goalsError) throw goalsError;
-      setGoals(goalsData || []);
+      // Mock goals
+      const mockGoals: Goal[] = [
+        {
+          id: "goal-1",
+          name: "Apple Stock",
+          type: "stock",
+          current_amount: 350000,
+          target_amount: 500000,
+          brick_color: "#A855F7",
+          growth_rate: 0.12,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: "goal-2",
+          name: "Savings",
+          type: "cash",
+          current_amount: 400000,
+          target_amount: 500000,
+          brick_color: "#10B981",
+          growth_rate: 0.03,
+          created_at: new Date().toISOString()
+        }
+      ];
+      setGoals(mockGoals);
 
     } catch (error: any) {
-      console.error("API Error:", error);
-      toast.error("שגיאה בטעינת הנתונים");
+      console.error("Demo Mode Error:", error);
     } finally {
       setLoading(false);
     }
-  }, [user, supabase, profile, balance, authLoading, viewingDate]);
+  }, [authLoading, balance]);
 
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading) {
       fetchData();
     }
-  }, [authLoading, user, fetchData]);
+  }, [authLoading, fetchData]);
 
   // Render Failsafe
   if (authLoading) {

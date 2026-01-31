@@ -1,68 +1,49 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { LoadingSplash } from "@/components/LoadingSplash";
+import { ArrowLeft } from "lucide-react";
 
 export default function LoginPage() {
     const router = useRouter();
-    const supabase = createClientComponentClient();
-    const [hasError, setHasError] = useState(false);
 
-    useEffect(() => {
-        const autoLogin = async () => {
-            // Delay purely for the aesthetic feel of the "initializing" sequence
-            // and to prevent a flash if the connection is too fast
-            await new Promise(resolve => setTimeout(resolve, 2000));
+    const handleEnterDemo = () => {
+        router.push("/");
+    };
 
-            try {
-                const email = process.env.NEXT_PUBLIC_AUTO_EMAIL;
-                const password = process.env.NEXT_PUBLIC_AUTO_PASSWORD;
-
-                if (!email || !password) {
-                    throw new Error("Missing auto-login credentials");
-                }
-
-                const { error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
-                });
-
-                if (error) throw error;
-
-                // toast.success("ברוכים הבאים הביתה ❤️");
-                router.refresh();
-                router.replace("/");
-            } catch (error: any) {
-                console.error("Auto-login failed:", error);
-                setHasError(true);
-                toast.error("שגיאה בהתחברות אוטומטית", {
-                    description: "אנא בדקו את ההגדרות או התחברו ידנית"
-                });
-            }
-        };
-
-        autoLogin();
-    }, [router, supabase]);
-
-    if (hasError) {
-        return (
-            <div className="flex min-h-screen items-center justify-center p-4 bg-slate-950 text-center">
+    return (
+        <div className="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+            <div className="text-center space-y-8 max-w-md">
+                {/* Logo/Title */}
                 <div className="space-y-4">
-                    <h1 className="text-red-500 text-xl font-bold">שגיאה בהתחברות</h1>
-                    <p className="text-white/60">נא לוודא שמשתני הסביבה מוגדרים היטב.</p>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="px-6 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
-                    >
-                        נסה שוב
-                    </button>
+                    <h1 className="text-5xl font-bold text-white">
+                        OurGlass
+                    </h1>
+                    <p className="text-xl text-white/60">
+                        Static Portfolio Demo
+                    </p>
+                    <p className="text-sm text-white/40">
+                        Explore the app with impressive mock data - no login required
+                    </p>
+                </div>
+
+                {/* Demo Enter Button */}
+                <button
+                    onClick={handleEnterDemo}
+                    className="group relative w-full px-8 py-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white text-xl font-bold rounded-2xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95"
+                >
+                    <span className="flex items-center justify-center gap-3">
+                        Enter Demo
+                        <ArrowLeft className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                </button>
+
+                {/* Info */}
+                <div className="text-xs text-white/30 space-y-2">
+                    <p>✓ No internet connection required</p>
+                    <p>✓ Hardcoded success data</p>
+                    <p>✓ Fully functional UI</p>
                 </div>
             </div>
-        );
-    }
-
-    return <LoadingSplash />;
+        </div>
+    );
 }
