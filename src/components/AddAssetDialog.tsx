@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { toast } from "sonner";
-import { Goal } from "@/types";
+import { Goal, Asset } from "@/types";
 import { Loader2, Coins, TrendingUp, Building, Bitcoin } from "lucide-react";
 import { ASSET_TYPES } from "@/lib/constants";
 
@@ -16,7 +16,7 @@ interface AddAssetDialogProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
-    initialData?: Goal | null;
+    initialData?: Goal | Asset | null;
 }
 
 export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData }: AddAssetDialogProps) => {
@@ -34,7 +34,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData }: AddA
         if (isOpen) {
             if (initialData) {
                 setName(initialData.name);
-                setAmount(initialData.current_amount.toString());
+                setAmount((initialData.current_amount || 0).toString());
                 // Map existing types
                 if (initialData.type === 'stock') setType('stock');
                 else if (initialData.investment_type === 'crypto') setType('crypto');

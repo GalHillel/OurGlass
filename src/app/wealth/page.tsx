@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { Goal } from "@/types";
+import { Goal, Asset } from "@/types";
 import { useWealth } from "@/hooks/useWealth";
 import { TrendingUp, PieChart, Shield, Rocket, Plus, Edit2, Coins, Building, Trash2 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
@@ -46,7 +46,7 @@ export default function WealthPage() {
     } = useWealth();
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [editingAsset, setEditingAsset] = useState<Goal | null>(null);
+    const [editingAsset, setEditingAsset] = useState<Asset | Goal | null>(null);
     const [activeTab, setActiveTab] = useState<string>(TABS.ALL);
     const [chartFilter, setChartFilter] = useState<string | null>(null);
 

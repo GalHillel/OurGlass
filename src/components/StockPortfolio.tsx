@@ -6,12 +6,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { SwipeableRow } from "@/components/SwipeableRow";
-import { Goal } from "@/types";
+import { Asset } from "@/types";
 import { toast } from "sonner";
-import { DEMO_ASSETS, USD_TO_ILS } from "@/lib/demoData";
+import { USD_TO_ILS } from "@/lib/demoData";
 
 interface StockPortfolioProps {
-    assets?: Goal[];
+    assets?: Asset[];
 }
 
 interface StockDisplay {
@@ -26,19 +26,20 @@ interface StockDisplay {
 export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
     const [isAddOpen, setIsAddOpen] = useState(false);
 
-    // Use static demo data
+    // Map assets to display format
     const stocks: StockDisplay[] = useMemo(() => {
-        return DEMO_ASSETS
+        return assets
             .filter(a => a.type === 'stock')
             .map(asset => ({
                 id: asset.id,
                 symbol: asset.symbol || '',
                 shares: asset.quantity || 0,
                 currentPriceUSD: asset.currentPrice || 0,
-                totalValueILS: asset.calculatedValue || 0,
+                // Use calculatedValue if available, otherwise calculate it
+                totalValueILS: asset.calculatedValue || ((asset.quantity || 0) * (asset.currentPrice || 0) * 3.65),
                 changePercent: asset.changePercent || 0,
             }));
-    }, []);
+    }, [assets]);
 
     const portfolioValue = stocks.reduce((sum, s) => sum + s.totalValueILS, 0);
 

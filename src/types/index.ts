@@ -71,3 +71,18 @@ export interface WishlistItem {
     saved_amount: number;
     created_at: string;
 }
+
+export interface Asset {
+    id: string;
+    type: string;
+    name: string;
+    symbol?: string;
+    quantity?: number;
+    currentPrice?: number;
+    changePercent?: number;
+    calculatedValue?: number;
+    current_amount?: number;
+    brick_color?: string;
+    // For compatibility with potentially loose objects
+    [key: string]: any;
+}
