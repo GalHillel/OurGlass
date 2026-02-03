@@ -7,7 +7,7 @@ export const MOCK_TRANSACTIONS: Transaction[] = [
         amount: 350,
         category_id: null,
         user_id: "demo",
-        description: "סושי\nארוחת ערב עם איריס",
+        description: "סושי\nארוחת ערב רומנטית",
         date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
         is_surprise: false,
         surprise_reveal_date: null,

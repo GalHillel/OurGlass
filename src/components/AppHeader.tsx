@@ -20,9 +20,9 @@ export const AppHeader = memo(({ title, subtitle, icon: Icon, iconColor = "text-
 
     useEffect(() => {
         const hour = new Date().getHours();
-        if (hour >= 5 && hour < 12) setGreeting("בוקר טוב, גל ☕");
-        else if (hour >= 12 && hour < 17) setGreeting("המשך יום מעולה, גל ☀️");
-        else if (hour >= 17 && hour < 22) setGreeting("ערב טוב, גל 🌙");
+        if (hour >= 5 && hour < 12) setGreeting("בוקר טוב ☕");
+        else if (hour >= 12 && hour < 17) setGreeting("המשך יום מעולה ☀️");
+        else if (hour >= 17 && hour < 22) setGreeting("ערב טוב 🌙");
         else setGreeting("לילה טוב, חסכת היום? ✨");
 
         // Check if Zen mode was active

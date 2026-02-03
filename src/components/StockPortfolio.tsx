@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, TrendingUp, TrendingDown, RefreshCcw, Trash2, Rocket, Edit2, Loader2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useState, useMemo } from "react";
+import { Plus, TrendingUp, TrendingDown, Rocket } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { SwipeableRow } from "@/components/SwipeableRow";
 import { Goal } from "@/types";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { toast } from "sonner";
-import { Skeleton } from "@/components/ui/skeleton";
+import { DEMO_ASSETS, USD_TO_ILS } from "@/lib/demoData";
 
 interface StockPortfolioProps {
     assets?: Goal[];
@@ -23,219 +21,48 @@ interface StockDisplay {
     currentPriceUSD: number;
     totalValueILS: number;
     changePercent: number;
-    originalCost: number;
 }
 
 export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
-    const supabase = createClientComponentClient();
-    const [stocks, setStocks] = useState<StockDisplay[]>([]);
-    const [exchangeRate, setExchangeRate] = useState(3.65); // Default fallback
-    const [loading, setLoading] = useState(false);
-    const [refreshing, setRefreshing] = useState(false);
-
-    // Dialog State
     const [isAddOpen, setIsAddOpen] = useState(false);
-    const [editingStock, setEditingStock] = useState<StockDisplay | null>(null);
 
-    // Form State
-    // Form State
-    const [symbolInput, setSymbolInput] = useState("");
-    const [sharesInput, setSharesInput] = useState("");
-    // const [costInput, setCostInput] = useState(""); // Removed in favor of auto-calc
-    // const [costInput, setCostInput] = useState(""); // Removed in favor of auto-calc
+    // Use static demo data
+    const stocks: StockDisplay[] = useMemo(() => {
+        return DEMO_ASSETS
+            .filter(a => a.type === 'stock')
+            .map(asset => ({
+                id: asset.id,
+                symbol: asset.symbol || '',
+                shares: asset.quantity || 0,
+                currentPriceUSD: asset.currentPrice || 0,
+                totalValueILS: asset.calculatedValue || 0,
+                changePercent: asset.changePercent || 0,
+            }));
+    }, []);
 
-    // Filter relevant assets
-    const stockAssets = assets.filter(a => a.type === 'stock' && a.symbol);
-
-    const fetchPrices = async () => {
-        if (stockAssets.length === 0) return;
-        setRefreshing(true);
-
-        try {
-            const symbols = stockAssets.map(a => a.symbol);
-            const res = await fetch('/api/stocks', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ symbols })
-            });
-
-            if (!res.ok) throw new Error("Failed to fetch prices");
-
-            const data = await res.json();
-            const rate = data.exchangeRate || 3.65;
-            setExchangeRate(rate);
-
-            const mapped: StockDisplay[] = stockAssets.map(asset => {
-                const sym = asset.symbol!;
-                // Try exact match or cleaned symbol (e.g. BTC-USD)
-                const liveData = data.stocks[sym] || data.stocks[sym.replace('-USD', '')];
-
-                const priceUSD = liveData?.price || 0;
-                const change = liveData?.changePercent || 0;
-                const shares = asset.quantity || 0;
-
-                // Math: priceUSD * shares * exchangeRate
-                const totalILS = priceUSD * shares * rate;
-
-                return {
-                    id: asset.id,
-                    symbol: sym,
-                    shares: shares,
-                    currentPriceUSD: priceUSD,
-                    totalValueILS: totalILS,
-                    changePercent: change,
-                    originalCost: asset.current_amount || 0
-                };
-            });
-
-            setStocks(mapped);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setRefreshing(false);
-        }
-    };
-
-    useEffect(() => {
-        if (stockAssets.length > 0) {
-            fetchPrices();
-            const interval = setInterval(fetchPrices, 30000);
-            return () => clearInterval(interval);
-        } else {
-            setStocks([]);
-        }
-    }, [assets]);
-
-    // Derived Totals
     const portfolioValue = stocks.reduce((sum, s) => sum + s.totalValueILS, 0);
 
-    // CRUD Operations
-    // CRUD Operations
-    const handleSave = async () => {
-        if (!symbolInput || !sharesInput) {
-            toast.error("נא למלא את כל השדות");
-            return;
-        }
-
-        const quantity = parseFloat(sharesInput);
-        if (isNaN(quantity) || quantity <= 0) {
-            toast.error("כמות לא תקינה");
-            return;
-        }
-
-        setLoading(true);
-        try {
-            // 1. Fetch User
-            const { data: { user }, error: userError } = await supabase.auth.getUser();
-            if (userError || !user) throw new Error("User not found");
-
-            // 2. Fetch Live Price for Auto-Calculation
-            let initialValueILS = 0;
-
-            // Only fetch if adding new or if we want to overwrite cost (user didn't specify behavior, but "Auto-Price" implies we calculate it now)
-            // For now, let's always calculate it based on current market price as the "Cost Basis" if it's a new add. 
-            // If editing, we might want to keep original... but the prompt says "Refactor... Remove Manual Input... Implement handleAdd Logic".
-            // So for new adds: Calculate. For edits: If we removed input, we might lose original cost if we don't be careful. 
-            // However, the prompt is focused on "Add Stock" crash mostly. Let's assume for Edit we keep existing if not changing?
-            // Actually, for simplicity and following the "Auto-Price" instruction strictly:
-
-            const res = await fetch('/api/stocks', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ symbols: [symbolInput.toUpperCase()] })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                const stockData = data.stocks[symbolInput.toUpperCase()];
-                const rate = data.usdToIls || 3.65;
-                const price = stockData?.price || 0;
-                initialValueILS = price * quantity * rate;
-            }
-
-            const payload = {
-                user_id: user.id,
-                type: 'stock',
-                symbol: symbolInput.toUpperCase(),
-                quantity: quantity,
-                name: `Stock ${symbolInput.toUpperCase()}`,
-                target_amount: 0, // <--- CRITICAL FIX: Satisfy NOT NULL constraint
-                brick_color: '#8B5CF6'
-            };
-
-            if (editingStock) {
-                // Should we recalculate cost on edit? Use case ambiguous. 
-                // Let's UPDATE quantities but maybe keep cost? 
-                // Or if we removed the input, how does user edit cost? They can't.
-                // Let's assume for EDIT we just update quantity/symbol. 
-                // The prompt was about "Fix Save Error" which is usually INSERT.
-                const { error } = await supabase
-                    .from('goals')
-                    .update(payload) // updating all fields
-                    .eq('id', editingStock.id);
-                if (error) throw error;
-                toast.success("עודכן בהצלחה");
-            } else {
-                // Insert with calculated cost
-                const insertPayload = {
-                    ...payload,
-                    current_amount: initialValueILS // <--- CALCULATED AUTOMATICALLY
-                };
-
-                const { error } = await supabase
-                    .from('goals')
-                    .insert([insertPayload]);
-                if (error) throw error;
-                toast.success("נוסף לתיק בהצלחה");
-            }
-
-            closeModals();
-            fetchPrices();
-        } catch (e) {
-            console.error("Save Error:", JSON.stringify(e, null, 2));
-            toast.error("שגיאה בשמירה: " + ((e as any).message || "Unknown error"));
-        } finally {
-            setLoading(false);
-        }
+    const handleAddClick = () => {
+        toast.info("מצב דמו: לא ניתן להוסיף מניות", {
+            description: "זוהי גרסת הדגמה עם נתונים קבועים"
+        });
     };
 
-    const handleDelete = async (id: string, symbol: string) => {
-        if (!confirm(`למחוק את ${symbol} מהתיק?`)) return;
-
-        try {
-            const { error } = await supabase.from('goals').delete().eq('id', id);
-            if (error) throw error;
-            toast.success("נמחק בהצלחה");
-            window.location.reload();
-        } catch (e) {
-            toast.error("שגיאה במחיקה");
-        }
+    const handleEdit = () => {
+        toast.info("מצב דמו: לא ניתן לערוך מניות", {
+            description: "זוהי גרסת הדגמה עם נתונים קבועים"
+        });
     };
 
-    const openAdd = () => {
-        setEditingStock(null);
-        setSymbolInput("");
-        setSharesInput("");
-        // setCostInput(""); 
-        setIsAddOpen(true);
-    };
-
-    const openEdit = (stock: StockDisplay) => {
-        setEditingStock(stock);
-        setSymbolInput(stock.symbol);
-        setSharesInput(stock.shares.toString());
-        // setCostInput(stock.originalCost.toString());
-        setIsAddOpen(true);
-    };
-
-    const closeModals = () => {
-        setIsAddOpen(false);
-        setEditingStock(null);
+    const handleDelete = () => {
+        toast.info("מצב דמו: לא ניתן למחוק מניות", {
+            description: "זוהי גרסת הדגמה עם נתונים קבועים"
+        });
     };
 
     return (
         <div className="w-full space-y-6">
-            {/* 1. Header Card */}
+            {/* Header Card */}
             <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/50 backdrop-blur-xl shadow-2xl group">
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-transparent to-blue-600/5" />
                 <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3" />
@@ -244,9 +71,8 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
                     <div className="flex justify-between items-start mb-2">
                         <h2 className="text-sm font-bold text-white/60 tracking-widest uppercase flex items-center gap-2">
                             <Rocket className="w-4 h-4 text-purple-400" />
-                            תיק השקעות חי
+                            תיק השקעות
                         </h2>
-                        {refreshing && <RefreshCcw className="w-4 h-4 text-white/20 animate-spin" />}
                     </div>
 
                     <div className="flex flex-col gap-1">
@@ -254,7 +80,7 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
                             ₪{portfolioValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </div>
                         <div className="text-xs text-white/40 font-mono">
-                            שער דולר: ₪{exchangeRate.toFixed(2)}
+                            שער דולר: ₪{USD_TO_ILS.toFixed(2)}
                         </div>
                     </div>
                 </div>
@@ -262,7 +88,7 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
                 {/* Quick Add Button */}
                 <div className="absolute bottom-6 left-6 z-20">
                     <Button
-                        onClick={openAdd}
+                        onClick={handleAddClick}
                         size="sm"
                         className="bg-white/10 hover:bg-white/20 text-white rounded-full border border-white/5 backdrop-blur-md transition-all hover:scale-105 active:scale-95"
                     >
@@ -271,10 +97,10 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
                 </div>
             </div>
 
-            {/* 2. Stock Lists */}
+            {/* Stock Lists */}
             <div className="space-y-3">
                 <AnimatePresence mode="popLayout">
-                    {stocks.map((stock, i) => {
+                    {stocks.map((stock) => {
                         const isPositive = stock.changePercent >= 0;
 
                         return (
@@ -286,8 +112,8 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
                                 className="group relative overflow-hidden rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all active:scale-[0.98]"
                             >
                                 <SwipeableRow
-                                    onEdit={() => openEdit(stock)}
-                                    onDelete={() => handleDelete(stock.id, stock.symbol)}
+                                    onEdit={handleEdit}
+                                    onDelete={handleDelete}
                                     className="bg-transparent"
                                 >
                                     <div className="flex items-center justify-between p-4 relative z-10 w-full">
@@ -328,56 +154,13 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
                     })}
                 </AnimatePresence>
 
-                {stockAssets.length === 0 && (
+                {stocks.length === 0 && (
                     <div className="text-center py-12 px-4 rounded-3xl border border-white/5 border-dashed bg-white/5">
                         <Rocket className="w-8 h-8 text-white/20 mx-auto mb-3" />
                         <p className="text-white/40 text-sm">התיק ריק... זה הזמן להתחיל!</p>
                     </div>
                 )}
             </div>
-
-            {/* Dialog for Add/Edit */}
-            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 text-white max-w-sm rounded-[2rem]">
-                    <DialogHeader>
-                        <DialogTitle>{editingStock ? 'עריכת החזקה' : 'הוספת מניה לתיק'}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <label className="text-xs text-white/50">סימול (Ticker)</label>
-                            <Input
-                                placeholder="AAPL, NVDA..."
-                                value={symbolInput}
-                                onChange={e => setSymbolInput(e.target.value.toUpperCase())}
-                                className="bg-white/5 border-white/10 text-white font-mono uppercase text-lg tracking-widest"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-xs text-white/50">כמות מניות</label>
-                            <Input
-                                type="number"
-                                inputMode="decimal"
-                                placeholder="0.00"
-                                value={sharesInput}
-                                onChange={e => setSharesInput(e.target.value)}
-                                className="bg-white/5 border-white/10 text-white text-lg"
-                            />
-                        </div>
-                        {/* Cost input removed for auto-calculation */}
-
-                        <div className="pt-2 flex gap-2">
-                            <Button variant="ghost" className="flex-1" onClick={closeModals}>ביטול</Button>
-                            <Button
-                                onClick={handleSave}
-                                disabled={loading}
-                                className="flex-[2] bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold shadow-lg shadow-purple-900/40"
-                            >
-                                {loading ? <><Loader2 className="w-4 h-4 ml-1 animate-spin" /> שומר ומתמחר...</> : "שמור בתיק"}
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 };

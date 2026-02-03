@@ -1,8 +1,8 @@
 export const APP_NAME = "OurGlass";
 
 export const PAYERS = {
-    HIM: "גל",
-    HER: "איריס",
+    HIM: "אני",
+    HER: "בן/בת זוג",
     JOINT: "משותף"
 } as const;
 

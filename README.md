@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ⏳ OurGlass - דמו אינטראקטיבי (Static Demo)
 
-## Getting Started
+> **שימו לב:** זוהי גרסת **הדגמה סטטית** (Static Demo) המיועדת להצגת יכולות ה-UI/UX.
+> המערכת פועלת באופן עצמאי (Client-Side) עם נתונים לדוגמה, ללא חיבור למסד נתונים וללא צורך בהרשמה.
 
-First, run the development server:
+## 🌟 פיצ'רים מרכזיים
+* **ממשק עברי מלא (RTL):** תמיכה טבעית ועיצוב מותאם לשפה העברית.
+* **זמן קפוא:** הנתונים מדמים מצב של "אמצע החודש" (15 באוקטובר 2025) באופן קבוע.
+* **תקציב לדוגמה:** מוגדר תקציב חודשי של 30,000 ₪ להמחשת ניהול פיננסי בריא.
+* **נתונים עשירים:** מניות, מזומנים, הוצאות, ומנויים מוזנים מראש.
+* **אנונימיות:** כל המידע האישי הוחלף בשמות גנריים ("אני", "בן/בת זוג").
+
+## 🚀 הרצה מקומית
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+האפליקציה תהיה זמינה בכתובת: http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🎯 טכנולוגיות
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Next.js 14** - React framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **Framer Motion** - Animations
+- **RTL Support** - Hebrew interface
 
-## Learn More
+## 📦 מבנה הפרויקט
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/              # Next.js pages & routes
+├── components/       # React components
+├── lib/             # Utilities & demo data
+│   └── demoData.ts  # Static demo data source
+├── hooks/           # Custom React hooks
+└── types/           # TypeScript definitions
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 💡 הערות פיתוח
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- כל הנתונים נשמרים ב-`src/lib/demoData.ts`
+- אין קריאות API או חיבורים לשרתים חיצוניים
+- התאריך קפוא ל-15 באוקטובר 2025 לצורך דמו עקבי
+- כל הטקסטים בעברית למעט שמות מניות בינלאומיות
 
-## Deploy on Vercel
+## 🌐 פריסה (Deployment)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+הפרויקט מוכן לפריסה ב-Vercel:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run build
+vercel deploy
+```
+
+---
+
+**נבנה בגאווה עם ❤️ ו-TypeScript**

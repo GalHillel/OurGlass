@@ -19,10 +19,10 @@ export default function LoginPage() {
                         OurGlass
                     </h1>
                     <p className="text-xl text-white/60">
-                        Static Portfolio Demo
+                        דמו אינטראקטיבי
                     </p>
                     <p className="text-sm text-white/40">
-                        Explore the app with impressive mock data - no login required
+                        חקור את האפליקציה עם נתונים לדוגמה - ללא צורך בהרשמה
                     </p>
                 </div>
 
@@ -32,16 +32,16 @@ export default function LoginPage() {
                     className="group relative w-full px-8 py-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white text-xl font-bold rounded-2xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95"
                 >
                     <span className="flex items-center justify-center gap-3">
-                        Enter Demo
+                        כניסה לדמו
                         <ArrowLeft className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                     </span>
                 </button>
 
                 {/* Info */}
                 <div className="text-xs text-white/30 space-y-2">
-                    <p>✓ No internet connection required</p>
-                    <p>✓ Hardcoded success data</p>
-                    <p>✓ Fully functional UI</p>
+                    <p>✓ פועל ללא חיבור לאינטרנט</p>
+                    <p>✓ נתונים לדוגמה מוכנים מראש</p>
+                    <p>✓ ממשק מלא ופונקציונלי</p>
                 </div>
             </div>
         </div>

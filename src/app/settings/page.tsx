@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { Input } from "@/components/ui/input";
@@ -9,56 +8,32 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { LogOut, Save, User } from "lucide-react";
+import { DEMO_USER } from "@/lib/demoData";
 
 export default function SettingsPage() {
-    const { user, profile } = useAuth();
-    const supabase = createClientComponentClient();
+    const { profile } = useAuth();
     const router = useRouter();
 
     const [name, setName] = useState("");
     const [hourlyWage, setHourlyWage] = useState("");
     const [budget, setBudget] = useState("");
-    const [loading, setLoading] = useState(false);
-
-    const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
-        if (profile && !isLoaded) {
-            setName(profile.name || "");
-            setHourlyWage(profile.hourly_wage?.toString() || "");
-            setBudget(profile.budget?.toString() || "20000");
-            setIsLoaded(true);
-        }
-    }, [profile, isLoaded]);
+        // Load demo user data
+        setName(DEMO_USER.name);
+        setHourlyWage("150");
+        setBudget(DEMO_USER.budget.toString());
+    }, []);
 
-    const handleSave = async () => {
-        if (!user) return;
-        setLoading(true);
-
-        try {
-            const updates = {
-                id: user.id,
-                name,
-                hourly_wage: parseFloat(hourlyWage) || 0,
-                budget: parseFloat(budget) || 20000,
-                updated_at: new Date().toISOString(),
-            };
-
-            const { error } = await supabase.from('profiles').upsert(updates);
-
-            if (error) throw error;
-            toast.success("הפרופיל עודכן בהצלחה");
-        } catch (error: any) {
-            toast.error("שגיאה בעדכון הפרופיל", { description: error.message });
-        } finally {
-            setLoading(false);
-        }
+    const handleSave = () => {
+        // Static mode - just show feedback
+        toast.info("מצב דמו: השינויים לא נשמרים", {
+            description: "זוהי גרסת הדגמה עם נתונים קבועים"
+        });
     };
 
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
+    const handleLogout = () => {
         router.push("/login");
-        router.refresh();
     };
 
     return (
@@ -74,7 +49,7 @@ export default function SettingsPage() {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-white">הפרופיל שלי</h2>
-                        <p className="text-xs text-blue-200/60 font-mono tracking-wide">{user?.email}</p>
+                        <p className="text-xs text-blue-200/60 font-mono tracking-wide">{DEMO_USER.email}</p>
                     </div>
                 </div>
 
@@ -111,7 +86,7 @@ export default function SettingsPage() {
                                 value={budget}
                                 onChange={(e) => setBudget(e.target.value)}
                                 className="bg-slate-950/50 border-white/10 text-white pl-10 text-lg font-mono font-bold h-11"
-                                placeholder="20000"
+                                placeholder="30000"
                             />
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">₪</span>
                         </div>
@@ -120,11 +95,10 @@ export default function SettingsPage() {
 
                 <Button
                     onClick={handleSave}
-                    disabled={loading}
                     className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-12 rounded-xl mt-4 shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all hover:scale-[1.02]"
                 >
                     <Save className="w-4 h-4 ml-2" />
-                    {loading ? "שומר..." : "שמור שינויים"}
+                    שמור שינויים
                 </Button>
             </div>
 
@@ -134,7 +108,7 @@ export default function SettingsPage() {
                 className="w-full bg-transparent border-red-500/20 text-red-400 hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/40 h-12 rounded-xl transition-all"
             >
                 <LogOut className="w-4 h-4 ml-2" />
-                התנתק
+                חזרה למסך כניסה
             </Button>
         </div>
     );
