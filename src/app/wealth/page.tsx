@@ -63,11 +63,11 @@ export default function WealthPage() {
 
             // 1. Chart Filter (High Priority)
             if (chartFilter) {
-                if (chartFilter === 'crypto') return asset.investment_type === 'crypto';
-                if (chartFilter === 'real_estate') return asset.investment_type === 'real_estate';
-                if (chartFilter === 'stock') return asset.type === 'stock' && asset.investment_type !== 'crypto'; // Ensure distinction
+                if (chartFilter === 'crypto') return asset.type === 'crypto';
+                if (chartFilter === 'real_estate') return asset.type === 'real_estate';
+                if (chartFilter === 'stock') return asset.type === 'stock';
                 if (chartFilter === 'cash') return asset.type === 'cash';
-                if (chartFilter === 'other') return asset.type !== 'stock' && asset.type !== 'cash' && !asset.investment_type;
+                if (chartFilter === 'other') return asset.type !== 'stock' && asset.type !== 'cash';
                 // Fallback
                 return true;
             }
@@ -76,8 +76,8 @@ export default function WealthPage() {
             if (activeTab === TABS.ALL) return true;
 
             const isInvestment = asset.type === 'stock' ||
-                asset.investment_type === 'crypto' ||
-                asset.investment_type === 'real_estate';
+                asset.type === 'crypto' ||
+                asset.type === 'real_estate';
 
             if (activeTab === TABS.INVESTMENTS) return isInvestment;
             if (activeTab === TABS.LIQUID) return !isInvestment;
@@ -114,7 +114,7 @@ export default function WealthPage() {
             <div className="h-16" />
 
             <StockTicker userSymbols={assets
-                .filter(a => (a.type === 'stock' || a.investment_type === 'crypto') && a.symbol)
+                .filter(a => (a.type === 'stock' || a.type === 'crypto') && a.symbol)
                 .map(a => a.symbol!)
             } />
 
@@ -278,10 +278,10 @@ export default function WealthPage() {
                                     className="neon-card p-4 rounded-2xl flex items-center justify-between group relative overflow-hidden"
                                 >
                                     <div className="flex items-center gap-4 relative z-10 w-full">
-                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border border-white/5 ${(asset.type === 'stock' || asset.investment_type === 'crypto') ? 'bg-purple-500/20 text-purple-400' : 'bg-emerald-500/20 text-emerald-400'
+                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border border-white/5 ${(asset.type === 'stock' || asset.type === 'crypto') ? 'bg-purple-500/20 text-purple-400' : 'bg-emerald-500/20 text-emerald-400'
                                             }`}>
-                                            {asset.investment_type === 'crypto' ? <Coins className="w-6 h-6" /> :
-                                                asset.investment_type === 'real_estate' ? <Building className="w-6 h-6" /> :
+                                            {asset.type === 'crypto' ? <Coins className="w-6 h-6" /> :
+                                                asset.type === 'real_estate' ? <Building className="w-6 h-6" /> :
                                                     asset.type === 'stock' ? <Rocket className="w-6 h-6" /> : <Shield className="w-6 h-6" />}
                                         </div>
 
@@ -289,7 +289,7 @@ export default function WealthPage() {
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <h3 className="font-bold text-white text-lg">{asset.name}</h3>
-                                                    {(asset.type === 'stock' || asset.investment_type === 'crypto') && asset.symbol && (
+                                                    {(asset.type === 'stock' || asset.type === 'crypto') && asset.symbol && (
                                                         <span className="text-xs text-slate-400 font-mono tracking-wider">{asset.symbol} • {asset.quantity} יח׳</span>
                                                     )}
                                                 </div>
@@ -297,7 +297,7 @@ export default function WealthPage() {
                                                     <div className="font-black text-xl tracking-tight neon-text">
                                                         ₪{Number((asset as any).calculatedValue || asset.current_amount).toLocaleString()}
                                                     </div>
-                                                    {(asset.type === 'stock' || asset.investment_type === 'crypto') && (
+                                                    {(asset.type === 'stock' || asset.type === 'crypto') && (
                                                         <div className="flex justify-end">
                                                             <span className="text-[10px] bg-purple-500/20 text-purple-200 px-1.5 py-0.5 rounded border border-purple-500/30">חי</span>
                                                         </div>
