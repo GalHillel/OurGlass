@@ -1,9 +1,8 @@
 import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-import { Goal } from "@/types";
 
 interface WealthChartProps {
-    assets: Goal[];
+    assets: any[]; // Changed from Goal[] to support DEMO_ASSETS structure
     selectedType?: string | null;
     onSelect?: (type: string | null) => void;
 }
@@ -24,8 +23,8 @@ export const WealthChart = ({ assets, selectedType, onSelect }: WealthChartProps
         assets.forEach((asset: any) => {
             const val = Number(asset.calculatedValue || asset.current_amount || 0);
 
-            if (asset.investment_type === 'crypto') crypto += val;
-            else if (asset.investment_type === 'real_estate') realEstate += val;
+            if (asset.type === 'crypto') crypto += val;
+            else if (asset.type === 'real_estate') realEstate += val;
             else if (asset.type === 'stock') stocks += val;
             else if (asset.type === 'cash') cash += val;
             else other += val;

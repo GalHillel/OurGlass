@@ -66,12 +66,12 @@ export const DEMO_SUBSCRIPTIONS = [
 
 // 7. WISHLIST (Hebrew)
 export const DEMO_WISHLIST = [
-    { id: 'w1', name: 'חופשה בתאילנד 🏝️', price: 15000, saved_amount: 5000, status: 'pending', emoji: '✈️', description: '10 ימים בפוקט ובנגקוק' },
-    { id: 'w2', name: 'אייפון 16 פרו מקס', price: 5000, saved_amount: 5000, status: 'purchased', emoji: '📱', description: '256GB - טיטניום שחור' },
-    { id: 'w3', name: 'מחשב נייד MacBook Pro', price: 12000, saved_amount: 3500, status: 'pending', emoji: '💻', description: 'M3 Max, 16GB RAM' },
-    { id: 'w4', name: 'רכב חדש טסלה מודל 3', price: 180000, saved_amount: 45000, status: 'pending', emoji: '🚗', description: 'Long Range - כחול' },
-    { id: 'w5', name: 'מצלמה סוני A7IV', price: 8500, saved_amount: 8500, status: 'purchased', emoji: '📷', description: 'עדשה 24-70mm' },
-    { id: 'w6', name: 'ריהוט לסלון', price: 25000, saved_amount: 12000, status: 'pending', emoji: '🛋️', description: 'ספה + שולחן + מזנון' },
+    { id: 'w1', name: 'חופשה בתאילנד 🏝️', price: 15000, saved_amount: 5000, status: 'pending' as const, emoji: '✈️', description: '10 ימים בפוקט ובנגקוק', link: null, created_at: getDemoDate(-30) },
+    { id: 'w2', name: 'אייפון 16 פרו מקס', price: 5000, saved_amount: 5000, status: 'purchased' as const, emoji: '📱', description: '256GB - טיטניום שחור', link: null, created_at: getDemoDate(-60) },
+    { id: 'w3', name: 'מחשב נייד MacBook Pro', price: 12000, saved_amount: 3500, status: 'pending' as const, emoji: '💻', description: 'M3 Max, 16GB RAM', link: null, created_at: getDemoDate(-45) },
+    { id: 'w4', name: 'רכב חדש טסלה מודל 3', price: 180000, saved_amount: 45000, status: 'pending' as const, emoji: '🚗', description: 'Long Range - כחול', link: null, created_at: getDemoDate(-90) },
+    { id: 'w5', name: 'מצלמה סוני A7IV', price: 8500, saved_amount: 8500, status: 'purchased' as const, emoji: '📷', description: 'עדשה 24-70mm', link: null, created_at: getDemoDate(-120) },
+    { id: 'w6', name: 'ריהוט לסלון', price: 25000, saved_amount: 12000, status: 'pending' as const, emoji: '🛋️', description: 'ספה + שולחן + מזנון', link: null, created_at: getDemoDate(-15) },
 ];
 
 // 8. TOTALS
