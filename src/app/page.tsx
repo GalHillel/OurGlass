@@ -14,6 +14,7 @@ import { calculateBurnRate, cn } from "@/lib/utils";
 import { useState, useEffect, useCallback } from "react";
 import { BudgetGauges } from "@/components/BudgetGauges";
 import { BudgetHealthScore } from "@/components/BudgetHealthScore";
+import { SavingsTracker } from "@/components/SavingsTracker";
 import dynamic from 'next/dynamic';
 
 import { TimeTravelSlider } from "@/components/TimeTravelSlider";
@@ -280,18 +281,19 @@ export default function Home() {
               {/* ... */}
             </div>
           ) : (
-            <div className={cn("flex flex-col items-center gap-8 w-full relative z-10 py-8 transition-all duration-500", isPrivacyMode && "blur-xl opacity-50 grayscale")}>
+            <div className={cn("flex flex-col items-center gap-6 w-full relative z-10 py-6 transition-all duration-500", isPrivacyMode && "blur-xl opacity-50 grayscale")}>
               <ReactorCore
                 income={profile?.budget || 20000}
                 expenses={(profile?.budget || 20000) - balance}
                 balance={balance}
                 burnRateStatus={burnRateData.status}
-                cycleStart={getBillingPeriodForDate(viewingDate).start} // New Prop
-                cycleEnd={getBillingPeriodForDate(viewingDate).end}     // New Prop
+                cycleStart={getBillingPeriodForDate(viewingDate).start}
+                cycleEnd={getBillingPeriodForDate(viewingDate).end}
               />
 
-              {/* Budget Health Score Widget */}
-              <div className="w-full max-w-sm px-4">
+              {/* Widgets Container - Unified max-width */}
+              <div className="w-full max-w-md space-y-4 px-4">
+                {/* Budget Health Score Widget */}
                 <BudgetHealthScore
                   balance={balance}
                   budget={profile?.budget || 20000}
@@ -300,10 +302,17 @@ export default function Home() {
                   daysInMonth={differenceInDays(getBillingPeriodForDate(viewingDate).end, getBillingPeriodForDate(viewingDate).start)}
                   daysPassed={Math.max(1, differenceInDays(new Date(), getBillingPeriodForDate(viewingDate).start))}
                 />
+
+                {/* Savings Tracker Widget */}
+                <SavingsTracker
+                  monthlyIncome={profile?.monthly_income || profile?.budget || 20000}
+                  budget={profile?.budget || 20000}
+                  totalSpent={(profile?.budget || 20000) - balance}
+                />
               </div>
 
               {/* Quick Actions - Quick Expense Buttons */}
-              <div className="w-full" style={{ touchAction: 'auto', overflow: 'visible' }}>
+              <div className="w-full max-w-md" style={{ touchAction: 'auto', overflow: 'visible' }}>
                 <p className="text-white/40 text-xs font-medium mb-2 px-4">הוספה מהירה</p>
                 <QuickActions
                   onAction={(id, label) => {

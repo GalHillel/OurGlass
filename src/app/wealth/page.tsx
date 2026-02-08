@@ -28,7 +28,6 @@ import { TABS } from "@/lib/constants";
 import { StockTicker } from "@/components/StockTicker";
 import { StockPortfolio } from "@/components/StockPortfolio";
 import { WealthChart } from "@/components/WealthChart";
-import { WealthTimeMachine } from "@/components/WealthTimeMachine";
 import { RiskAnalysisCard } from "@/components/RiskAnalysisCard";
 import { DividendForecast } from "@/components/DividendForecast";
 
@@ -165,11 +164,7 @@ export default function WealthPage() {
                 </div>
             </div>
 
-            {/* Smart Tools Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <WealthTimeMachine currentNetWorth={netWorth} monthlySavings={5000} />
-                {/* Dividend Forecast Removed */}
-            </div>
+
 
             {/* Risk Analysis (Wide) */}
             <RiskAnalysisCard investments={assets.filter(a => a.type === 'stock' || a.investment_type === 'crypto')} totalWealth={netWorth} cash={cashValue} />

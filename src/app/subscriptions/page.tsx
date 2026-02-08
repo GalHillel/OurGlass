@@ -174,21 +174,21 @@ export default function SubscriptionsPage() {
 
             {/* Total Card */}
             <div className="grid grid-cols-2 gap-4">
-                <div className="neon-card p-6 rounded-3xl text-center relative overflow-hidden flex flex-col justify-center group">
+                <div className="neon-card p-6 rounded-3xl relative overflow-hidden flex flex-col items-center justify-center group">
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent pointer-events-none group-hover:opacity-100 transition-opacity" />
-                    <span className="text-xs uppercase tracking-widest text-white/60 mb-1 block">
+                    <span className="text-xs uppercase tracking-widest text-white/60 mb-1 block text-center">
                         חודשי
                     </span>
-                    <span className="text-3xl font-black text-white drop-shadow-lg neon-text">
+                    <span className="text-3xl font-black text-white drop-shadow-lg neon-text text-center">
                         ₪{totalMonthly.toLocaleString()}
                     </span>
                 </div>
-                <div className="neon-card p-6 rounded-3xl text-center relative overflow-hidden flex flex-col justify-center border-red-500/20 group">
+                <div className="neon-card p-6 rounded-3xl relative overflow-hidden flex flex-col items-center justify-center border-red-500/20 group">
                     <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent pointer-events-none" />
-                    <span className="text-xs uppercase tracking-widest text-red-200/60 mb-1 block">
+                    <span className="text-xs uppercase tracking-widest text-red-200/60 mb-1 block text-center">
                         שנתי
                     </span>
-                    <span className="text-3xl font-black text-red-200 drop-shadow-lg">
+                    <span className="text-3xl font-black text-red-200 drop-shadow-lg text-center">
                         ₪{(totalMonthly * 12).toLocaleString()}
                     </span>
                 </div>

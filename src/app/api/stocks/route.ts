@@ -107,8 +107,21 @@ async function getQuote(symbol: string): Promise<{ price: number; changePercent:
             FETCH_TIMEOUT_MS
         );
 
+        // Handle rate limiting (429) gracefully
+        if (res.status === 429) {
+            console.warn(`Rate limited for ${symbol}, using cache`);
+            if (cached) {
+                return { price: cached.price, changePercent: cached.changePercent, cached: true };
+            }
+            return { price: 0, changePercent: 0, cached: false, error: 'Rate limited - try again later' };
+        }
+
         if (!res.ok) {
-            throw new Error(`API returned ${res.status}`);
+            // For other errors, try to use cache
+            if (cached) {
+                return { price: cached.price, changePercent: cached.changePercent, cached: true };
+            }
+            return { price: 0, changePercent: 0, cached: false, error: `API returned ${res.status}` };
         }
 
         const data = await res.json();
