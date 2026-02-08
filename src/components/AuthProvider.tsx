@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { User } from "@supabase/supabase-js";
 import { Profile } from "@/types";
@@ -21,9 +21,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
-    const supabase = createClientComponentClient();
+    const supabaseRef = useRef(createClientComponentClient());
+    const profileRef = useRef<Profile | null>(null);
 
     useEffect(() => {
+        const supabase = supabaseRef.current;
         const getUser = async () => {
             const { data: { session } } = await supabase.auth.getSession();
 
@@ -39,6 +41,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
                 if (profileData) {
                     setProfile(profileData);
+                    profileRef.current = profileData;
                 }
             }
 
@@ -49,22 +52,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: string, session: any) => {
             setUser(session?.user ?? null);
-            if (session?.user && !profile) {
+            if (session?.user && !profileRef.current) {
                 const { data: profileData } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', session.user.id)
                     .single();
-                if (profileData) setProfile(profileData);
+                if (profileData) {
+                    setProfile(profileData);
+                    profileRef.current = profileData;
+                }
             } else if (!session?.user) {
                 setProfile(null);
+                profileRef.current = null;
             }
         });
 
         return () => {
             subscription.unsubscribe();
         };
-    }, [supabase, profile]);
+    }, []);
 
     return (
         <AuthContext.Provider value={{ user, profile, loading }}>

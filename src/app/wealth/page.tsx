@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import { differenceInDays, format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { AddAssetDialog } from "@/components/AddAssetDialog";
-import { MillionRace } from "@/components/MillionRace";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     AlertDialog,
@@ -29,6 +28,9 @@ import { TABS } from "@/lib/constants";
 import { StockTicker } from "@/components/StockTicker";
 import { StockPortfolio } from "@/components/StockPortfolio";
 import { WealthChart } from "@/components/WealthChart";
+import { WealthTimeMachine } from "@/components/WealthTimeMachine";
+import { RiskAnalysisCard } from "@/components/RiskAnalysisCard";
+import { DividendForecast } from "@/components/DividendForecast";
 
 import { getRank } from "@/lib/ranks";
 import { RankBadge } from "@/components/RankBadge";
@@ -163,61 +165,73 @@ export default function WealthPage() {
                 </div>
             </div>
 
-            {/* Race to First Million (Keep this, it's cool) */}
-            <MillionRace currentWealth={netWorth} />
-
-            {/* Main Stats & Chart */}
+            {/* Smart Tools Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Chart Section */}
-                <div className="neon-card p-4 rounded-3xl relative overflow-hidden group flex flex-col items-center justify-center min-h-[300px]">
-                    <div className="absolute top-4 right-4 z-10">
-                        <span className="text-white/40 text-[10px] uppercase tracking-widest">התפלגות נכסים</span>
-                    </div>
-                    <div className="w-full h-full flex items-center justify-center">
-                        <WealthChart
-                            assets={assets}
-                            selectedType={chartFilter}
-                            onSelect={setChartFilter}
-                        />
-                    </div>
-                </div>
+                <WealthTimeMachine currentNetWorth={netWorth} monthlySavings={5000} />
+                {/* Dividend Forecast Removed */}
+            </div>
 
-                {/* Stats Grid */}
+            {/* Risk Analysis (Wide) */}
+            <RiskAnalysisCard investments={assets.filter(a => a.type === 'stock' || a.investment_type === 'crypto')} totalWealth={netWorth} cash={cashValue} />
+
+            {/* Main Stats Grid - Full Width */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Left Col: Rankings / Status (To be expanded or used for more stats) */}
                 <div className="flex flex-col gap-4">
-                    <div className="neon-card p-6 rounded-2xl flex flex-col justify-center flex-1 relative overflow-hidden">
+                    {/* Net Worth Big Card */}
+                    <div className="neon-card p-6 rounded-2xl flex flex-col justify-center flex-1 relative overflow-hidden min-h-[160px]">
                         <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <TrendingUp className="w-24 h-24 text-blue-500" />
+                            <TrendingUp className="w-32 h-32 text-blue-500" />
                         </div>
-                        <span className="text-blue-300 text-xs font-bold tracking-widest uppercase mb-1 block relative z-10">שווי נקי כולל</span>
+                        <span className="text-blue-300 text-xs font-bold tracking-widest uppercase mb-2 block relative z-10">שווי נקי כולל</span>
                         {loading ? (
-                            <Skeleton className="h-10 w-48 bg-white/10" />
+                            <Skeleton className="h-12 w-48 bg-white/10" />
                         ) : (
-                            <div className="text-4xl font-black text-white neon-text relative z-10">
+                            <div className="text-5xl font-black text-white neon-text relative z-10">
                                 ₪<CountUp end={netWorth} separator="," decimals={0} duration={1} />
                             </div>
                         )}
+                        <div className="mt-4 flex gap-3 relative z-10">
+                            < RankBadge rank={currentRank} />
+                        </div>
                     </div>
+                </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="neon-card p-4 rounded-2xl flex flex-col justify-center">
+                {/* Right Col: Liquid vs Invested */}
+                <div className="flex flex-col gap-4">
+                    <div className="grid grid-cols-2 gap-4 h-full">
+                        <div className="neon-card p-4 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
+                            <div className="absolute -right-4 -top-4 w-20 h-20 bg-purple-500/20 rounded-full blur-xl group-hover:bg-purple-500/30 transition-all" />
                             <span className="text-purple-300 text-[10px] font-bold tracking-widest uppercase mb-1">השקעות (חי)</span>
                             {loading ? (
                                 <Skeleton className="h-7 w-24 bg-white/10" />
                             ) : (
-                                <div className="text-xl font-bold text-white">
+                                <div className="text-2xl font-bold text-white">
                                     ₪<CountUp end={investmentsValue} separator="," prefix="" duration={1} />
                                 </div>
                             )}
                         </div>
-                        <div className="neon-card p-4 rounded-2xl flex flex-col justify-center">
+                        <div className="neon-card p-4 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
+                            <div className="absolute -right-4 -top-4 w-20 h-20 bg-emerald-500/20 rounded-full blur-xl group-hover:bg-emerald-500/30 transition-all" />
                             <span className="text-emerald-300 text-[10px] font-bold tracking-widest uppercase mb-1">נזיל / חסכונות</span>
                             {loading ? (
                                 <Skeleton className="h-7 w-24 bg-white/10" />
                             ) : (
-                                <div className="text-xl font-bold text-white">
+                                <div className="text-2xl font-bold text-white">
                                     ₪<CountUp end={cashValue} separator="," prefix="" duration={1} />
                                 </div>
                             )}
+                        </div>
+                    </div>
+                    <div className="neon-card p-4 rounded-2xl flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-500/20 rounded-lg">
+                                <Shield className="w-5 h-5 text-blue-400" />
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-400">ניהול סיכונים</p>
+                                <p className="text-sm font-bold text-white">תיק המניות שלך מגוון</p>
+                            </div>
                         </div>
                     </div>
                 </div>

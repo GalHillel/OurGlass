@@ -83,13 +83,13 @@ export const SwipeableRow = ({
             {/* Background Layer */}
             <div className="absolute inset-0 flex items-center justify-between pointer-events-none">
                 {/* Right Side (Delete Result - visible when swiping Left) - RTL Start */}
-                <div className={`flex-1 h-full flex items-center justify-start pr-6 transition-colors duration-300 ${action === 'delete' ? 'bg-red-600' : 'bg-slate-900'}`}>
-                    <Trash2 className={`w-6 h-6 text-white transition-opacity duration-200 ${action === 'delete' ? 'opacity-100' : 'opacity-20'}`} />
+                <div className={`flex-1 h-full flex items-center justify-start pr-6 transition-colors duration-300 ${action === 'delete' ? 'bg-red-600/80' : 'bg-transparent'}`}>
+                    <Trash2 className={`w-6 h-6 text-white transition-opacity duration-200 ${action === 'delete' ? 'opacity-100' : 'opacity-0'}`} />
                 </div>
 
                 {/* Left Side (Edit Result - visible when swiping Right) - RTL End */}
-                <div className={`flex-1 h-full flex items-center justify-end pl-6 transition-colors duration-300 ${action === 'edit' ? 'bg-blue-600' : 'bg-slate-900'}`}>
-                    <Edit2 className={`w-6 h-6 text-white transition-opacity duration-200 ${action === 'edit' ? 'opacity-100' : 'opacity-20'}`} />
+                <div className={`flex-1 h-full flex items-center justify-end pl-6 transition-colors duration-300 ${action === 'edit' ? 'bg-blue-600/80' : 'bg-transparent'}`}>
+                    <Edit2 className={`w-6 h-6 text-white transition-opacity duration-200 ${action === 'edit' ? 'opacity-100' : 'opacity-0'}`} />
                 </div>
             </div>
 
@@ -101,7 +101,7 @@ export const SwipeableRow = ({
                 onDragEnd={handleDragEnd}
                 onDrag={handleDrag}
                 animate={controls}
-                className="relative bg-slate-950 z-10 touch-pan-y" // Ensure vertical scroll still works
+                className="relative z-10 touch-pan-y" // Ensure vertical scroll still works, removed opaque bg
                 whileTap={{ cursor: "grabbing" }}
             >
                 {children}

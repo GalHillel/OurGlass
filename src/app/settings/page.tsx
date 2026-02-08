@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { LogOut, Save, User } from "lucide-react";
 
 export default function SettingsPage() {
+    console.log("Settings Page Rendering"); // Debug log for build verification
     const { user, profile } = useAuth();
     const supabase = createClientComponentClient();
     const router = useRouter();
@@ -18,6 +19,7 @@ export default function SettingsPage() {
     const [name, setName] = useState("");
     const [hourlyWage, setHourlyWage] = useState("");
     const [budget, setBudget] = useState("");
+    const [income, setIncome] = useState("");
     const [loading, setLoading] = useState(false);
 
     const [isLoaded, setIsLoaded] = useState(false);
@@ -27,9 +29,13 @@ export default function SettingsPage() {
             setName(profile.name || "");
             setHourlyWage(profile.hourly_wage?.toString() || "");
             setBudget(profile.budget?.toString() || "20000");
+            setIncome(profile.monthly_income?.toString() || "");
             setIsLoaded(true);
         }
     }, [profile, isLoaded]);
+
+    const savingsRate = income && budget ? ((Number(income) - Number(budget)) / Number(income)) * 100 : 0;
+    const potentialSavings = income && budget ? Number(income) - Number(budget) : 0;
 
     const handleSave = async () => {
         if (!user) return;
@@ -41,6 +47,7 @@ export default function SettingsPage() {
                 name,
                 hourly_wage: parseFloat(hourlyWage) || 0,
                 budget: parseFloat(budget) || 20000,
+                monthly_income: parseFloat(income) || 0,
                 updated_at: new Date().toISOString(),
             };
 
@@ -104,7 +111,40 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-slate-400 text-xs font-bold uppercase tracking-wider">תקציב חודשי</Label>
+                        <Label className="text-emerald-400 text-xs font-bold uppercase tracking-wider">הכנסה חודשית נטו (משותף)</Label>
+                        <div className="relative">
+                            <Input
+                                type="number"
+                                value={income}
+                                onChange={(e) => setIncome(e.target.value)}
+                                className="bg-slate-950/50 border-emerald-500/20 text-emerald-100 pl-10 text-lg font-mono font-bold h-11 focus:border-emerald-500/50"
+                                placeholder="25000"
+                            />
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500/50">₪</span>
+                        </div>
+                    </div>
+
+                    {/* Smart Savings Indicator */}
+                    {Number(income) > Number(budget) && (
+                        <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 flex justify-between items-center animate-in fade-in slide-in-from-top-2">
+                            <span className="text-xs text-emerald-200">פוטנציאל חיסכון:</span>
+                            <span className="font-bold text-emerald-400 font-mono">
+                                {savingsRate.toFixed(0)}% (₪{potentialSavings.toLocaleString()})
+                            </span>
+                        </div>
+                    )}
+
+                    {Number(income) > 0 && Number(income) < Number(budget) && (
+                        <div className="p-3 bg-red-500/10 rounded-xl border border-red-500/20 flex justify-between items-center animate-in fade-in slide-in-from-top-2">
+                            <span className="text-xs text-red-200">גירעון מתוכנן:</span>
+                            <span className="font-bold text-red-400 font-mono">
+                                (₪{(Number(budget) - Number(income)).toLocaleString()})
+                            </span>
+                        </div>
+                    )}
+
+                    <div className="space-y-2">
+                        <Label className="text-slate-400 text-xs font-bold uppercase tracking-wider">תקציב חודשי (להוצאות)</Label>
                         <div className="relative">
                             <Input
                                 type="number"

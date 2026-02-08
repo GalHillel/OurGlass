@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useAuth } from "@/components/AuthProvider";
 import { Goal } from "@/types";
 
 export const useWealth = () => {
@@ -8,17 +9,38 @@ export const useWealth = () => {
     const [cashValue, setCashValue] = useState<number>(0);
     const [assets, setAssets] = useState<Goal[]>([]);
     const [loading, setLoading] = useState(true);
-    const supabase = createClientComponentClient();
+    const supabaseRef = useRef(createClientComponentClient());
+    const { user, loading: authLoading } = useAuth();
 
     const fetchWealth = useCallback(async () => {
+        const supabase = supabaseRef.current;
+        // Guard: Don't fetch if no authenticated user
+        if (!user) {
+            setLoading(false);
+            setAssets([]);
+            setNetWorth(0);
+            setInvestmentsValue(0);
+            setCashValue(0);
+            return;
+        }
+
         setLoading(true);
         try {
             const { data: goals, error } = await supabase
                 .from('goals')
-                .select('*')
+                .select('id, name, current_amount, type, brick_color, growth_rate, investment_type, symbol, quantity')
                 .order('created_at', { ascending: true });
 
             if (error || !goals) {
+                const errorDetails = {
+                  message: error?.message,
+                  details: error?.details,
+                  hint: error?.hint,
+                  code: error?.code,
+                  fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+                };
+                console.error("useWealth fetch error:", errorDetails);
+                console.error("useWealth fetch error Raw JSON:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
                 setLoading(false);
                 return;
             }
@@ -44,7 +66,13 @@ export const useWealth = () => {
                         usdToIls = data.usdToIls || data.exchangeRate || 3.65;
                     }
                 } catch (apiError) {
-                    console.error("Failed to fetch stock prices:", apiError);
+                    const errorDetails = {
+                      message: (apiError as any)?.message,
+                      stack: (apiError as any)?.stack,
+                      fullError: JSON.stringify(apiError, Object.getOwnPropertyNames(apiError), 2)
+                    };
+                    console.error("Failed to fetch stock prices:", errorDetails);
+                    console.error("Failed to fetch stock prices Raw JSON:", JSON.stringify(apiError, Object.getOwnPropertyNames(apiError), 2));
                 }
             }
 
@@ -99,15 +127,40 @@ export const useWealth = () => {
             setCashValue(totalCash);
 
         } catch (error) {
-            console.error("useWealth Error:", error);
+            const errorDetails = {
+              message: (error as any)?.message,
+              details: (error as any)?.details,
+              hint: (error as any)?.hint,
+              code: (error as any)?.code,
+              stack: (error as any)?.stack,
+              fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+            };
+            console.error("useWealth Error:", errorDetails);
+            console.error("useWealth Error Raw JSON:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+            // Reset to safe defaults on error
+            setAssets([]);
+            setNetWorth(0);
+            setInvestmentsValue(0);
+            setCashValue(0);
         } finally {
             setLoading(false);
         }
-    }, [supabase]);
+    }, [user]);
 
     useEffect(() => {
+        if (authLoading) return;
+
+        if (!user) {
+            setLoading(false);
+            setAssets([]);
+            setNetWorth(0);
+            setInvestmentsValue(0);
+            setCashValue(0);
+            return;
+        }
+
         fetchWealth();
-    }, [fetchWealth]);
+    }, [fetchWealth, authLoading, user]);
 
     return {
         netWorth,

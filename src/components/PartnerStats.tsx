@@ -3,7 +3,8 @@
 import { useMemo } from "react";
 import { Transaction, Subscription } from "@/types";
 import { motion } from "framer-motion";
-import { PAYERS } from "@/lib/constants";
+import { User, Users, Heart } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface PartnerStatsProps {
     transactions: Transaction[];
@@ -11,143 +12,65 @@ interface PartnerStatsProps {
     monthlyBudget?: number;
 }
 
-export const PartnerStats = ({ transactions, subscriptions = [], monthlyBudget = 0 }: PartnerStatsProps) => {
-    // Calculate totals safely
+export const PartnerStats = ({ transactions, subscriptions = [] }: PartnerStatsProps) => {
     const stats = useMemo(() => {
-        const himTotal = transactions
-            .filter(t => t.payer === "him")
-            .reduce((sum, t) => sum + Number(t.amount), 0) +
-            subscriptions
-                .filter(s => s.owner === 'him')
+        // Logic: My Spend (Him), Her Spend, Joint Spend
+        // Assuming 'him' is the current user for "My Spend" label, or use generic names
+
+        const calculateTotal = (payer: 'him' | 'her' | 'joint') => {
+            const txSum = transactions
+                .filter(t => t.payer === payer)
+                .reduce((sum, t) => sum + Number(t.amount), 0);
+
+            const subSum = subscriptions
+                .filter(s => s.owner === payer)
                 .reduce((sum, s) => sum + Number(s.amount), 0);
 
-        const herTotal = transactions
-            .filter(t => t.payer === "her")
-            .reduce((sum, t) => sum + Number(t.amount), 0) +
-            subscriptions
-                .filter(s => s.owner === 'her')
-                .reduce((sum, s) => sum + Number(s.amount), 0);
+            return txSum + subSum;
+        };
 
-        const jointTotal = transactions
-            .filter(t => t.payer === "joint")
-            .reduce((sum, t) => sum + Number(t.amount), 0) +
-            subscriptions
-                .filter(s => !s.owner || s.owner === 'joint')
-                .reduce((sum, s) => sum + Number(s.amount), 0);
+        const himTotal = calculateTotal('him');
+        const herTotal = calculateTotal('her');
+        const jointTotal = calculateTotal('joint');
 
-        const total = himTotal + herTotal + jointTotal;
+        // For 'joint', we might also want to include subscriptions without explicit owner if that was the old logic, 
+        // but the prompt says "Sum of transactions where payer === 'joint'". keeping it strict for now.
 
-        // Percentages
-        const himPct = total > 0 ? (himTotal / total) * 100 : 0;
-        const herPct = total > 0 ? (herTotal / total) * 100 : 0;
-        const jointPct = total > 0 ? (jointTotal / total) * 100 : 0;
-
-        return { himTotal, herTotal, jointTotal, himPct, herPct, jointPct, total };
+        return [
+            { id: 'him', label: 'גל', amount: himTotal, icon: User, color: 'bg-blue-500/20 text-blue-200 border-blue-500/10' },
+            { id: 'joint', label: 'משותף', amount: jointTotal, icon: Users, color: 'bg-purple-500/20 text-purple-200 border-purple-500/10' },
+            { id: 'her', label: 'איריס', amount: herTotal, icon: Heart, color: 'bg-pink-500/20 text-pink-200 border-pink-500/10' },
+        ];
     }, [transactions, subscriptions]);
 
-    if (transactions.length === 0 && subscriptions.length === 0) return null;
+    const total = stats.reduce((acc, curr) => acc + curr.amount, 0);
+
+    if (total === 0) return null;
 
     return (
-        <div className="w-full px-6 mt-4">
-            <div className="neon-card p-5 rounded-3xl flex flex-col gap-4">
-                {/* Stats Row */}
-                <div className="flex justify-between items-end">
-                    {/* HIM */}
-                    <div className="flex flex-col">
-                        <span className="text-[10px] text-blue-300 font-bold uppercase tracking-wider mb-1">{PAYERS.HIM}</span>
-                        <span className="text-xl font-black text-blue-100 neon-text">₪{stats.himTotal.toLocaleString()}</span>
-                    </div>
-
-                    {/* JOINT */}
-                    <div className="flex flex-col items-center">
-                        <span className="text-[10px] text-purple-300 font-bold uppercase tracking-wider mb-1">{PAYERS.JOINT}</span>
-                        <span className="text-xl font-black text-purple-100 neon-text">₪{stats.jointTotal.toLocaleString()}</span>
-                    </div>
-
-                    {/* HER */}
-                    <div className="flex flex-col items-end">
-                        <span className="text-[10px] text-pink-300 font-bold uppercase tracking-wider mb-1">{PAYERS.HER}</span>
-                        <span className="text-xl font-black text-pink-100 neon-text">₪{stats.herTotal.toLocaleString()}</span>
-                    </div>
-                </div>
-
-                {/* 3-Segment Single Flex Bar */}
-                <div className="relative h-4 w-full bg-slate-800/50 rounded-full overflow-hidden flex">
-                    {/* HIM Segment */}
-                    {stats.himPct > 0 && (
-                        <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${stats.himPct}%` }}
-                            transition={{ duration: 1.5, ease: "easeOut" }}
-                            className="bg-gradient-to-r from-blue-600 to-blue-500 h-full"
-                        />
-                    )}
-
-                    {/* JOINT Segment */}
-                    {stats.jointPct > 0 && (
-                        <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${stats.jointPct}%` }}
-                            transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
-                            className="bg-gradient-to-r from-purple-600 to-purple-500 h-full"
-                        />
-                    )}
-
-                    {/* HER Segment */}
-                    {stats.herPct > 0 && (
-                        <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${stats.herPct}%` }}
-                            transition={{ duration: 1.5, ease: "easeOut", delay: 0.4 }}
-                            className="bg-gradient-to-r from-pink-600 to-pink-500 h-full"
-                        />
-                    )}
-                </div>
-
-                {/* Legend Dots */}
-                <div className="flex justify-between text-[10px] text-white/40 font-mono pt-1">
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                        <span>{Math.round(stats.himPct)}%</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
-                        <span>{Math.round(stats.jointPct)}%</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-pink-500 shadow-[0_0_8px_rgba(236,72,153,0.5)]" />
-                        <span>{Math.round(stats.herPct)}%</span>
-                    </div>
-                </div>
+        <div className="w-full px-6 mt-8">
+            <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-4 px-1">חלוקה מגדרית</h3>
+            <div className="grid grid-cols-3 gap-3">
+                {stats.map((stat, i) => (
+                    <motion.div
+                        key={stat.id}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: i * 0.1 }}
+                        className={cn(
+                            "flex flex-col items-center p-3 rounded-2xl border backdrop-blur-md",
+                            stat.color,
+                            "border-white/5" // Override border color for cleaner look
+                        )}
+                    >
+                        <div className={cn("p-2 rounded-full mb-2 bg-black/20")}>
+                            <stat.icon className="w-4 h-4" />
+                        </div>
+                        <span className="text-[10px] text-white/60 mb-1 font-medium">{stat.label}</span>
+                        <span className="text-sm font-bold text-white">₪{stat.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                    </motion.div>
+                ))}
             </div>
-
-            {/* Subscription Fatigue Alert */}
-            {(() => {
-                if (subscriptions.length === 0 || !monthlyBudget) return null;
-                const totalSubs = subscriptions.reduce((sum, s) => sum + Number(s.amount), 0);
-                const ratio = totalSubs / monthlyBudget;
-
-                if (ratio > 0.4) {
-                    return (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            className="mt-2 bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex items-start gap-3"
-                        >
-                            <div className="p-1.5 bg-red-500/20 rounded-full shrink-0 animate-pulse">
-                                <span className="text-xs">⚠️</span>
-                            </div>
-                            <div>
-                                <h4 className="text-xs font-bold text-red-300 mb-0.5">עייפות מנויים מזוהה</h4>
-                                <p className="text-[10px] text-red-200/70 leading-tight">
-                                    ההוצאות הקבועות שלך מהוות {Math.round(ratio * 100)}% מההכנסה הפנויה. זה גבוה מהמומלץ (30%).
-                                </p>
-                            </div>
-                        </motion.div>
-                    );
-                }
-                return null;
-            })()}
         </div>
     );
 };

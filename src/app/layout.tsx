@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Heebo } from "next/font/google";
 import "./globals.css";
-import { LiquidBackground } from "@/components/LiquidBackground";
 import { AuthProvider } from "@/components/AuthProvider";
 import { Toaster } from "sonner";
 import { BottomNav } from "@/components/BottomNav";
@@ -37,8 +36,8 @@ export default function RootLayout({
     <html lang="he" dir="rtl" className="dark">
       <body className={`${heebo.variable} bg-slate-950 text-white antialiased font-sans h-full overflow-x-hidden overflow-y-auto`}>
         <AuthProvider>
-          <LiquidBackground />
-          <main className="native-scroll relative z-10 w-full p-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(6rem+env(safe-area-inset-bottom))]">
+          {/* Clean solid background - LiquidBackground removed */}
+          <main className="native-scroll touch-scroll relative z-10 w-full p-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(6rem+env(safe-area-inset-bottom))]">
             {children}
           </main>
           <BottomNav />

@@ -267,6 +267,88 @@ export default function WishlistPage() {
             {/* Spacing for fixed header */}
             <div className="h-4" />
 
+            {/* Active Savings / Spare Change Harvester */}
+            {realNumberBalance > 0 && realNumberBalance % 100 > 0 && (
+                <div className="mx-2 mb-4">
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-4 flex items-center justify-between"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center animate-bounce-slow">
+                                <Sparkles className="w-5 h-5 text-purple-400" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-white text-sm">עיגול לטובה</h3>
+                                <p className="text-[10px] text-purple-200/60">
+                                    יש לך ₪{Math.floor(realNumberBalance % 100)} עודף בארנק.
+                                </p>
+                            </div>
+                        </div>
+                        <Button
+                            size="sm"
+                            onClick={async () => {
+                                const amount = Math.floor(realNumberBalance % 100);
+                                if (amount <= 0) return;
+
+                                // Logic: Distribute to "Most Needed" (Highest Priority or Closest)
+                                // For simplicity, deposit to the FIRST item in the current sorted list
+                                const targetItem = items[0];
+                                if (!targetItem) {
+                                    toast.error("אין פריטים ברשימה");
+                                    return;
+                                }
+
+                                try {
+                                    // 1. Transaction (Expense)
+                                    await supabase.from('transactions').insert({
+                                        amount: amount,
+                                        description: `עיגול לטובה: ${targetItem.name}`,
+                                        date: new Date().toISOString(),
+                                        category_id: null,
+                                        is_surprise: false
+                                    });
+
+                                    // 2. Wishlist Update
+                                    const newSaved = (targetItem.saved_amount || 0) + amount;
+                                    await supabase.from('wishlist').update({ saved_amount: newSaved }).eq('id', targetItem.id);
+
+                                    toast.success(`הועברו ₪${amount} ל-${targetItem.name}!`);
+                                    confetti({ particleCount: 150, spread: 60, origin: { y: 0.6 } });
+                                    fetchData(); // Refresh
+                                } catch (e) {
+                                    toast.error("שגיאה בפעולה");
+                                }
+                            }}
+                            className="bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-purple-900/20"
+                        >
+                            שמור אותם
+                        </Button>
+                    </motion.div>
+                </div>
+            )}
+
+            {/* Smart Prioritization Controls */}
+            <div className="flex justify-end px-2 mb-2 gap-2">
+                <select
+                    className="bg-slate-900/50 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white/60 focus:outline-none focus:border-purple-500/50"
+                    onChange={(e) => {
+                        const newSort = e.target.value;
+                        const sorted = [...items];
+                        if (newSort === 'price') sorted.sort((a, b) => a.price - b.price); // Cheapest first
+                        else if (newSort === 'progress') sorted.sort((a, b) => (b.saved_amount || 0) / b.price - (a.saved_amount || 0) / a.price); // Closest to goal first
+                        else if (newSort === 'newest') sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+                        setItems(sorted);
+                    }}
+                >
+                    <option value="newest">סידור: הכי חדש</option>
+                    <option value="progress">הכי קרוב ליעד</option>
+                    <option value="price">הכי זול</option>
+                </select>
+            </div>
+
             <div className="w-full space-y-4">
                 {loading ? (
                     <div className="space-y-4">

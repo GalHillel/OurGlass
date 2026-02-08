@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Plus, TrendingUp, TrendingDown, RefreshCcw, Trash2, Rocket, Edit2, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,8 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
     const [exchangeRate, setExchangeRate] = useState(3.65); // Default fallback
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const [fetchError, setFetchError] = useState<string | null>(null);
+    const [isCachedData, setIsCachedData] = useState(false);
 
     // Dialog State
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -44,12 +46,13 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
     // const [costInput, setCostInput] = useState(""); // Removed in favor of auto-calc
     // const [costInput, setCostInput] = useState(""); // Removed in favor of auto-calc
 
-    // Filter relevant assets
-    const stockAssets = assets.filter(a => a.type === 'stock' && a.symbol);
+    // Filter relevant assets - memoized to prevent unnecessary recalculations
+    const stockAssets = useMemo(() => assets.filter(a => a.type === 'stock' && a.symbol), [assets]);
 
-    const fetchPrices = async () => {
+    const fetchPrices = useCallback(async () => {
         if (stockAssets.length === 0) return;
         setRefreshing(true);
+        setFetchError(null);
 
         try {
             const symbols = stockAssets.map(a => a.symbol);
@@ -64,6 +67,9 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
             const data = await res.json();
             const rate = data.exchangeRate || 3.65;
             setExchangeRate(rate);
+
+            // Track if data is from cache
+            setIsCachedData(data.meta?.allCached || false);
 
             const mapped: StockDisplay[] = stockAssets.map(asset => {
                 const sym = asset.symbol!;
@@ -90,11 +96,14 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
 
             setStocks(mapped);
         } catch (err) {
-            console.error(err);
+            const errorMessage = (err as Error)?.message || 'Failed to fetch stock data';
+            console.error("StockPortfolio fetchPrices error:", errorMessage);
+            setFetchError(errorMessage);
+            // Keep existing stock data on error (graceful degradation)
         } finally {
             setRefreshing(false);
         }
-    };
+    }, [stockAssets]);
 
     useEffect(() => {
         if (stockAssets.length > 0) {
@@ -104,7 +113,7 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
         } else {
             setStocks([]);
         }
-    }, [assets]);
+    }, [fetchPrices, stockAssets.length]);
 
     // Derived Totals
     const portfolioValue = stocks.reduce((sum, s) => sum + s.totalValueILS, 0);
@@ -236,9 +245,9 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
     return (
         <div className="w-full space-y-6">
             {/* 1. Header Card */}
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/50 backdrop-blur-xl shadow-2xl group">
+            <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/60 backdrop-blur-xl shadow-2xl group touch-pan-y">
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-transparent to-blue-600/5" />
-                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3" />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 opacity-50" />
 
                 <div className="p-6 relative z-10">
                     <div className="flex justify-between items-start mb-2">
@@ -247,6 +256,9 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
                             תיק השקעות חי
                         </h2>
                         {refreshing && <RefreshCcw className="w-4 h-4 text-white/20 animate-spin" />}
+                        {isCachedData && !refreshing && (
+                            <span className="text-[10px] text-yellow-400/70 bg-yellow-500/10 px-2 py-0.5 rounded-full">מטמון</span>
+                        )}
                     </div>
 
                     <div className="flex flex-col gap-1">
@@ -328,10 +340,26 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
                     })}
                 </AnimatePresence>
 
-                {stockAssets.length === 0 && (
-                    <div className="text-center py-12 px-4 rounded-3xl border border-white/5 border-dashed bg-white/5">
+                {stockAssets.length === 0 && !fetchError && (
+                    <div className="text-center py-12 px-4 rounded-3xl border border-white/5 border-dashed bg-white/5 backdrop-blur-sm">
                         <Rocket className="w-8 h-8 text-white/20 mx-auto mb-3" />
-                        <p className="text-white/40 text-sm">התיק ריק... זה הזמן להתחיל!</p>
+                        <p className="text-white/40 text-sm">אין עדיין מניות? הוסף את הראשונה שלך!</p>
+                        <Button onClick={openAdd} size="sm" className="mt-4 bg-purple-600 hover:bg-purple-500">
+                            <Plus className="w-4 h-4 ml-1" /> הוסף מניה
+                        </Button>
+                    </div>
+                )}
+
+                {fetchError && (
+                    <div className="text-center py-8 px-4 rounded-2xl border border-red-500/20 bg-red-500/10">
+                        <p className="text-red-300/80 text-sm mb-3">שגיאה בטעינת נתוני המניות</p>
+                        <Button
+                            onClick={() => fetchPrices()}
+                            size="sm"
+                            className="bg-red-600/20 hover:bg-red-600/30 text-red-200 border border-red-500/30"
+                        >
+                            <RefreshCcw className="w-4 h-4 ml-1" /> נסה שוב
+                        </Button>
                     </div>
                 )}
             </div>

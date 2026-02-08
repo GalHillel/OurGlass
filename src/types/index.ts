@@ -4,6 +4,8 @@ export interface Profile {
     avatar_url: string | null;
     hourly_wage: number | null;
     budget: number | null;
+    monthly_income: number | null; // New field
+    joint_account: boolean; // New field
     role: 'admin' | 'user';
     created_at: string;
 }
@@ -17,20 +19,22 @@ export interface Category {
     created_at: string;
 }
 
+/** Matches DB: transactions table. category_id is UUID FK to categories.id */
 export interface Transaction {
     id: string;
     amount: number;
-    category_id: string | null;
+    category_id: string | null;   // DB column (uuid)
+    category?: string;            // Mapped from categories.name for UI display only
     user_id: string | null;
     description: string | null;
     date: string;
-    is_surprise: boolean;
+    is_surprise: boolean | null;
     surprise_reveal_date: string | null;
     location_lat: number | null;
     location_lng: number | null;
     mood_rating: number | null;
     created_at: string;
-    payer?: 'him' | 'her' | 'joint'; // Added joint
+    payer?: 'him' | 'her' | 'joint';
 }
 
 export interface Subscription {

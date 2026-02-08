@@ -3,6 +3,7 @@
 import { Home, Gift, Settings, CreditCard, Gem } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { triggerHaptic } from "@/utils/haptics";
 
 const navItems = [
     { id: "home", label: "בית", icon: Home, path: "/" },
@@ -20,15 +21,15 @@ export const BottomNav = () => {
     if (pathname === "/login") return null;
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 p-4 z-50 pb-[calc(1rem+env(safe-area-inset-bottom))] pointer-events-none">
+        <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[env(safe-area-inset-bottom)] z-50 pointer-events-none">
             {/* Pointer events none on container, auto on nav to let clicks pass through sides */}
-            <div className="neon-card rounded-3xl flex justify-around items-center p-2 backdrop-blur-xl bg-slate-950/80 border-white/5 pointer-events-auto shadow-[0_0_20px_rgba(0,0,0,0.5)] max-w-md mx-auto">
+            <div className="neon-card rounded-3xl flex justify-around items-center p-2 backdrop-blur-2xl bg-slate-950/60 border-white/10 pointer-events-auto shadow-[0_0_40px_rgba(0,0,0,0.6)] max-w-md mx-auto ring-1 ring-white/5">
                 {navItems.map((item) => {
                     const isActive = pathname === item.path;
                     return (
                         <button
                             key={item.id}
-                            onClick={() => router.push(item.path)}
+                            onClick={() => { triggerHaptic(); router.push(item.path); }}
                             className={`relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${isActive ? "text-white scale-110" : "text-slate-500 hover:text-white/60"
                                 }`}
                         >

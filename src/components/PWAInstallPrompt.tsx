@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Share, PlusSquare, X } from "lucide-react"; // Using similar icons
+import Image from "next/image";
+import { Share, PlusSquare, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const PWAInstallPrompt = () => {
@@ -49,10 +50,8 @@ export const PWAInstallPrompt = () => {
                 >
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-900/50">
-                                <img src="/icons/icon-192x192.png" alt="Logo" className="w-8 h-8 object-contain opactiy-90" onError={(e) => e.currentTarget.style.display = 'none'} />
-                                {/* Fallback icon if image fails */}
-                                <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xl">O</div>
+                            <div className="relative w-12 h-12 rounded-xl bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-900/50 overflow-hidden">
+                                <Image src="/icons/icon-192x192.png" alt="OurGlass" width={32} height={32} className="object-contain opacity-90" />
                             </div>
                             <div>
                                 <h3 className="font-bold text-white text-lg">OurGlass</h3>
