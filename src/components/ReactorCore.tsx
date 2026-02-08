@@ -155,7 +155,7 @@ export const ReactorCore = ({ income, expenses, balance, burnRateStatus, cycleSt
                     {/* Bottom Data Grid */}
                     <div className="mt-3 grid grid-cols-2 gap-x-8 gap-y-1 text-[9px] font-mono text-white/50 border-t border-white/10 pt-2 w-full px-6 transition-all duration-300" style={{ opacity: isPressed ? 0.3 : 1 }}>
                         <div className="flex flex-col text-right">
-                            <span className="opacity-50 tracking-wider">הכנסות</span>
+                            <span className="opacity-50 tracking-wider">תקציב</span>
                             <span className="text-white">{(income / 1000).toFixed(1)}K</span>
                         </div>
                         <div className="flex flex-col text-left">
