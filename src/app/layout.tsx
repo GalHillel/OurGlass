@@ -25,6 +25,16 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "OurGlass",
   description: "Couple Finance Tracker",
+  icons: {
+    icon: '/icon.png',
+    shortcut: '/icon.png',
+    apple: '/apple-icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'OurGlass',
+  },
 };
 
 export default function RootLayout({

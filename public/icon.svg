@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </radialGradient>
+    <linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.1)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.05)"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="15" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient id="core" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+  
+  <!-- Outer Ring (Reactor Shell) -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2" stroke-dasharray="10 10"/>
+  <circle cx="256" cy="256" r="180" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="40"/>
+  
+  <!-- Core Glow -->
+  <circle cx="256" cy="256" r="120" fill="url(#glass)" filter="url(#glow)"/>
+  
+  <!-- Hourglass Shape inside Reactor -->
+  <path d="M200 160 L312 160 L256 256 L200 160 Z" fill="url(#core)" opacity="0.8" filter="url(#glow)"/>
+  <path d="M200 352 L312 352 L256 256 L200 352 Z" fill="url(#core)" opacity="0.6" filter="url(#glow)"/>
+  
+  <!-- Inner Ring (Active) -->
+  <circle cx="256" cy="256" r="140" fill="none" stroke="url(#core)" stroke-width="8" stroke-linecap="round" stroke-dasharray="600" stroke-dashoffset="150" filter="url(#glow)"/>
+  
+  <!-- Central Pulse -->
+  <circle cx="256" cy="256" r="15" fill="#fff" filter="url(#glow)"/>
+</svg>
