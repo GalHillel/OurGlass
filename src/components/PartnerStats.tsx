@@ -37,9 +37,9 @@ export const PartnerStats = ({ transactions, subscriptions = [] }: PartnerStatsP
         // but the prompt says "Sum of transactions where payer === 'joint'". keeping it strict for now.
 
         return [
-            { id: 'him', label: 'גל', amount: himTotal, icon: User, color: 'bg-blue-500/20 text-blue-200 border-blue-500/10' },
-            { id: 'joint', label: 'משותף', amount: jointTotal, icon: Users, color: 'bg-purple-500/20 text-purple-200 border-purple-500/10' },
-            { id: 'her', label: 'איריס', amount: herTotal, icon: Heart, color: 'bg-pink-500/20 text-pink-200 border-pink-500/10' },
+            { id: 'him', label: 'גל', amount: himTotal, icon: User, color: 'text-blue-400' },
+            { id: 'joint', label: 'משותף', amount: jointTotal, icon: Users, color: 'text-purple-400' },
+            { id: 'her', label: 'איריס', amount: herTotal, icon: Heart, color: 'text-pink-400' },
         ];
     }, [transactions, subscriptions]);
 
@@ -48,29 +48,24 @@ export const PartnerStats = ({ transactions, subscriptions = [] }: PartnerStatsP
     if (total === 0) return null;
 
     return (
-        <div className="w-full px-6 mt-8">
-            <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-4 px-1">חלוקה מגדרית</h3>
-            <div className="grid grid-cols-3 gap-3">
-                {stats.map((stat, i) => (
-                    <motion.div
-                        key={stat.id}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: i * 0.1 }}
-                        className={cn(
-                            "flex flex-col items-center p-3 rounded-2xl border backdrop-blur-md",
-                            stat.color,
-                            "border-white/5" // Override border color for cleaner look
-                        )}
-                    >
-                        <div className={cn("p-2 rounded-full mb-2 bg-black/20")}>
-                            <stat.icon className="w-4 h-4" />
-                        </div>
-                        <span className="text-[10px] text-white/60 mb-1 font-medium">{stat.label}</span>
-                        <span className="text-sm font-bold text-white">₪{stat.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                    </motion.div>
-                ))}
-            </div>
+        <div className="w-full mt-4 grid grid-cols-3 gap-3">
+            {stats.map((stat, i) => (
+                <motion.div
+                    key={stat.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 + (i * 0.1) }}
+                    className="flex flex-col items-center justify-center p-3 rounded-2xl border border-white/10 bg-slate-950/50 backdrop-blur-xl shadow-lg relative overflow-hidden"
+                >
+                    <div className="absolute inset-0 bg-blue-500/5 pointer-events-none" />
+
+                    <div className={cn("p-2 rounded-full mb-2 bg-black/20", stat.color.replace('bg-', 'text-').split(' ')[0])}>
+                        <stat.icon className={cn("w-4 h-4", stat.color.match(/text-\w+-\d+/)?.[0])} />
+                    </div>
+                    <span className="text-[10px] text-white/50 mb-0.5 font-medium">{stat.label}</span>
+                    <span className="text-sm font-bold text-white">₪{stat.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                </motion.div>
+            ))}
         </div>
     );
 };

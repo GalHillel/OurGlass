@@ -38,7 +38,6 @@ import { useWealth } from "@/hooks/useWealth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isSameDay, addMonths, subMonths, format, differenceInDays, addDays } from "date-fns";
 import { Shield, Rocket, ChevronLeft, ChevronRight, LayoutGrid, EyeOff } from "lucide-react";
-import { AppHeader } from "@/components/AppHeader";
 import { toast } from "sonner";
 import CountUp from "react-countup";
 
@@ -53,14 +52,25 @@ const PullToRefresh = ({ children, onRefresh }: { children: React.ReactNode, onR
     if (isRefreshing) return;
     setIsRefreshing(true);
     triggerHaptic();
-    await onRefresh();
-    setIsRefreshing(false);
+
+    // Safety timeout - force stop spinning after 2 seconds
+    const safetyTimeout = setTimeout(() => {
+      setIsRefreshing(false);
+    }, 2000);
+
+    try {
+      await onRefresh();
+    } finally {
+      clearTimeout(safetyTimeout);
+      setIsRefreshing(false);
+    }
   };
 
   return (
     <div className="w-full touch-pan-y">
       {isRefreshing && (
-        <div className="flex justify-center h-10 items-center">
+        <div className="flex justify-center h-10 items-center hidden">
+          {/* Spinner hidden per user request to remove "semicircle" */}
           <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
         </div>
       )}
@@ -258,17 +268,7 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen pb-20 text-white selection:bg-blue-500/50 bg-slate-950">
 
-      <AppHeader
-        title="OurGlass"
-        subtitle={getGreeting()}
-        icon={isPrivacyMode ? EyeOff : LayoutGrid} // Toggle Icon
-        iconColor={isLowFunds ? "text-orange-500" : "text-blue-400"}
-        titleColor={isLowFunds ? "text-orange-400" : "text-blue-500"}
-        onIconClick={() => setIsPrivacyMode(!isPrivacyMode)}
-      />
 
-      {/* Spacer for fixed header */}
-      <div className="h-10" />
 
       {/* ... SmartInsights ... */}
 

@@ -5,7 +5,7 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Goal } from "@/types";
 import { useWealth } from "@/hooks/useWealth";
 import { TrendingUp, PieChart, Shield, Rocket, Plus, Edit2, Coins, Building, Trash2 } from "lucide-react";
-import { AppHeader } from "@/components/AppHeader";
+
 import { motion, AnimatePresence } from "framer-motion";
 import CountUp from "react-countup";
 import { toast } from "sonner";
@@ -104,15 +104,7 @@ export default function WealthPage() {
 
     return (
         <div className="min-h-screen bg-slate-950 text-white pb-24 px-4 space-y-6">
-            <AppHeader
-                title="הון"
-                subtitle="עצמי"
-                icon={Shield}
-                iconColor="text-blue-400"
-                titleColor="text-blue-500"
-            />
-            {/* Spacing for fixed header */}
-            <div className="h-16" />
+
 
             <StockTicker userSymbols={assets
                 .filter(a => (a.type === 'stock' || a.investment_type === 'crypto') && a.symbol)

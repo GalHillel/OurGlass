@@ -52,14 +52,7 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
         }
     };
 
-    const getStatusBg = () => {
-        switch (status) {
-            case "excellent": return "from-emerald-500/20 to-emerald-500/5";
-            case "good": return "from-blue-500/20 to-blue-500/5";
-            case "warning": return "from-amber-500/20 to-amber-500/5";
-            case "overspent": return "from-red-500/20 to-red-500/5";
-        }
-    };
+
 
     // Progress bar for budget usage
     const budgetUsagePercent = Math.min(100, (totalSpent / budget) * 100);
@@ -69,8 +62,9 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className={cn("rounded-2xl p-4 border border-white/10 bg-gradient-to-br", getStatusBg())}
+            className="rounded-2xl p-4 border border-white/10 bg-slate-950/50 backdrop-blur-xl shadow-lg relative overflow-hidden"
         >
+            <div className="absolute inset-0 bg-blue-500/5 pointer-events-none" />
             {/* Header with Status */}
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">

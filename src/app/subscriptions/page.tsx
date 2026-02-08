@@ -17,7 +17,7 @@ import {
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SwipeableRow } from "@/components/SwipeableRow";
-import { AppHeader } from "@/components/AppHeader";
+
 import { useAuth } from "@/components/AuthProvider";
 
 export default function SubscriptionsPage() {
@@ -127,15 +127,7 @@ export default function SubscriptionsPage() {
 
     return (
         <div className="flex flex-col gap-6 w-full mx-auto pt-8 pb-24 px-4">
-            <AppHeader
-                title="הוצאות"
-                subtitle="קבועות"
-                icon={CreditCard}
-                iconColor="text-purple-400"
-                titleColor="text-purple-500"
-            />
-            {/* Spacing for fixed header */}
-            <div className="h-4" />
+
 
             {/* Vampire Index Analysis */}
             {profile?.budget && (

@@ -330,3 +330,23 @@ input,
 textarea {
   touch-action: manipulation;
 }
+
+/* ========================================= */
+/*  INFINITE TICKER ANIMATION (Global)       */
+/* ========================================= */
+@keyframes ticker-slide {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-ticker {
+  animation: ticker-slide var(--duration, 30s) linear infinite;
+  will-change: transform;
+  /* Ensure hardware acceleration */
+  transform: translateZ(0);
+}

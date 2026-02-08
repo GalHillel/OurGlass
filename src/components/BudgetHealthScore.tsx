@@ -132,14 +132,7 @@ export const BudgetHealthScore = ({
         }
     };
 
-    const getBgGradient = () => {
-        switch (status) {
-            case "excellent": return "from-emerald-500/10 to-emerald-500/5";
-            case "good": return "from-blue-500/10 to-blue-500/5";
-            case "warning": return "from-amber-500/10 to-amber-500/5";
-            case "critical": return "from-red-500/10 to-red-500/5";
-        }
-    };
+
 
     const getStatusText = () => {
         switch (status) {
@@ -167,8 +160,9 @@ export const BudgetHealthScore = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className={cn("rounded-2xl p-4 border border-white/10 bg-gradient-to-br", getBgGradient())}
+            className="rounded-2xl p-4 border border-white/10 bg-slate-950/50 backdrop-blur-xl shadow-lg relative overflow-hidden"
         >
+            <div className="absolute inset-0 bg-blue-500/5 pointer-events-none" />
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">

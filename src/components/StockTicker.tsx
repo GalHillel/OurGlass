@@ -65,56 +65,56 @@ export const StockTicker = ({ userSymbols = [] }: StockTickerProps) => {
         </div>
     );
 
-    // Quadruple the list to ensure gapless infinite scroll on all screen sizes
-    // We display 4 sets. We animate from 0% to -50% (which covers 2 full sets).
-    // At -50%, we are visually identical to 0% (start of set 3 vs start of set 1).
-    const displayStocks = [...stocks, ...stocks, ...stocks, ...stocks];
+    // Create a "set" of stocks duplicated enough to cover reasonable screen width
+    // 20 duplicates is safe for almost any screen size/stock count combination
+    const duplicatedStocks = Array(20).fill(stocks).flat();
 
-    // Slower speed for readability: 20s per full iteration (moving through 2 sets)
-    // Adjust based on items? Let's make it dynamic-ish.
-    const duration = `${Math.max(20, displayStocks.length * 2)}s`;
+    // Slower duration for readability.
+    const duration = `${Math.max(60, stocks.length * 30)}s`;
 
     return (
-        <div className="w-full bg-slate-900/50 border-y border-white/5 overflow-hidden py-3 backdrop-blur-sm group hover:bg-slate-900/80 transition-colors relative z-20">
+        <div className="w-full bg-slate-900/50 border-y border-white/5 overflow-hidden py-3 backdrop-blur-sm relative z-20 select-none">
             {/* Gradient Masks */}
-            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-950 to-transparent z-10" />
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-950 to-transparent z-10" />
+            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-950 to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-950 to-transparent z-10 pointer-events-none" />
 
-            <div
-                className="flex items-center gap-6 animate-marquee w-max group-hover:[animation-play-state:paused]"
-                style={{
-                    '--duration': duration
-                } as React.CSSProperties}
-            >
-                {displayStocks.map((stock, i) => {
-                    const isUp = stock.changePercent >= 0;
-                    return (
-                        <div
-                            key={`${stock.symbol}-${i}`}
-                            className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-md border border-white/5 shadow-sm whitespace-nowrap transition-transform hover:scale-105 cursor-default"
-                        >
-                            <span className="font-bold text-white/90 text-xs tracking-wider">{stock.symbol}</span>
-                            <span className={`text-xs font-bold ${isUp ? "text-emerald-400" : "text-rose-400"}`}>
-                                {isUp ? '+' : ''}{stock.changePercent.toFixed(2)}%
-                            </span>
-                            <span className="text-white/60 text-xs font-mono">
-                                ${stock.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                        </div>
-                    );
-                })}
+            {/* Scrolling Container - Dual List Technique for seamless loop */}
+            <div className="flex w-full overflow-hidden">
+                <div
+                    className="flex flex-nowrap items-center gap-3 animate-ticker flex-shrink-0 min-w-full"
+                    style={{ '--duration': duration } as React.CSSProperties}
+                >
+                    {duplicatedStocks.map((stock, i) => (
+                        <StockItem key={`a-${stock.symbol}-${i}`} stock={stock} />
+                    ))}
+                </div>
+
+                {/* Second copy follows immediately */}
+                <div
+                    className="flex flex-nowrap items-center gap-3 animate-ticker flex-shrink-0 min-w-full"
+                    style={{ '--duration': duration } as React.CSSProperties}
+                >
+                    {duplicatedStocks.map((stock, i) => (
+                        <StockItem key={`b-${stock.symbol}-${i}`} stock={stock} />
+                    ))}
+                </div>
             </div>
-
-            <style jsx>{`
-                @keyframes marquee {
-                    0% { transform: translateX(0); }
-                    100% { transform: translateX(-50%); } 
-                }
-                .animate-marquee {
-                    animation: marquee var(--duration) linear infinite;
-                    will-change: transform;
-                }
-            `}</style>
         </div>
     );
 };
+
+const StockItem = ({ stock }: { stock: StockData }) => {
+    const isUp = stock.changePercent >= 0;
+    return (
+        <div className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-md border border-white/5 shadow-sm whitespace-nowrap">
+            <span className="font-bold text-white/90 text-xs tracking-wider">{stock.symbol}</span>
+            <span className={`text-xs font-bold ${isUp ? "text-emerald-400" : "text-rose-400"}`}>
+                {isUp ? '+' : ''}{stock.changePercent.toFixed(2)}%
+            </span>
+            <span className="text-white/60 text-xs font-mono">
+                ${stock.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+        </div>
+    );
+};
+

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { WishlistItem } from "@/types";
 import { Plus, Check, Clock, AlertTriangle, Sparkles, Trash2, Hourglass } from "lucide-react";
-import { AppHeader } from "@/components/AppHeader";
+
 import { WishlistCard } from "@/components/WishlistCard";
 import { WishlistActionDrawer } from "@/components/WishlistActionDrawer";
 import { Button } from "@/components/ui/button";
@@ -257,15 +257,7 @@ export default function WishlistPage() {
 
     return (
         <div className="flex flex-col gap-6 w-full mx-auto pt-8 pb-32 px-4 shadow-none">
-            <AppHeader
-                title="רשימת"
-                subtitle="משאלות"
-                icon={Sparkles}
-                iconColor="text-purple-400"
-                titleColor="text-purple-500"
-            />
-            {/* Spacing for fixed header */}
-            <div className="h-4" />
+
 
             {/* Active Savings / Spare Change Harvester */}
             {realNumberBalance > 0 && realNumberBalance % 100 > 0 && (

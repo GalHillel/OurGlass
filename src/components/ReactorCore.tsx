@@ -57,211 +57,141 @@ export const ReactorCore = ({ income, expenses, balance, burnRateStatus, cycleSt
 
     return (
         <div
-            className="relative w-72 h-72 flex items-center justify-center touch-pan-y cursor-pointer select-none"
+            className="relative w-full py-12 flex flex-col items-center justify-center touch-pan-y cursor-pointer select-none overflow-hidden"
             onPointerDown={() => { setIsPressed(true); triggerHaptic(); }}
             onPointerUp={() => setIsPressed(false)}
             onPointerLeave={() => setIsPressed(false)}
         >
-            {/* Ambient Glow Layer */}
-            <div
-                className="absolute inset-0 rounded-full opacity-30 blur-3xl transition-all duration-1000"
-                style={{
-                    background: `radial-gradient(circle, ${gradientFrom}40 0%, transparent 70%)`,
-                    transform: isPressed ? 'scale(1.2)' : 'scale(1)'
-                }}
+            {/* Tech Scanline Overlay */}
+            <div className="absolute inset-0 pointer-events-none z-0 opacity-20"
+                style={{ background: 'linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.5) 50%)', backgroundSize: '100% 4px' }}
             />
 
-            {/* Outer Decorative Rings */}
-            <div className="absolute inset-0 rounded-full border border-white/[0.03]" />
-            <div className="absolute inset-2 rounded-full border border-white/[0.05] border-dashed" />
-            <div className="absolute inset-4 rounded-full border border-white/[0.03]" />
+            {/* Status Indicator - Tech Badge */}
+            <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={cn(
+                    "flex items-center gap-2 px-3 py-1 rounded-sm mb-8 relative z-10 backdrop-blur-md",
+                    "bg-slate-900/60 border border-white/10 shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+                )}
+            >
+                <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse shadow-[0_0_8px_currentColor]", color.replace('text-', 'text-'))} style={{ backgroundColor: 'currentColor' }} />
 
-            {/* Progress Track Container */}
-            <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 280 280">
-                {/* Background Track */}
-                <circle
-                    cx="140"
-                    cy="140"
-                    r={radius}
-                    fill="none"
-                    stroke="rgba(255,255,255,0.04)"
-                    strokeWidth={strokeWidth}
-                />
+                <span className={cn("text-[10px] font-bold tracking-widest uppercase font-mono", color)}>
+                    {isPressed ? "מצב תחזית >>" : (isCrisis ? "!! חריגה !!" : isWarning ? "שים לב" : "מערכת תקינה")}
+                </span>
+            </motion.div>
 
-                {/* Gradient Definition */}
-                <defs>
-                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor={gradientFrom} />
-                        <stop offset="100%" stopColor={gradientTo} />
-                    </linearGradient>
-                    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                        <feMerge>
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                    </filter>
-                </defs>
+            {/* Main Digital Display with Brackets */}
+            <div className="relative z-10 w-full flex flex-col items-center justify-center">
 
-                {/* Main Progress Arc */}
-                <motion.circle
-                    cx="140"
-                    cy="140"
-                    r={radius}
-                    fill="none"
-                    stroke="url(#progressGradient)"
-                    strokeWidth={strokeWidth}
-                    strokeLinecap="round"
-                    strokeDasharray={circumference}
-                    initial={{ strokeDashoffset: circumference }}
-                    animate={{
-                        strokeDashoffset: circumference - (percentage / 100) * circumference,
-                        opacity: isPressed ? 0.4 : 1
-                    }}
-                    transition={{ duration: 1.5, ease: "circOut" }}
-                    filter="url(#glow)"
-                />
+                {/* Decorative Brackets */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-0 w-64 h-full pointer-events-none opacity-30">
+                    <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-white/50" />
+                    <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-white/50" />
+                    <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-white/50" />
+                    <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-white/50" />
+                </div>
 
-                {/* Ghost Projection Arc (on press) */}
-                <AnimatePresence>
-                    {isPressed && (
-                        <motion.circle
-                            cx="140"
-                            cy="140"
-                            r={radius - 15}
-                            fill="none"
-                            stroke={projectedBalance > 0 ? "#10b981" : "#ef4444"}
-                            strokeWidth={4}
-                            strokeLinecap="round"
-                            strokeDasharray={2 * Math.PI * (radius - 15)}
-                            initial={{ strokeDashoffset: 2 * Math.PI * (radius - 15), opacity: 0 }}
-                            animate={{
-                                strokeDashoffset: 2 * Math.PI * (radius - 15) - (Math.min(Math.max(projectedBalance / income, 0), 1)) * 2 * Math.PI * (radius - 15),
-                                opacity: 0.8
-                            }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.8 }}
-                            filter="url(#glow)"
-                        />
+                <AnimatePresence mode="wait">
+                    {isPressed ? (
+                        <motion.div
+                            key="projected"
+                            initial={{ scale: 0.95, opacity: 0, filter: "blur(4px)" }}
+                            animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
+                            exit={{ scale: 1.05, opacity: 0, filter: "blur(8px)" }}
+                            transition={{ duration: 0.2 }}
+                            className="flex flex-col items-center gap-2 py-4"
+                        >
+                            <span className="text-[10px] font-mono text-emerald-400/80 tracking-widest uppercase bg-emerald-950/30 px-2 py-0.5 rounded text-shadow-sm">
+                                צפי לסיום החודש
+                            </span>
+
+                            {/* LTR Container for Correct [Minus] [Number] [Shekel] Ordering */}
+                            <div className="flex items-baseline justify-center gap-1" dir="ltr">
+                                {projectedBalance < 0 && (
+                                    <span className="text-4xl font-bold text-red-500 mr-1 self-center">-</span>
+                                )}
+                                <span className={cn(
+                                    "text-6xl sm:text-7xl font-sans font-black tracking-tighter tabular-nums",
+                                    projectedBalance >= 0 ? "text-emerald-400 drop-shadow-[0_0_25px_rgba(52,211,153,0.5)]" : "text-red-500 drop-shadow-[0_0_25px_rgba(239,68,68,0.5)]"
+                                )}>
+                                    <CountUp
+                                        end={Math.abs(projectedBalance)}
+                                        duration={0.4}
+                                        separator=","
+                                        decimals={0}
+                                    />
+                                </span>
+                                <span className="text-3xl text-emerald-400/40 font-light ml-2">₪</span>
+                            </div>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="balance"
+                            initial={{ scale: 0.95, opacity: 0, filter: "blur(4px)" }}
+                            animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
+                            exit={{ scale: 1.05, opacity: 0, filter: "blur(8px)" }}
+                            transition={{ duration: 0.2 }}
+                            className="flex flex-col items-center gap-2 py-4"
+                        >
+                            <span className="text-[10px] font-mono text-blue-400/60 tracking-widest uppercase bg-blue-950/20 px-2 py-0.5 rounded text-shadow-sm">
+                                יתרה לשימוש
+                            </span>
+
+                            {/* LTR Container for Correct [Minus] [Number] [Shekel] Ordering */}
+                            <div className="flex items-baseline justify-center gap-2" dir="ltr">
+                                {balance < 0 && (
+                                    <span className="text-4xl font-bold text-red-500 mr-1 self-center animate-pulse">-</span>
+                                )}
+                                <span className={cn(
+                                    "text-6xl sm:text-7xl font-sans font-black tracking-tighter tabular-nums",
+                                    balance >= 0
+                                        ? "text-white drop-shadow-[0_0_35px_rgba(255,255,255,0.2)]"
+                                        : "text-red-500 drop-shadow-[0_0_35px_rgba(239,68,68,0.4)]"
+                                )}>
+                                    <CountUp
+                                        end={Math.abs(balance)}
+                                        duration={1.5}
+                                        separator=","
+                                        decimals={0}
+                                    />
+                                </span>
+                                <span className="text-3xl text-white/30 font-light ml-2">₪</span>
+                            </div>
+                        </motion.div>
                     )}
                 </AnimatePresence>
 
-                {/* Tick Marks */}
-                {[...Array(12)].map((_, i) => (
-                    <line
-                        key={i}
-                        x1="140"
-                        y1="22"
-                        x2="140"
-                        y2={i % 3 === 0 ? "28" : "25"}
-                        stroke="rgba(255,255,255,0.15)"
-                        strokeWidth={i % 3 === 0 ? "2" : "1"}
-                        transform={`rotate(${i * 30} 140 140)`}
-                    />
-                ))}
-            </svg>
+                {/* Tech Specs */}
+                <div className="flex items-center justify-between w-64 mt-8 px-4 opacity-80">
+                    <div className="flex flex-col items-center border-r border-white/10 pr-6">
+                        <span className="text-[9px] font-mono text-blue-300/60 uppercase tracking-widest mb-1">תקציב</span>
+                        <span className="text-lg font-mono font-bold text-blue-100 tabular-nums">
+                            {income.toLocaleString()}
+                        </span>
+                    </div>
 
-            {/* Central Content */}
-            <div className="relative z-10 flex flex-col items-center justify-center">
-                {/* Status Badge */}
-                <motion.div
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={cn(
-                        "flex items-center gap-1.5 px-3 py-1 rounded-full mb-2 backdrop-blur-sm",
-                        "bg-white/5 border border-white/10"
-                    )}
-                >
-                    <span className="text-xs">{statusEmoji}</span>
-                    <span className={cn("text-[10px] font-semibold tracking-wide uppercase", color)}>
-                        {isPressed ? "תחזית" : (isCrisis ? "חריגה" : isWarning ? "שים לב" : "יציב")}
-                    </span>
-                </motion.div>
-
-                {/* Main Balance Display */}
-                <div className="flex flex-row items-baseline justify-center gap-0.5" dir="ltr">
-                    <AnimatePresence mode="wait">
-                        {isPressed ? (
-                            <motion.div
-                                key="projected"
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.9, opacity: 0 }}
-                                className="flex items-baseline gap-0.5"
-                            >
-                                {projectedBalance < 0 && <span className="text-2xl font-bold text-red-400">-</span>}
-                                <span className={cn(
-                                    "text-4xl font-black tracking-tight",
-                                    projectedBalance >= 0 ? "text-emerald-400" : "text-red-400"
-                                )}>
-                                    <CountUp end={Math.abs(projectedBalance)} duration={0.5} separator="," />
-                                </span>
-                                <span className="text-lg text-white/30 font-light ml-0.5">₪</span>
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key="balance"
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.9, opacity: 0 }}
-                                className="flex items-baseline gap-0.5"
-                            >
-                                {balance < 0 && <span className="text-3xl font-bold text-red-400 animate-pulse">-</span>}
-                                <span className="text-5xl font-black text-white tracking-tight drop-shadow-[0_0_30px_rgba(255,255,255,0.15)]">
-                                    <CountUp end={Math.abs(balance)} duration={2} separator="," />
-                                </span>
-                                <span className="text-xl text-white/25 font-light ml-0.5">₪</span>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    <div className="flex flex-col items-center pl-6">
+                        <span className="text-[9px] font-mono text-purple-300/60 uppercase tracking-widest mb-1">הוצאות</span>
+                        <span className={cn(
+                            "text-lg font-mono font-bold tabular-nums",
+                            isCrisis ? "text-red-400 text-shadow-glow" : "text-purple-100"
+                        )}>
+                            {expenses.toLocaleString()}
+                        </span>
+                    </div>
                 </div>
 
-                {/* Subtitle */}
+                {/* Bottom Detail */}
                 <motion.p
-                    className="text-[10px] text-white/40 mt-1 font-medium"
-                    animate={{ opacity: isPressed ? 0.3 : 1 }}
+                    className="text-[10px] font-mono text-white/30 mt-6 tracking-widest uppercase"
+                    animate={{ opacity: isPressed ? 0.5 : 0.3 }}
                 >
-                    {isPressed ? "סוף החודש" : `נותרו ${daysRemaining} ימים`}
+                    {isPressed ? ">> חישוב תחזית סיום <<" : `[ ${daysRemaining} ימים למחזור ]`}
                 </motion.p>
-
-                {/* Stats Row */}
-                <motion.div
-                    className="flex items-center gap-4 mt-3 pt-3 border-t border-white/10"
-                    animate={{ opacity: isPressed ? 0.2 : 1 }}
-                >
-                    <div className="text-center">
-                        <p className="text-[9px] text-white/40 uppercase tracking-wider">תקציב</p>
-                        <p className="text-xs font-bold text-white/80">₪{income.toLocaleString()}</p>
-                    </div>
-                    <div className="w-px h-6 bg-white/10" />
-                    <div className="text-center">
-                        <p className="text-[9px] text-white/40 uppercase tracking-wider">הוצאות</p>
-                        <p className={cn("text-xs font-bold", isCrisis ? "text-red-400" : "text-white/80")}>
-                            ₪{expenses.toLocaleString()}
-                        </p>
-                    </div>
-                </motion.div>
-
-                {/* Percentage Badge */}
-                <motion.div
-                    className={cn(
-                        "absolute -bottom-8 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold",
-                        "bg-white/5 border border-white/10 backdrop-blur-sm",
-                        color
-                    )}
-                    animate={{ scale: isPressed ? 0.9 : 1 }}
-                >
-                    {percentage.toFixed(0)}%
-                </motion.div>
             </div>
-
-            {/* Press Hint */}
-            <motion.div
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[8px] text-white/20 font-medium"
-                animate={{ opacity: isPressed ? 0 : 0.5 }}
-            >
-                לחץ לתחזית
-            </motion.div>
         </div>
     );
 };

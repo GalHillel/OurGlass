@@ -1,8 +1,22 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
-export const LoadingSplash = () => {
+export const LoadingSplash = ({ onComplete }: { onComplete?: () => void }) => {
+    const [isVisible, setIsVisible] = useState(true);
+
+    useEffect(() => {
+        // Force completion after 2.5s even if data is slow
+        const timer = setTimeout(() => {
+            setIsVisible(false);
+            onComplete?.();
+        }, 2500);
+        return () => clearTimeout(timer);
+    }, [onComplete]);
+
+    if (!isVisible) return null;
+
     return (
         <div className="flex min-h-screen items-center justify-center p-4 bg-slate-950 relative overflow-hidden">
             {/* Background Atmosphere */}

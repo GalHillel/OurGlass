@@ -37,6 +37,11 @@ export const metadata: Metadata = {
   },
 };
 
+import { LiquidBackground } from "@/components/LiquidBackground";
+// ... imports
+
+// ...
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -44,10 +49,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="he" dir="rtl" className="dark">
-      <body className={`${heebo.variable} bg-slate-950 text-white antialiased font-sans h-full overflow-x-hidden overflow-y-auto`}>
+      <body className={`${heebo.variable} text-white antialiased font-sans h-full overflow-x-hidden overflow-y-auto`}>
+        <LiquidBackground />
         <AuthProvider>
-          {/* Clean solid background - LiquidBackground removed */}
-          <main className="native-scroll touch-scroll relative z-10 w-full p-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(6rem+env(safe-area-inset-bottom))]">
+          <main className="native-scroll touch-scroll relative z-10 w-full p-4 pt-[env(safe-area-inset-top)] pb-[calc(6rem+env(safe-area-inset-bottom))]">
             {children}
           </main>
           <BottomNav />
