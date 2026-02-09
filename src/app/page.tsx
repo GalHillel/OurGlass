@@ -7,11 +7,11 @@ import { StreakCounter } from "@/components/StreakCounter";
 import { TransactionList } from "@/components/TransactionList";
 import { FinancialWisdom } from "@/components/FinancialWisdom";
 import { PartnerStats } from "@/components/PartnerStats";
-import { CategoryBreakdown } from "@/components/CategoryBreakdown";
+import { CategoryBreakdown, normalizeCategory } from "@/components/CategoryBreakdown";
 import { getDaysRemainingInCycle, getBillingPeriodForDate } from "@/lib/billing";
 import { triggerHaptic } from "@/utils/haptics";
 import { calculateBurnRate, cn } from "@/lib/utils";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { BudgetGauges } from "@/components/BudgetGauges";
 import { BudgetHealthScore } from "@/components/BudgetHealthScore";
 import { SavingsTracker } from "@/components/SavingsTracker";
@@ -86,6 +86,7 @@ export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedFilterCategory, setSelectedFilterCategory] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -243,9 +244,14 @@ export default function Home() {
     fetchData();
   };
 
-  const filteredTransactions = selectedDate
-    ? transactions.filter(tx => isSameDay(new Date(tx.date), selectedDate))
-    : transactions;
+  // Filter transactions (simple variable, not a hook)
+  let filteredTransactions = transactions;
+  if (selectedDate) {
+    filteredTransactions = filteredTransactions.filter(tx => isSameDay(new Date(tx.date), selectedDate));
+  }
+  if (selectedFilterCategory) {
+    filteredTransactions = filteredTransactions.filter(tx => normalizeCategory(tx.category) === selectedFilterCategory);
+  }
 
   const balanceRatio = balance && profile?.budget ? balance / profile.budget : 0.5;
   const isLowFunds = balanceRatio < 0.2;
@@ -424,7 +430,15 @@ export default function Home() {
 
         {/* Category Breakdown Widget */}
         <div className="w-full max-w-md px-4">
-          <CategoryBreakdown transactions={transactions} />
+          <CategoryBreakdown
+            transactions={transactions}
+            subscriptions={subscriptions}
+            selectedCategory={selectedFilterCategory}
+            onCategorySelect={(cat) => {
+              setSelectedFilterCategory(cat);
+              setSelectedDate(null); // Clear date filter when selecting category
+            }}
+          />
         </div>
 
         {/* Partner/Gender Breakdown Widget */}
@@ -435,11 +449,13 @@ export default function Home() {
         />
 
         {/* Transactions */}
-        <LayoutGroup>
+        <LayoutGroup key={selectedFilterCategory ?? 'all'}>
           <TransactionList
+            key={selectedFilterCategory ?? 'all'}
             transactions={filteredTransactions}
             subscriptions={subscriptions}
             onRefresh={fetchData}
+            activeFilter={selectedFilterCategory}
             onEdit={(tx) => {
               setEditingTransaction(tx);
               setIsDrawerOpen(true);

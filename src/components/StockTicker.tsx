@@ -42,7 +42,7 @@ export const StockTicker = ({ userSymbols = [] }: StockTickerProps) => {
                     const info = data.stocks[sym];
                     if (!info) return null;
                     return {
-                        symbol: sym.replace('-USD', ''), // Clean up crypto names slightly
+                        symbol: sym.replace('-USD', ''),
                         price: info.price,
                         changePercent: info.changePercent || 0
                     };
@@ -65,11 +65,9 @@ export const StockTicker = ({ userSymbols = [] }: StockTickerProps) => {
         </div>
     );
 
-    // Create a "set" of stocks duplicated enough to cover reasonable screen width
-    // 20 duplicates is safe for almost any screen size/stock count combination
+
     const duplicatedStocks = Array(20).fill(stocks).flat();
 
-    // Slower duration for readability.
     const duration = `${Math.max(60, stocks.length * 30)}s`;
 
     return (

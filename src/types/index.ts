@@ -43,6 +43,8 @@ export interface Subscription {
     amount: number;
     billing_day: number | null;
     owner?: 'him' | 'her' | 'joint';
+    category_id?: string | null;  // Category for fixed expense
+    category?: string;            // Mapped category name for UI display
     created_at: string;
 }
 

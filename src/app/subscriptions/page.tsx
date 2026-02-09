@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Subscription } from "@/types";
-import { Plus, Calendar, CreditCard } from "lucide-react"; // Removed Trash2, Edit2 as they are in SwipeableRow
+import { Plus, Calendar, Utensils, Bus, ShoppingBag, Beer, Home, Heart, Briefcase, Zap, Coffee, Fuel, Car, GraduationCap, Sparkles, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,8 +17,29 @@ import {
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SwipeableRow } from "@/components/SwipeableRow";
+import { cn } from "@/lib/utils";
 
 import { useAuth } from "@/components/AuthProvider";
+
+// Use the SAME categories as transactions - unified category system
+const CATEGORIES = [
+    { id: 'אוכל', label: 'אוכל', icon: Utensils, color: 'text-orange-400', bg: 'bg-orange-500/20', border: 'border-orange-500/30' },
+    { id: 'קפה', label: 'קפה', icon: Coffee, color: 'text-amber-400', bg: 'bg-amber-500/20', border: 'border-amber-500/30' },
+    { id: 'סופר', label: 'סופר', icon: ShoppingBag, color: 'text-green-400', bg: 'bg-green-500/20', border: 'border-green-500/30' },
+    { id: 'תחבורה', label: 'תחבורה', icon: Bus, color: 'text-blue-400', bg: 'bg-blue-500/20', border: 'border-blue-500/30' },
+    { id: 'דלק', label: 'דלק', icon: Fuel, color: 'text-cyan-400', bg: 'bg-cyan-500/20', border: 'border-cyan-500/30' },
+    { id: 'רכב', label: 'רכב', icon: Car, color: 'text-red-400', bg: 'bg-red-500/20', border: 'border-red-500/30' },
+    { id: 'קניות', label: 'קניות', icon: ShoppingBag, color: 'text-purple-400', bg: 'bg-purple-500/20', border: 'border-purple-500/30' },
+    { id: 'בילוי', label: 'בילוי', icon: Beer, color: 'text-pink-400', bg: 'bg-pink-500/20', border: 'border-pink-500/30' },
+    { id: 'מסעדה', label: 'מסעדה', icon: Utensils, color: 'text-red-400', bg: 'bg-red-500/20', border: 'border-red-500/30' },
+    { id: 'חשבונות', label: 'חשבונות', icon: Home, color: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/30' },
+    { id: 'בריאות', label: 'בריאות', icon: Heart, color: 'text-rose-400', bg: 'bg-rose-500/20', border: 'border-rose-500/30' },
+    { id: 'ביטוח', label: 'ביטוח', icon: Shield, color: 'text-sky-400', bg: 'bg-sky-500/20', border: 'border-sky-500/30' },
+    { id: 'לימודים', label: 'לימודים', icon: GraduationCap, color: 'text-indigo-400', bg: 'bg-indigo-500/20', border: 'border-indigo-500/30' },
+    { id: 'קוסמטיקה', label: 'קוסמטיקה', icon: Sparkles, color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/20', border: 'border-fuchsia-500/30' },
+    { id: 'עבודה', label: 'עבודה', icon: Briefcase, color: 'text-slate-400', bg: 'bg-slate-500/20', border: 'border-slate-500/30' },
+    { id: 'אחר', label: 'אחר', icon: Zap, color: 'text-yellow-400', bg: 'bg-yellow-500/20', border: 'border-yellow-500/30' },
+];
 
 export default function SubscriptionsPage() {
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -29,6 +50,7 @@ export default function SubscriptionsPage() {
     const [amount, setAmount] = useState("");
     const [day, setDay] = useState("");
     const [owner, setOwner] = useState<'him' | 'her' | 'joint'>('joint');
+    const [category, setCategory] = useState<string>('חשבונות');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingSub, setEditingSub] = useState<Subscription | null>(null);
     const { profile } = useAuth();
@@ -61,6 +83,7 @@ export default function SubscriptionsPage() {
         setAmount("");
         setDay("");
         setOwner('joint');
+        setCategory('חשבונות');
         setIsDialogOpen(true);
     };
 
@@ -70,6 +93,7 @@ export default function SubscriptionsPage() {
         setAmount(sub.amount.toString());
         setDay(sub.billing_day?.toString() || "1");
         setOwner(sub.owner || 'joint');
+        setCategory(sub.category || 'חשבונות');
         setIsDialogOpen(true);
     };
 
@@ -85,6 +109,7 @@ export default function SubscriptionsPage() {
                 amount: parseFloat(amount),
                 billing_day: parseInt(day) || 1,
                 owner: owner,
+                category: category,
             };
 
             if (editingSub) {
@@ -203,33 +228,44 @@ export default function SubscriptionsPage() {
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        {subscriptions.map((sub) => (
-                            <SwipeableRow
-                                key={sub.id}
-                                onEdit={() => openEditDialog(sub)}
-                                onDelete={() => handleDelete(sub.id)}
-                                deleteMessage="האם להסיר את המנוי הזה מהחישוב החודשי?"
-                                className="mb-3 rounded-2xl overflow-hidden"
-                            >
-                                <div className="neon-card p-4 flex items-center justify-between group relative overflow-hidden">
-                                    <div className="flex items-center gap-4 relative z-10">
-                                        <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-300 font-bold text-lg shadow-[0_0_10px_rgba(99,102,241,0.1)]">
-                                            {sub.name.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-white text-lg">{sub.name}</h3>
-                                            <div className="flex items-center text-xs text-slate-400 gap-1 font-mono">
-                                                <Calendar className="w-3 h-3" />
-                                                חיוב ב-{sub.billing_day || 1} לחודש
+                        {subscriptions.map((sub) => {
+                            const cat = CATEGORIES.find(c => c.id === sub.category) || CATEGORIES.find(c => c.id === 'חשבונות')!;
+                            const IconComponent = cat.icon;
+                            return (
+                                <SwipeableRow
+                                    key={sub.id}
+                                    onEdit={() => openEditDialog(sub)}
+                                    onDelete={() => handleDelete(sub.id)}
+                                    deleteMessage="האם להסיר את המנוי הזה מהחישוב החודשי?"
+                                    className="mb-3 rounded-2xl overflow-hidden"
+                                >
+                                    <div className="neon-card p-4 flex items-center justify-between group relative overflow-hidden">
+                                        <div className="flex items-center gap-4 relative z-10">
+                                            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shadow-lg", cat.bg, "border", cat.border)}>
+                                                <IconComponent className={cn("w-6 h-6", cat.color)} />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-white text-lg">{sub.name}</h3>
+                                                <div className="flex items-center text-xs text-slate-400 gap-2">
+                                                    <span className="flex items-center gap-1 font-mono">
+                                                        <Calendar className="w-3 h-3" />
+                                                        חיוב ב-{sub.billing_day || 1} לחודש
+                                                    </span>
+                                                    {sub.category && (
+                                                        <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", cat.bg, cat.color)}>
+                                                            {cat.label}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
+                                        <div className="flex items-center gap-3 relative z-10">
+                                            <span className="font-black text-white text-xl tracking-tight">₪{sub.amount}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-3 relative z-10">
-                                        <span className="font-black text-white text-xl tracking-tight">₪{sub.amount}</span>
-                                    </div>
-                                </div>
-                            </SwipeableRow>
-                        ))}
+                                </SwipeableRow>
+                            );
+                        })}
                         {subscriptions.length === 0 && (
                             <div className="text-center py-10 text-slate-500 text-sm bg-white/5 rounded-3xl border border-white/5 border-dashed">
                                 אין מנויים עדיין. הכל נקי!
@@ -278,6 +314,34 @@ export default function SubscriptionsPage() {
                                 onChange={(e) => setDay(e.target.value)}
                                 className="bg-slate-950 border-white/10 text-white"
                             />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>קטגוריה</Label>
+                            <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
+                                {CATEGORIES.map((cat) => {
+                                    const isSelected = category === cat.id;
+                                    const IconComponent = cat.icon;
+                                    return (
+                                        <button
+                                            type="button"
+                                            key={cat.id}
+                                            onClick={() => setCategory(cat.id)}
+                                            className={cn(
+                                                "flex flex-col items-center justify-center p-2 rounded-xl border transition-all duration-200",
+                                                isSelected
+                                                    ? cn(cat.bg, cat.border, "scale-105 shadow-lg")
+                                                    : "bg-slate-950 border-white/10 opacity-60 hover:opacity-100"
+                                            )}
+                                        >
+                                            <IconComponent className={cn("w-5 h-5 mb-1", cat.color)} />
+                                            <span className={cn("text-[10px] whitespace-nowrap", isSelected ? "text-white font-bold" : "text-white/50")}>
+                                                {cat.label}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
 
                         <div className="space-y-2">

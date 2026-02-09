@@ -13,6 +13,7 @@ interface TransactionListProps {
     subscriptions?: Subscription[]; // Add prop
     onRefresh: () => void;
     onEdit?: (tx: Transaction) => void;
+    activeFilter?: string | null; // Category filter active
 }
 
 const getIcon = (description: string | null) => {
@@ -36,7 +37,7 @@ import { ActivePress } from "@/components/ui/ActivePress";
 
 // ... imports ...
 
-export const TransactionList = memo(({ transactions, subscriptions = [], onRefresh, onEdit }: TransactionListProps) => {
+export const TransactionList = memo(({ transactions, subscriptions = [], onRefresh, onEdit, activeFilter }: TransactionListProps) => {
     const supabase = createClientComponentClient();
     const [detectedSub, setDetectedSub] = React.useState<{ name: string, amount: number } | null>(null);
 
@@ -166,6 +167,16 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
         [transactions, deletedIds]);
 
     if (visibleTransactions.length === 0) {
+        // Show different message if filter is active vs no transactions at all
+        if (activeFilter) {
+            return (
+                <div className="text-center py-12 px-6 mx-4 rounded-3xl border border-blue-500/20 border-dashed bg-blue-500/5 backdrop-blur-sm">
+                    <ShoppingBag className="w-10 h-10 text-blue-400/40 mx-auto mb-3" />
+                    <p className="text-blue-200/60 text-sm mb-1">אין עסקאות בקטגוריה "{activeFilter}"</p>
+                    <p className="text-blue-200/40 text-xs">ייתכן שיש רק הוצאות קבועות בקטגוריה זו</p>
+                </div>
+            );
+        }
         return (
             <div className="text-center py-12 px-6 mx-4 rounded-3xl border border-white/5 border-dashed bg-white/5 backdrop-blur-sm">
                 <ShoppingBag className="w-10 h-10 text-white/20 mx-auto mb-3" />
