@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,8 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData }: AddA
     const [interestRate, setInterestRate] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const supabase = createClientComponentClient();
+    const supabaseRef = useRef(createClientComponentClient());
+    const supabase = supabaseRef.current;
 
     useEffect(() => {
         if (isOpen) {

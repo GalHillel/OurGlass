@@ -68,6 +68,8 @@ export interface Goal {
     last_updated?: string;
 }
 
+export type Asset = Goal;
+
 export interface WishlistItem {
     id: string;
     name: string;

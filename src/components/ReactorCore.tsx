@@ -8,6 +8,7 @@ import { triggerHaptic } from "@/utils/haptics";
 
 interface ReactorCoreProps {
     income: number;
+    budget: number;
     expenses: number;
     balance: number;
     burnRateStatus?: 'safe' | 'warning' | 'critical';
@@ -15,7 +16,7 @@ interface ReactorCoreProps {
     cycleEnd: Date;
 }
 
-export const ReactorCore = ({ income, expenses, balance, burnRateStatus, cycleStart, cycleEnd }: ReactorCoreProps) => {
+export const ReactorCore = ({ income, budget, expenses, balance, burnRateStatus, cycleStart, cycleEnd }: ReactorCoreProps) => {
     const [isPressed, setIsPressed] = useState(false);
 
     const { percentage, projectedBalance, totalDaysInCycle, daysPassed, daysRemaining } = useMemo(() => {
@@ -23,7 +24,7 @@ export const ReactorCore = ({ income, expenses, balance, burnRateStatus, cycleSt
         const days = Math.max(1, Math.min(totalDays, Math.ceil((new Date().getTime() - cycleStart.getTime()) / (1000 * 60 * 60 * 24))));
         const avg = expenses / days;
         const projected = income - (avg * totalDays);
-        const pct = Math.min(Math.max((balance / income) * 100, 0), 100);
+        const pct = Math.min(Math.max((balance / (budget || income || 1)) * 100, 0), 100);
         return {
             percentage: pct,
             projectedBalance: projected,
@@ -169,7 +170,7 @@ export const ReactorCore = ({ income, expenses, balance, burnRateStatus, cycleSt
                     <div className="flex flex-col items-center border-r border-white/10 pr-6">
                         <span className="text-[9px] font-mono text-blue-300/60 uppercase tracking-widest mb-1">תקציב</span>
                         <span className="text-lg font-mono font-bold text-blue-100 tabular-nums">
-                            {income.toLocaleString()}
+                            {budget.toLocaleString()}
                         </span>
                     </div>
 

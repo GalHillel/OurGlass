@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Bot, Sparkles, X, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -14,7 +14,8 @@ export const AIChatButton = () => {
     const [error, setError] = useState(false);
     const [loading, setLoading] = useState(false);
     const [bubbleMessage, setBubbleMessage] = useState<string | null>(null);
-    const supabase = createClientComponentClient();
+    const supabaseRef = useRef(createClientComponentClient());
+    const supabase = supabaseRef.current;
 
     useEffect(() => {
         // Proactive Nudge Logic

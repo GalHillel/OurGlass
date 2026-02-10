@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
@@ -12,8 +12,9 @@ import { LogOut, Save, User } from "lucide-react";
 
 export default function SettingsPage() {
     console.log("Settings Page Rendering"); // Debug log for build verification
-    const { user, profile } = useAuth();
-    const supabase = createClientComponentClient();
+    const { user, profile, updateProfile } = useAuth();
+    const supabaseRef = useRef(createClientComponentClient());
+    const supabase = supabaseRef.current;
     const router = useRouter();
 
     const [name, setName] = useState("");
@@ -54,6 +55,12 @@ export default function SettingsPage() {
             const { error } = await supabase.from('profiles').upsert(updates);
 
             if (error) throw error;
+            updateProfile({
+                name,
+                hourly_wage: parseFloat(hourlyWage) || 0,
+                budget: parseFloat(budget) || 20000,
+                monthly_income: parseFloat(income) || 0,
+            });
             toast.success("הפרופיל עודכן בהצלחה");
         } catch (error: any) {
             toast.error("שגיאה בעדכון הפרופיל", { description: error.message });

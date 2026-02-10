@@ -1,27 +1,30 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { useState, useMemo, useRef } from "react";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Trophy, AlertTriangle, Shield, Check, Star, ShoppingBag, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, Trophy, AlertTriangle, Shield, Check, Star, ShoppingBag, TrendingUp, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { Transaction } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
+import { RoundUpVault } from "@/components/RoundUpVault";
 
 interface MonthlySummaryProps {
     currentBalance: number;
     transactions: Transaction[];
     onRefresh: () => void;
+    customTrigger?: React.ReactNode;
 }
 
-export const MonthlySummary = ({ currentBalance, transactions = [], onRefresh }: MonthlySummaryProps) => {
+export const MonthlySummary = ({ currentBalance, transactions = [], onRefresh, customTrigger }: MonthlySummaryProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [slideIndex, setSlideIndex] = useState(0);
     const [loading, setLoading] = useState(false);
 
-    const supabase = createClientComponentClient();
+    const supabaseRef = useRef(createClientComponentClient());
+    const supabase = supabaseRef.current;
     const isSurplus = currentBalance > 0;
     const absAmount = Math.abs(currentBalance);
 
@@ -120,7 +123,21 @@ export const MonthlySummary = ({ currentBalance, transactions = [], onRefresh }:
                 </div>
             )
         },
-        // Slide 3: Action
+        // Slide 3: Round Up Vault
+        {
+            bg: "bg-yellow-900",
+            content: (
+                <div className="flex items-center justify-center h-full">
+                    <div className="w-full">
+                        <RoundUpVault transactions={transactions} />
+                        <p className="text-yellow-200/60 text-xs text-center mt-8">
+                            "הכסף הקטן של היום הוא החופש הגדול של מחר."
+                        </p>
+                    </div>
+                </div>
+            )
+        },
+        // Slide 4: Action
         {
             bg: "bg-slate-900",
             isAction: true,
@@ -139,7 +156,7 @@ export const MonthlySummary = ({ currentBalance, transactions = [], onRefresh }:
                     <Button
                         onClick={() => handleAction()}
                         disabled={loading}
-                        className={`w-full h-12 font-bold text-lg ${isSurplus ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-blue-500 hover:bg-blue-600'}`}
+                        className={`relative z-50 w-full h-12 font-bold text-lg ${isSurplus ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-blue-500 hover:bg-blue-600'}`}
                     >
                         {loading ? "מבצע..." : isSurplus ? "כן, לחיסכון! 💰" : "איזון תקציב 🛡️"}
                     </Button>
@@ -219,16 +236,27 @@ export const MonthlySummary = ({ currentBalance, transactions = [], onRefresh }:
             if (!open) setSlideIndex(0);
         }}>
             <DialogTrigger asChild>
-                <Button variant="outline" className="border-white/10 text-white/60 hover:text-white hover:bg-white/5">
-                    סיכום חודש
-                </Button>
+                {customTrigger ? customTrigger : (
+                    <Button variant="outline" className="border-white/10 text-white/60 hover:text-white hover:bg-white/5">
+                        סיכום חודש
+                    </Button>
+                )}
             </DialogTrigger>
-            <DialogContent className="p-0 border-none bg-transparent max-w-sm overflow-hidden rounded-[2rem] aspect-[9/16] max-h-[85vh]">
+            <DialogContent showCloseButton={false} className="p-0 border-none bg-transparent max-w-sm overflow-hidden rounded-[2rem] aspect-[9/16] max-h-[85vh]">
+                <DialogTitle className="sr-only">Monthly Summary</DialogTitle>
                 {/* Story Container */}
                 <div className={`relative w-full h-full ${currentSlide.bg} flex flex-col transition-colors duration-500`}>
 
+                    {/* Close Button */}
+                    <button
+                        onClick={() => setIsOpen(false)}
+                        className="absolute top-4 left-4 z-50 p-2 rounded-full bg-black/20 text-white/70 hover:bg-black/40 hover:text-white transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+
                     {/* Progress Bar */}
-                    <div className="absolute top-4 left-4 right-4 flex gap-1 z-20">
+                    <div className="absolute top-4 left-16 right-4 flex gap-1 z-20">
                         {slides.map((_, idx) => (
                             <div key={idx} className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
                                 <div
@@ -255,12 +283,10 @@ export const MonthlySummary = ({ currentBalance, transactions = [], onRefresh }:
                     </div>
 
                     {/* Controls */}
-                    {!currentSlide.isAction && (
-                        <div className="absolute inset-0 z-0 flex">
-                            <div className="w-1/3 h-full" onClick={prevSlide} />
-                            <div className="w-2/3 h-full" onClick={nextSlide} />
-                        </div>
-                    )}
+                    <div className="absolute inset-0 z-30 flex">
+                        <div className="w-1/3 h-full" onClick={prevSlide} />
+                        <div className="w-2/3 h-full" onClick={nextSlide} />
+                    </div>
 
                     {/* Hint */}
                     <div className="absolute bottom-6 w-full text-center text-xs text-white/30 z-20">

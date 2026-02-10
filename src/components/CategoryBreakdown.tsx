@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { format } from "date-fns";
+import { he } from "date-fns/locale";
 import {
   Utensils,
   Bus,
@@ -229,6 +231,48 @@ export const CategoryBreakdown = ({ transactions, subscriptions = [], selectedCa
           );
         })}
       </div>
+
+      {/* Inline transaction list for selected category */}
+      <AnimatePresence>
+        {selectedCategory && (() => {
+          const categoryTx = transactions.filter(tx => normalizeCategory(tx.category) === selectedCategory);
+          return (
+            <motion.div
+              key={selectedCategory}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-4 pt-4 border-t border-white/10 space-y-2">
+                <h4 className="text-xs font-bold text-white/50 mb-2">
+                  הוצאות בקטגוריית {selectedCategory} ({categoryTx.length})
+                </h4>
+                {categoryTx.length > 0 ? (
+                  categoryTx.map(tx => (
+                    <div key={tx.id} className="flex justify-between items-center p-2.5 rounded-xl bg-white/5 border border-white/5">
+                      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                        <span className="text-sm font-medium text-white truncate">
+                          {tx.description || 'ללא תיאור'}
+                        </span>
+                        <span className="text-[10px] text-white/30">
+                          {format(new Date(tx.date), 'd.M.yy', { locale: he })}
+                        </span>
+                      </div>
+                      <span className="text-sm font-bold text-red-400 shrink-0 mr-3">
+                        ₪{Number(tx.amount).toLocaleString()}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-white/30 text-sm py-2">אין הוצאות בקטגוריה זו</p>
+                )}
+              </div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
     </motion.div>
   );
 };

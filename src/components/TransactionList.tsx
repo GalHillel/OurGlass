@@ -3,10 +3,11 @@
 import { Transaction, Subscription } from "@/types";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { Trash2, Edit2, ShoppingBag, Coffee, Car, Film, FileText, Utensils, Fuel, ShoppingCart } from "lucide-react";
+import { Trash2, Edit2, ShoppingBag, Coffee, Car, Film, FileText, Utensils, Fuel, ShoppingCart, Calendar } from "lucide-react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { toast } from "sonner";
 import { SwipeableRow } from "@/components/SwipeableRow";
+import { EmptyState } from "@/components/EmptyState";
 
 interface TransactionListProps {
     transactions: Transaction[];
@@ -14,6 +15,7 @@ interface TransactionListProps {
     onRefresh: () => void;
     onEdit?: (tx: Transaction) => void;
     activeFilter?: string | null; // Category filter active
+    activeDateFilter?: Date | null; // Date filter active
 }
 
 const getIcon = (description: string | null) => {
@@ -28,7 +30,7 @@ const getIcon = (description: string | null) => {
     return ShoppingBag;
 };
 
-import React, { memo } from 'react';
+import React, { memo, useRef, useMemo } from 'react';
 
 // ... imports ...
 
@@ -37,16 +39,16 @@ import { ActivePress } from "@/components/ui/ActivePress";
 
 // ... imports ...
 
-export const TransactionList = memo(({ transactions, subscriptions = [], onRefresh, onEdit, activeFilter }: TransactionListProps) => {
-    const supabase = createClientComponentClient();
+export const TransactionList = memo(({ transactions, subscriptions = [], onRefresh, onEdit, activeFilter, activeDateFilter }: TransactionListProps) => {
+    const supabaseRef = useRef(createClientComponentClient());
+    const supabase = supabaseRef.current;
     const [detectedSub, setDetectedSub] = React.useState<{ name: string, amount: number } | null>(null);
 
-    React.useEffect(() => {
-        if (!transactions.length) return;
+    // === IMPROVED RECURRING CHARGE DETECTION (Optimized with useMemo) ===
+    const recurringCandidate = useMemo(() => {
+        if (!transactions.length) return null;
 
-        // === IMPROVED RECURRING CHARGE DETECTION ===
         // Detects charges by: similar amounts (10% margin), similar dates (±5 days), same merchant
-
         interface RecurringCandidate {
             merchantName: string;
             amount: number;
@@ -58,23 +60,21 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
         const AMOUNT_TOLERANCE = 0.10; // 10% margin
         const DAY_TOLERANCE = 5; // ±5 days considered "same day of month"
 
-        // Helper: normalize merchant name for comparison
+        // Helper functions defined inside useMemo to avoid dependency chain issues
         const normalizeName = (name: string | null): string => {
             if (!name) return 'unknown';
             return name.toLowerCase().trim()
-                .replace(/[0-9]/g, '') // Remove numbers (dates/IDs)
-                .replace(/[^\u05d0-\u05eaa-z\s]/g, '') // Keep Hebrew, English, spaces
+                .replace(/[0-9]/g, '')
+                .replace(/[^\u05d0-\u05eaa-z\s]/g, '')
                 .trim();
         };
 
-        // Helper: check if amounts are similar (within tolerance)
         const amountsSimilar = (a: number, b: number): boolean => {
             if (a === 0 || b === 0) return false;
             const diff = Math.abs(a - b) / Math.max(a, b);
             return diff <= AMOUNT_TOLERANCE;
         };
 
-        // Group by normalized merchant name
         transactions.forEach(tx => {
             const amt = Number(tx.amount);
             if (amt <= 0) return;
@@ -86,7 +86,6 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
             const dayOfMonth = new Date(tx.date).getDate();
 
             if (existing) {
-                // Check if amount is similar to existing
                 if (amountsSimilar(amt, existing.amount)) {
                     existing.occurrences++;
                     existing.daysOfMonth.push(dayOfMonth);
@@ -101,36 +100,31 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
             }
         });
 
-        // Find recurring: 2+ occurrences with consistent day-of-month
-        const recurring = Array.from(candidates.values()).find(c => {
+        return Array.from(candidates.values()).find(c => {
             if (c.occurrences < 2) return false;
-
-            // Check if days are within tolerance of each other
             if (c.daysOfMonth.length >= 2) {
                 const avgDay = c.daysOfMonth.reduce((a, b) => a + b, 0) / c.daysOfMonth.length;
                 const allClose = c.daysOfMonth.every(d => Math.abs(d - avgDay) <= DAY_TOLERANCE);
                 if (!allClose) return false;
             }
-
-            // Check not already in subscriptions
-            const isKnown = subscriptions.some(s =>
+            return !subscriptions.some(s =>
                 amountsSimilar(Number(s.amount), c.amount) ||
                 normalizeName(s.name) === normalizeName(c.merchantName)
             );
-
-            return !isKnown;
         });
+    }, [transactions, subscriptions]);
 
-        if (recurring) {
-            const key = `dismiss_sub_${Math.round(recurring.amount)}`;
+    React.useEffect(() => {
+        if (recurringCandidate) {
+            const key = `dismiss_sub_${Math.round(recurringCandidate.amount)}`;
             if (!localStorage.getItem(key)) {
                 setDetectedSub({
-                    amount: Math.round(recurring.amount),
-                    name: recurring.merchantName
+                    amount: Math.round(recurringCandidate.amount),
+                    name: recurringCandidate.merchantName
                 });
             }
         }
-    }, [transactions, subscriptions]);
+    }, [recurringCandidate]);
 
     const handleDismissSub = () => {
         if (detectedSub) {
@@ -168,21 +162,31 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
 
     if (visibleTransactions.length === 0) {
         // Show different message if filter is active vs no transactions at all
+        if (activeDateFilter) {
+            return (
+                <EmptyState
+                    icon={Calendar}
+                    title={`אין עסקאות ב-${format(activeDateFilter, "d.M", { locale: he })}`}
+                    description="נסה לבחור תאריך אחר או להוסיף הוצאה"
+                />
+            );
+        }
         if (activeFilter) {
             return (
-                <div className="text-center py-12 px-6 mx-4 rounded-3xl border border-blue-500/20 border-dashed bg-blue-500/5 backdrop-blur-sm">
-                    <ShoppingBag className="w-10 h-10 text-blue-400/40 mx-auto mb-3" />
-                    <p className="text-blue-200/60 text-sm mb-1">אין עסקאות בקטגוריה "{activeFilter}"</p>
-                    <p className="text-blue-200/40 text-xs">ייתכן שיש רק הוצאות קבועות בקטגוריה זו</p>
-                </div>
+                <EmptyState
+                    icon={ShoppingBag}
+                    title={`אין עסקאות בקטגוריה "${activeFilter}"`}
+                    description="ייתכן שיש רק הוצאות קבועות בקטגוריה זו"
+                    className="border-blue-500/20 bg-blue-500/5 text-blue-100"
+                />
             );
         }
         return (
-            <div className="text-center py-12 px-6 mx-4 rounded-3xl border border-white/5 border-dashed bg-white/5 backdrop-blur-sm">
-                <ShoppingBag className="w-10 h-10 text-white/20 mx-auto mb-3" />
-                <p className="text-white/40 text-sm mb-1">אין עסקאות עדיין</p>
-                <p className="text-white/25 text-xs">הוסף הוצאה ראשונה עם הלחצנים המהירים למעלה</p>
-            </div>
+            <EmptyState
+                icon={ShoppingBag}
+                title="אין עסקאות עדיין"
+                description="הוסף הוצאה ראשונה עם הלחצנים המהירים למעלה"
+            />
         );
     }
 
@@ -236,8 +240,12 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
 
             <h3 className="text-white/80 text-lg font-medium mb-2">פירוט עסקאות</h3>
             {visibleTransactions.map((tx) => {
-                const [title, note] = (tx.description || "").split('\n');
-                const Icon = getIcon(title || tx.description || "");
+                const installmentMatch = (tx.description || "").match(/\(תשלום (\d+\/\d+)\)/);
+                const installmentLabel = installmentMatch ? installmentMatch[1] : null;
+                const cleanDescription = (tx.description || "").replace(/\s*\(תשלום \d+\/\d+\)/, "");
+
+                const [title, note] = cleanDescription.split('\n');
+                const Icon = getIcon(title || cleanDescription || "");
                 return (
                     <motion.div key={tx.id} variants={item} layoutId={tx.id}>
                         <SwipeableRow
@@ -262,7 +270,12 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-3">
+                                    {installmentLabel && (
+                                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-white/10 text-white/50 border border-white/5">
+                                            {installmentLabel}
+                                        </span>
+                                    )}
                                     <span className="font-bold text-white">₪{tx.amount}</span>
                                 </div>
                             </ActivePress>

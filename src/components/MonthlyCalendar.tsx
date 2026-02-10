@@ -46,7 +46,7 @@ export const MonthlyCalendar = ({ transactions, selectedDate, onDateSelect }: Ca
     const selectedTotal = selectedDate ? getDailyTotal(selectedDate) : 0;
 
     return (
-        <div className="w-full max-w-md mx-auto p-4">
+        <div className="w-full">
             <div className="glass p-6 rounded-3xl border border-white/10 shadow-xl">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
@@ -114,15 +114,40 @@ export const MonthlyCalendar = ({ transactions, selectedDate, onDateSelect }: Ca
                 </div>
             </div>
 
-            {/* Daily Total Summary */}
-            {selectedDate && (
-                <div className="mt-4 animate-in fade-in slide-in-from-top-4">
-                    <div className="glass p-4 rounded-2xl border border-white/10 flex justify-between items-center bg-blue-500/10">
-                        <span className="text-white/60 text-sm">סה״כ ל-{format(selectedDate, 'd.M', { locale: he })}:</span>
-                        <span className="text-xl font-black text-white">₪{selectedTotal.toLocaleString()}</span>
+            {/* Daily Transactions */}
+            {selectedDate && (() => {
+                const dayTransactions = transactions.filter(tx => isSameDay(new Date(tx.date), selectedDate));
+                return (
+                    <div className="mt-4 animate-in fade-in slide-in-from-top-4 space-y-3">
+                        <div className="glass p-4 rounded-2xl border border-white/10 flex justify-between items-center bg-blue-500/10">
+                            <span className="text-white/60 text-sm">סה״כ ל-{format(selectedDate, 'd.M', { locale: he })}:</span>
+                            <span className="text-xl font-black text-white">₪{selectedTotal.toLocaleString()}</span>
+                        </div>
+
+                        {dayTransactions.length > 0 ? (
+                            <div className="space-y-2">
+                                {dayTransactions.map(tx => (
+                                    <div key={tx.id} className="glass p-3 rounded-xl border border-white/5 flex justify-between items-center">
+                                        <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                            <span className="text-sm font-medium text-white truncate">
+                                                {tx.description || 'ללא תיאור'}
+                                            </span>
+                                            {tx.category && (
+                                                <span className="text-[10px] text-white/40">{tx.category}</span>
+                                            )}
+                                        </div>
+                                        <span className="text-sm font-bold text-red-400 shrink-0 mr-3">
+                                            ₪{Number(tx.amount).toLocaleString()}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-center text-white/30 text-sm py-2">אין הוצאות ביום זה</p>
+                        )}
                     </div>
-                </div>
-            )}
+                );
+            })()}
         </div>
     );
 };

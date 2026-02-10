@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Goal } from "@/types";
 import { useWealth } from "@/hooks/useWealth";
@@ -51,7 +51,8 @@ export default function WealthPage() {
     const [activeTab, setActiveTab] = useState<string>(TABS.ALL);
     const [chartFilter, setChartFilter] = useState<string | null>(null);
 
-    const supabase = createClientComponentClient();
+    const supabaseRef = useRef(createClientComponentClient());
+    const supabase = supabaseRef.current;
 
     // Note: Compound interest calculation has been moved to a separate function
     // since it needs to write to DB, but it will trigger a refetch after completion

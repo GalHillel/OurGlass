@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { WishlistItem } from "@/types";
 import { Plus, Check, Clock, AlertTriangle, Sparkles, Trash2, Hourglass } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 import { WishlistCard } from "@/components/WishlistCard";
 import { WishlistActionDrawer } from "@/components/WishlistActionDrawer";
@@ -43,7 +44,8 @@ export default function WishlistPage() {
     const [actionType, setActionType] = useState<'deposit' | 'withdraw'>('deposit');
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-    const supabase = createClientComponentClient();
+    const supabaseRef = useRef(createClientComponentClient());
+    const supabase = supabaseRef.current;
     const { profile } = useAuth();
 
     const fetchData = useCallback(async () => {
@@ -100,7 +102,6 @@ export default function WishlistPage() {
             setNewItemName("");
             setNewItemPrice("");
             setNewItemLink("");
-            fetchData();
             fetchData();
         } catch (error: any) {
             toast.error("שגיאה בהוספה", { description: getHebrewError(error) });
@@ -351,10 +352,13 @@ export default function WishlistPage() {
                 ) : (
                     <AnimatePresence mode="popLayout">
                         {items.length === 0 ? (
-                            <div className="text-center py-20 opacity-50">
-                                <Sparkles className="w-12 h-12 mx-auto mb-4 text-purple-400" />
-                                <p>הרשימה ריקה. תתחילו לחלום!</p>
-                            </div>
+                            <EmptyState
+                                icon={Sparkles}
+                                title="הרשימה ריקה"
+                                description="תתחילו לחלום! הוסיפו פריט חדש לרשימה."
+                                actionLabel="הוסף חלום"
+                                onAction={() => setIsDialogOpen(true)}
+                            />
                         ) : (
                             items.map((item) => (
                                 <SwipeableRow

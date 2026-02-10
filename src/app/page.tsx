@@ -3,15 +3,14 @@
 import { QuickActions } from "@/components/QuickActions";
 import { AddTransactionDrawer } from "@/components/AddTransactionDrawer";
 import { MonthlySummary } from "@/components/MonthlySummary";
-import { StreakCounter } from "@/components/StreakCounter";
 import { TransactionList } from "@/components/TransactionList";
-import { FinancialWisdom } from "@/components/FinancialWisdom";
 import { PartnerStats } from "@/components/PartnerStats";
+import { HomeMosaic } from "@/components/HomeMosaic";
 import { CategoryBreakdown, normalizeCategory } from "@/components/CategoryBreakdown";
 import { getDaysRemainingInCycle, getBillingPeriodForDate } from "@/lib/billing";
 import { triggerHaptic } from "@/utils/haptics";
 import { calculateBurnRate, cn } from "@/lib/utils";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { BudgetGauges } from "@/components/BudgetGauges";
 import { BudgetHealthScore } from "@/components/BudgetHealthScore";
 import { SavingsTracker } from "@/components/SavingsTracker";
@@ -37,7 +36,8 @@ import { useAuth } from "@/components/AuthProvider";
 import { useWealth } from "@/hooks/useWealth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isSameDay, addMonths, subMonths, format, differenceInDays, addDays } from "date-fns";
-import { Shield, Rocket, ChevronLeft, ChevronRight, LayoutGrid, EyeOff } from "lucide-react";
+import { he } from "date-fns/locale";
+import { Shield, Rocket, ChevronLeft, ChevronRight, LayoutGrid, EyeOff, CalendarRange, Calendar, X } from "lucide-react";
 import { toast } from "sonner";
 import CountUp from "react-countup";
 
@@ -97,7 +97,8 @@ export default function Home() {
 
   const daysRemaining = getDaysRemainingInCycle(); // This is for current cycle only, maybe update if needed for UI but keeping for now
 
-  const supabase = createClientComponentClient();
+  const supabaseRef = useRef(createClientComponentClient());
+  const supabase = supabaseRef.current;
   const { user, profile, loading: authLoading } = useAuth();
   const { netWorth, investmentsValue, cashValue, assets, loading: wealthLoading } = useWealth();
 
@@ -122,6 +123,9 @@ export default function Home() {
       const { start, end } = getBillingPeriodForDate(viewingDate);
       // console.log("Fetching for range:", start.toISOString(), "to", end.toISOString());
 
+      const controller = new AbortController();
+      const signal = controller.signal;
+
       // OPTIMIZATION: Select only needed columns
       const [txResult, subsResult] = await Promise.all([
         supabase
@@ -129,8 +133,9 @@ export default function Home() {
           .select('id, amount, date, description, category, payer, is_surprise, created_at')
           .gte('date', start.toISOString())
           .lt('date', end.toISOString())
-          .order('date', { ascending: false }),
-        supabase.from('subscriptions').select('*'),
+          .order('date', { ascending: false })
+          .abortSignal(signal),
+        supabase.from('subscriptions').select('*').abortSignal(signal),
       ]);
 
       const { data: txData, error: txError } = txResult;
@@ -158,11 +163,35 @@ export default function Home() {
       const currentBalance = Math.round((MONTHLY_BUDGET - totalFixed - totalExpenses) * 100) / 100;
       setBalance(currentBalance);
 
-      // Burn Rate Logic
+      // Burn Rate Logic: "Variable Only"
+      // User request: "without the fixed ones"
+      // Strategy: Filter out transactions that match known subscription amounts (Fixed Expenses)
+      // and calculate average daily spend based on the remaining "Variable" transactions.
       const isCurrentMonth = viewingDate.getMonth() === new Date().getMonth() && viewingDate.getFullYear() === new Date().getFullYear();
       if (isCurrentMonth) {
         const daysIntoPeriod = differenceInDays(new Date(), start) + 1;
-        const avgDaily = daysIntoPeriod > 0 ? totalExpenses / daysIntoPeriod : 0;
+
+        // 1. Identify Fixed Amounts from Subscriptions
+        const fixedAmounts = new Set(subsData?.map((s: any) => Number(s.amount)) || []);
+
+        // 2. Filter Transactions: Exclude matches (Fixed)
+        // We use a small tolerance or exact match. Exact is safer to avoid excluding common prices like 50.
+        // But rent/bills are usually unique. Let's use strict match for now.
+        // Also helps if we exclude "Rent", "Bills" categories if we had them.
+        const variableTransactions = transactionsData.filter(tx => {
+          const amount = Number(tx.amount);
+          // If amount exists in subscriptions, likely a fixed bill. 
+          // BUT, common amounts (like 30, 50) might be coincidental.
+          // Heuristic: If amount > 200 and matches specific subscription, exclude it.
+          // Or just exclude if it matches ANY subscription?
+          // Let's exclude if it matches any subscription amount > 100.
+          if (fixedAmounts.has(amount) && amount > 100) return false;
+          return true;
+        });
+
+        const totalVariableExpenses = variableTransactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
+        const avgDaily = daysIntoPeriod > 0 ? totalVariableExpenses / daysIntoPeriod : 0;
+
         const daysRemaining = differenceInDays(end, new Date());
         const { status, projectedDate } = calculateBurnRate(currentBalance, daysRemaining, avgDaily);
         setBurnRateData({ status, projectedDate });
@@ -287,166 +316,90 @@ export default function Home() {
               {/* ... */}
             </div>
           ) : (
-            <div className={cn("flex flex-col items-center gap-6 w-full relative z-10 py-6 transition-all duration-500", isPrivacyMode && "blur-xl opacity-50 grayscale")}>
-              <ReactorCore
-                income={profile?.budget || 20000}
-                expenses={(profile?.budget || 20000) - balance}
-                balance={balance}
-                burnRateStatus={burnRateData.status}
-                cycleStart={getBillingPeriodForDate(viewingDate).start}
-                cycleEnd={getBillingPeriodForDate(viewingDate).end}
-              />
+            <div className={cn("flex flex-col items-center gap-2 w-full relative z-10 py-2 transition-all duration-500", isPrivacyMode && "blur-xl opacity-50 grayscale")}>
+              {/* Billing Cycle Navigation */}
+              <div className="w-full max-w-md px-4 flex items-center justify-between mb-1">
+                <button
+                  onClick={() => { setViewingDate(prev => subMonths(prev, 1)); }}
+                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 transition-all border border-white/10"
+                >
+                  <ChevronRight className="w-4 h-4 text-white/60" />
+                </button>
+                <div className="flex items-center gap-2">
+                  <CalendarRange className="w-4 h-4 text-blue-400/60" />
+                  <span className="text-sm font-medium text-white/70">
+                    {format(getBillingPeriodForDate(viewingDate).start, 'd.M', { locale: he })}
+                    {' - '}
+                    {format(getBillingPeriodForDate(viewingDate).end, 'd.M', { locale: he })}
+                  </span>
+                </div>
+                <button
+                  onClick={() => { setViewingDate(prev => addMonths(prev, 1)); }}
+                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 transition-all border border-white/10"
+                >
+                  <ChevronLeft className="w-4 h-4 text-white/60" />
+                </button>
+              </div>
 
-              {/* Widgets Container - Unified max-width */}
-              <div className="w-full max-w-md space-y-4 px-4">
-                {/* Budget Health Score Widget */}
-                <BudgetHealthScore
-                  balance={balance}
+              {/* Widgets Container - Mosaic Layout */}
+              <div className="w-full flex justify-center mb-2">
+                <HomeMosaic
+                  balance={balance || 0}
                   budget={profile?.budget || 20000}
                   monthlyIncome={profile?.monthly_income || profile?.budget || 20000}
                   totalExpenses={(profile?.budget || 20000) - balance}
                   daysInMonth={differenceInDays(getBillingPeriodForDate(viewingDate).end, getBillingPeriodForDate(viewingDate).start)}
                   daysPassed={Math.max(1, differenceInDays(new Date(), getBillingPeriodForDate(viewingDate).start))}
-                />
-
-                {/* Savings Tracker Widget */}
-                <SavingsTracker
-                  monthlyIncome={profile?.monthly_income || profile?.budget || 20000}
-                  budget={profile?.budget || 20000}
-                  totalSpent={(profile?.budget || 20000) - balance}
-                />
-              </div>
-
-              {/* Quick Actions - Quick Expense Buttons */}
-              <div className="w-full max-w-md" style={{ touchAction: 'auto', overflow: 'visible' }}>
-                <p className="text-white/40 text-xs font-medium mb-2 px-4">הוספה מהירה</p>
-                <QuickActions
-                  onAction={(id, label) => {
+                  assets={assets}
+                  transactions={transactions}
+                  subscriptions={subscriptions}
+                  onRefresh={fetchData}
+                  // Reactor Props
+                  burnRateStatus={burnRateData.status}
+                  cycleStart={getBillingPeriodForDate(viewingDate).start}
+                  cycleEnd={getBillingPeriodForDate(viewingDate).end}
+                  // Quick Actions
+                  onQuickAdd={(label) => {
                     setSelectedCategory(label);
                     setIsDrawerOpen(true);
                   }}
+                  // Calendar & Categories
+                  selectedDate={selectedDate}
+                  onDateSelect={setSelectedDate}
+                  selectedFilterCategory={selectedFilterCategory}
+                  onCategorySelect={setSelectedFilterCategory}
                 />
               </div>
             </div>
           )}
         </PullToRefresh>
 
-        {/* ... */}
-        {/* Focus Mode Wrapper - MANUAL PRIVACY ONLY */}
-        <motion.div
-          animate={{ opacity: isPrivacyMode ? 0 : 1, filter: isPrivacyMode ? "blur(10px)" : "none", pointerEvents: isPrivacyMode ? "none" : "auto" }}
-          transition={{ duration: 0.5 }}
-        >
-          {/* Content */}
-          {/* Wealth Cards (Investments/Savings) */}
-          {loading ? (
-            <Skeleton className="w-full max-w-md h-40 rounded-2xl bg-white/10 mx-4" />
-          ) : (
-            <div className="grid grid-cols-2 gap-4 w-full px-4 mb-4">
-              {/* Investments Card (Rocket) - Aggregated */}
-              {assets.some(g => g.type === 'stock') && (
-                <div className="neon-card p-4 rounded-2xl relative overflow-hidden group flex flex-col justify-between min-h-[160px] h-auto">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-purple-500/50 to-transparent opacity-50" />
-
-                  <div className="flex items-center gap-2 relative z-10">
-                    <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
-                      <Rocket className="w-4 h-4 text-purple-400" />
-                    </div>
-                    <h3 className="text-sm font-bold text-white truncate">השקעות</h3>
-                  </div>
-
-                  <div className="relative z-10 mt-4">
-                    <div className="text-2xl font-black text-white tracking-tight break-all">
-                      ₪<CountUp
-                        end={investmentsValue}
-                        separator=","
-                        duration={2.5}
-                      />
-                    </div>
-                    <div className="flex items-center gap-1 mt-1 flex-wrap">
-                      <span className="text-[10px] bg-purple-500/20 text-purple-200 px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                        תיק כולל
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-purple-500/20 blur-[30px] rounded-full pointer-events-none" />
-                </div>
-              )}
-
-              {/* Joint Savings Card (Fortress) - Aggregated */}
-              {assets.some(g => g.type === 'cash') && (
-                <div className="neon-card p-4 rounded-2xl relative overflow-hidden group flex flex-col justify-between min-h-[160px] h-auto">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent opacity-50" />
-
-                  <div className="flex items-center gap-2 relative z-10">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-                      <Shield className="w-4 h-4 text-emerald-400" />
-                    </div>
-                    <h3 className="text-sm font-bold text-white truncate">החסכונות שלנו</h3>
-                  </div>
-
-                  <div className="relative z-10 mt-4">
-                    <div className="text-2xl font-black text-white tracking-tight break-all">
-                      ₪<CountUp
-                        end={cashValue}
-                        separator=","
-                        duration={2}
-                      />
-                    </div>
-                    <p className="text-white/40 text-[10px] mt-1 truncate">נזילות מיידית</p>
-                  </div>
-
-                  <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-emerald-500/20 blur-[30px] rounded-full pointer-events-none" />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Calendar */}
-          <MonthlyCalendar
-            transactions={transactions}
-            onDateSelect={setSelectedDate}
-            selectedDate={selectedDate}
-          />
-        </motion.div>
-
-        {/* History Insight */}
-        {comparisonDiff !== null && (
-          <div className="text-center -mt-2 mb-4">
-            <p className="text-[10px] text-white/40">
-              {comparisonDiff > 0 ? (
-                <>
-                  החודש הוצאת <span className="text-rose-400 font-medium">₪{Math.abs(comparisonDiff).toLocaleString()} יותר</span> מחודש שעבר 📉
-                </>
-              ) : (
-                <>
-                  החודש הוצאת <span className="text-emerald-400 font-medium">₪{Math.abs(comparisonDiff).toLocaleString()} פחות</span> מחודש שעבר 👏
-                </>
-              )}
-            </p>
+        {/* Active Filters */}
+        {(selectedDate || selectedFilterCategory) && (
+          <div className="w-full max-w-md px-4 mb-2 flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-2">
+            {selectedDate && (
+              <div className="flex items-center gap-2 bg-blue-500/20 border border-blue-500/30 rounded-full px-3 py-1 text-sm text-blue-100">
+                <Calendar className="w-3.5 h-3.5" />
+                <span>{format(selectedDate, "d.M", { locale: he })}</span>
+                <button onClick={() => setSelectedDate(null)} className="hover:text-white p-0.5 rounded-full hover:bg-white/10 ml-1">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+            {selectedFilterCategory && (
+              <div className="flex items-center gap-2 bg-purple-500/20 border border-purple-500/30 rounded-full px-3 py-1 text-sm text-purple-100">
+                <span className="text-xs">🏷️</span>
+                <span>{selectedFilterCategory}</span>
+                <button onClick={() => setSelectedFilterCategory(null)} className="hover:text-white p-0.5 rounded-full hover:bg-white/10 ml-1">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+            <button onClick={() => { setSelectedDate(null); setSelectedFilterCategory(null); }} className="text-xs text-white/40 hover:text-white px-2">
+              נקה הכל
+            </button>
           </div>
         )}
-
-        {/* Category Breakdown Widget */}
-        <div className="w-full max-w-md px-4">
-          <CategoryBreakdown
-            transactions={transactions}
-            subscriptions={subscriptions}
-            selectedCategory={selectedFilterCategory}
-            onCategorySelect={(cat) => {
-              setSelectedFilterCategory(cat);
-              setSelectedDate(null); // Clear date filter when selecting category
-            }}
-          />
-        </div>
-
-        {/* Partner/Gender Breakdown Widget */}
-        <PartnerStats
-          transactions={transactions}
-          subscriptions={subscriptions}
-          monthlyBudget={profile?.budget || 20000}
-        />
 
         {/* Transactions */}
         <LayoutGroup key={selectedFilterCategory ?? 'all'}>
@@ -456,6 +409,7 @@ export default function Home() {
             subscriptions={subscriptions}
             onRefresh={fetchData}
             activeFilter={selectedFilterCategory}
+            activeDateFilter={selectedDate} // Pass date filter
             onEdit={(tx) => {
               setEditingTransaction(tx);
               setIsDrawerOpen(true);

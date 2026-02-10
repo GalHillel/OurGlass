@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { Plus, TrendingUp, TrendingDown, RefreshCcw, Trash2, Rocket, Edit2, Loader2 } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { Plus, TrendingUp, TrendingDown, RefreshCcw, Trash2, Rocket, Edit2, Loader2, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { SwipeableRow } from "@/components/SwipeableRow";
+import { EmptyState } from "@/components/EmptyState";
 import { Goal } from "@/types";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { toast } from "sonner";
@@ -27,7 +28,8 @@ interface StockDisplay {
 }
 
 export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
-    const supabase = createClientComponentClient();
+    const supabaseRef = useRef(createClientComponentClient());
+    const supabase = supabaseRef.current;
     const [stocks, setStocks] = useState<StockDisplay[]>([]);
     const [exchangeRate, setExchangeRate] = useState(3.65); // Default fallback
     const [loading, setLoading] = useState(false);
@@ -340,14 +342,36 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
                     })}
                 </AnimatePresence>
 
-                {stockAssets.length === 0 && !fetchError && (
-                    <div className="text-center py-12 px-4 rounded-3xl border border-white/5 border-dashed bg-white/5 backdrop-blur-sm">
-                        <Rocket className="w-8 h-8 text-white/20 mx-auto mb-3" />
-                        <p className="text-white/40 text-sm">אין עדיין מניות? הוסף את הראשונה שלך!</p>
-                        <Button onClick={openAdd} size="sm" className="mt-4 bg-purple-600 hover:bg-purple-500">
-                            <Plus className="w-4 h-4 ml-1" /> הוסף מניה
-                        </Button>
+                {(refreshing && stocks.length === 0) ? (
+                    <div className="space-y-3">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+                                <div className="flex items-center gap-3">
+                                    <Skeleton className="w-10 h-10 rounded-lg bg-white/10" />
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-4 w-12 bg-white/10" />
+                                        <Skeleton className="h-3 w-16 bg-white/5" />
+                                    </div>
+                                </div>
+                                <div className="space-y-2 flex flex-col items-end">
+                                    <Skeleton className="h-5 w-20 bg-white/10" />
+                                    <Skeleton className="h-3 w-12 bg-white/5" />
+                                </div>
+                            </div>
+                        ))}
                     </div>
+                ) : (
+                    <>
+                        {stockAssets.length === 0 && !fetchError && (
+                            <EmptyState
+                                icon={Sparkles}
+                                title="אין עדיין מניות?"
+                                description="הוסף את המניה הראשונה שלך והתחל לעקוב!"
+                                actionLabel="הוסף מניה"
+                                onAction={openAdd}
+                            />
+                        )}
+                    </>
                 )}
 
                 {fetchError && (

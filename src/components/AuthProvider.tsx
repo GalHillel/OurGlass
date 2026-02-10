@@ -9,12 +9,14 @@ interface AuthContextType {
     user: User | null;
     profile: Profile | null;
     loading: boolean;
+    updateProfile: (updates: Partial<Profile>) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
     profile: null,
     loading: true,
+    updateProfile: () => { },
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -23,6 +25,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true);
     const supabaseRef = useRef(createClientComponentClient());
     const profileRef = useRef<Profile | null>(null);
+
+    const updateProfile = (updates: Partial<Profile>) => {
+        setProfile(prev => {
+            const updated = prev ? { ...prev, ...updates } : null;
+            profileRef.current = updated;
+            return updated;
+        });
+    };
 
     useEffect(() => {
         const supabase = supabaseRef.current;
@@ -74,7 +84,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, profile, loading }}>
+        <AuthContext.Provider value={{ user, profile, loading, updateProfile }}>
             {children}
         </AuthContext.Provider>
     );

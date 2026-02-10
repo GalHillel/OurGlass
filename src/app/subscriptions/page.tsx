@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Subscription } from "@/types";
 import { Plus, Calendar, Utensils, Bus, ShoppingBag, Beer, Home, Heart, Briefcase, Zap, Coffee, Fuel, Car, GraduationCap, Sparkles, Shield } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,7 +55,8 @@ export default function SubscriptionsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingSub, setEditingSub] = useState<Subscription | null>(null);
     const { profile } = useAuth();
-    const supabase = createClientComponentClient();
+    const supabaseRef = useRef(createClientComponentClient());
+    const supabase = supabaseRef.current;
 
     const fetchSubscriptions = async () => {
         try {
@@ -228,48 +230,53 @@ export default function SubscriptionsPage() {
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        {subscriptions.map((sub) => {
-                            const cat = CATEGORIES.find(c => c.id === sub.category) || CATEGORIES.find(c => c.id === 'חשבונות')!;
-                            const IconComponent = cat.icon;
-                            return (
-                                <SwipeableRow
-                                    key={sub.id}
-                                    onEdit={() => openEditDialog(sub)}
-                                    onDelete={() => handleDelete(sub.id)}
-                                    deleteMessage="האם להסיר את המנוי הזה מהחישוב החודשי?"
-                                    className="mb-3 rounded-2xl overflow-hidden"
-                                >
-                                    <div className="neon-card p-4 flex items-center justify-between group relative overflow-hidden">
-                                        <div className="flex items-center gap-4 relative z-10">
-                                            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shadow-lg", cat.bg, "border", cat.border)}>
-                                                <IconComponent className={cn("w-6 h-6", cat.color)} />
-                                            </div>
-                                            <div>
-                                                <h3 className="font-bold text-white text-lg">{sub.name}</h3>
-                                                <div className="flex items-center text-xs text-slate-400 gap-2">
-                                                    <span className="flex items-center gap-1 font-mono">
-                                                        <Calendar className="w-3 h-3" />
-                                                        חיוב ב-{sub.billing_day || 1} לחודש
-                                                    </span>
-                                                    {sub.category && (
-                                                        <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", cat.bg, cat.color)}>
-                                                            {cat.label}
+                        {subscriptions.length === 0 ? (
+                            <EmptyState
+                                icon={Zap}
+                                title="אין מנויים עדיין"
+                                description="הוסף את המנויים הקבועים שלך למעקב חודשי"
+                                actionLabel="הוסף מנוי ראשון"
+                                onAction={openAddDialog}
+                            />
+                        ) : (
+                            subscriptions.map((sub) => {
+                                const cat = CATEGORIES.find(c => c.id === sub.category) || CATEGORIES.find(c => c.id === 'חשבונות')!;
+                                const IconComponent = cat.icon;
+                                return (
+                                    <SwipeableRow
+                                        key={sub.id}
+                                        onEdit={() => openEditDialog(sub)}
+                                        onDelete={() => handleDelete(sub.id)}
+                                        deleteMessage="האם להסיר את המנוי הזה מהחישוב החודשי?"
+                                        className="mb-3 rounded-2xl overflow-hidden"
+                                    >
+                                        <div className="neon-card p-4 flex items-center justify-between group relative overflow-hidden">
+                                            <div className="flex items-center gap-4 relative z-10">
+                                                <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shadow-lg", cat.bg, "border", cat.border)}>
+                                                    <IconComponent className={cn("w-6 h-6", cat.color)} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold text-white text-lg">{sub.name}</h3>
+                                                    <div className="flex items-center text-xs text-slate-400 gap-2">
+                                                        <span className="flex items-center gap-1 font-mono">
+                                                            <Calendar className="w-3 h-3" />
+                                                            חיוב ב-{sub.billing_day || 1} לחודש
                                                         </span>
-                                                    )}
+                                                        {sub.category && (
+                                                            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", cat.bg, cat.color)}>
+                                                                {cat.label}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <div className="flex items-center gap-3 relative z-10">
+                                                <span className="font-black text-white text-xl tracking-tight">₪{sub.amount}</span>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-3 relative z-10">
-                                            <span className="font-black text-white text-xl tracking-tight">₪{sub.amount}</span>
-                                        </div>
-                                    </div>
-                                </SwipeableRow>
-                            );
-                        })}
-                        {subscriptions.length === 0 && (
-                            <div className="text-center py-10 text-slate-500 text-sm bg-white/5 rounded-3xl border border-white/5 border-dashed">
-                                אין מנויים עדיין. הכל נקי!
-                            </div>
+                                    </SwipeableRow>
+                                );
+                            })
                         )}
                     </div>
                 )}
