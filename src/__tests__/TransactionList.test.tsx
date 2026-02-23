@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { TransactionList } from '@/components/TransactionList';
 
@@ -23,12 +23,12 @@ describe('TransactionList', () => {
     });
 
     it('renders transactions properly', () => {
-        const txs: any[] = [
+        const txs = [
             { id: '1', description: 'קפה ומאפה', amount: 35, date: new Date().toISOString() },
             { id: '2', description: 'סופרמרקט', amount: 450, date: new Date().toISOString() },
         ];
 
-        render(<TransactionList transactions={txs} onRefresh={vi.fn()} />);
+        render(<TransactionList transactions={txs as never} onRefresh={vi.fn()} />);
 
         expect(screen.getByText('קפה ומאפה')).toBeInTheDocument();
         expect(screen.getByText('₪35')).toBeInTheDocument();
@@ -37,12 +37,12 @@ describe('TransactionList', () => {
     });
 
     it.skip('detects recurring subscriptions', () => {
-        const txs: any[] = [
+        const txs = [
             { id: '1', description: 'Netflix', amount: 50, date: '2023-01-10T10:00:00Z' },
             { id: '2', description: 'Netflix', amount: 50, date: '2023-02-11T10:00:00Z' }, // Occurred twice ~same date
         ];
 
-        render(<TransactionList transactions={txs} onRefresh={vi.fn()} subscriptions={[]} />);
+        render(<TransactionList transactions={txs as never} onRefresh={vi.fn()} subscriptions={[]} />);
 
         expect(screen.getByText('זיהינו חיוב קבוע')).toBeInTheDocument();
         expect(screen.getByText(/Netflix/)).toBeInTheDocument();

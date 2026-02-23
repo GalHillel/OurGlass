@@ -5,11 +5,11 @@ import { ChatInterface } from '@/components/ChatInterface';
 // Mock framer-motion since ChatInterface uses motion.div, motion.button, motion.span
 vi.mock('framer-motion', () => ({
     motion: {
-        div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-        button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
-        span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+        div: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => <div {...props}>{children}</div>,
+        button: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => <button {...props}>{children}</button>,
+        span: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => <span {...props}>{children}</span>,
     },
-    AnimatePresence: ({ children }: any) => <>{children}</>,
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 // Mock useChat from ai-sdk
@@ -36,7 +36,7 @@ describe('ChatInterface', () => {
     });
 
     it('renders initial loaded messages', () => {
-        render(<ChatInterface context={{}} onClose={vi.fn()} />);
+        render(<ChatInterface context={{} as never} onClose={vi.fn()} />);
         // should render the mocked message
         expect(screen.getByText('Hello')).toBeInTheDocument();
         // Header shows the AI name
@@ -44,7 +44,7 @@ describe('ChatInterface', () => {
     });
 
     it('sends message and passes context when submitting form', () => {
-        render(<ChatInterface context={{ budget: 5000 }} onClose={vi.fn()} />);
+        render(<ChatInterface context={{ budget: 5000 } as never} onClose={vi.fn()} />);
 
         // The actual placeholder in the source is "שאל את רועי..."
         const input = screen.getByPlaceholderText('שאל את רועי...');
@@ -64,7 +64,7 @@ describe('ChatInterface', () => {
 
     it('calls onClose when close button clicked', () => {
         const onClose = vi.fn();
-        render(<ChatInterface context={{}} onClose={onClose} />);
+        render(<ChatInterface context={{} as never} onClose={onClose} />);
 
         const button = screen.getByRole('button', { name: 'Close' });
         fireEvent.click(button);

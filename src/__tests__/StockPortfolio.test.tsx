@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { StockPortfolio } from '@/components/StockPortfolio';
 import * as auth from '@/components/AuthProvider';
 
@@ -25,21 +25,21 @@ global.fetch = vi.fn();
 describe('StockPortfolio', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.spyOn(auth, 'useAuth').mockReturnValue({ profile: { couple_id: 'c1' } } as any);
+        vi.spyOn(auth, 'useAuth').mockReturnValue({ profile: { couple_id: 'c1' } } as never);
     });
 
     it('renders empty state initially', () => {
-        (global.fetch as any).mockResolvedValue({ ok: true, json: async () => ({ stocks: {} }) });
+        (global.fetch as Mock).mockResolvedValue({ ok: true, json: async () => ({ stocks: {} }) });
         render(<StockPortfolio assets={[]} />);
         expect(screen.getByText('אין עדיין מניות?')).toBeInTheDocument();
     });
 
     it.skip('renders assets and fetches their prices', async () => {
-        const assets: any[] = [
+        const assets = [
             { id: '1', type: 'stock', symbol: 'AAPL', quantity: 10, current_amount: 1500 }
         ];
 
-        (global.fetch as any).mockResolvedValue({
+        (global.fetch as Mock).mockResolvedValue({
             ok: true,
             json: async () => ({
                 exchangeRate: 3.7,
@@ -47,7 +47,7 @@ describe('StockPortfolio', () => {
             })
         });
 
-        render(<StockPortfolio assets={assets} />);
+        render(<StockPortfolio assets={assets as never} />);
 
         // Wait for fetch to complete and render
         await waitFor(() => {
@@ -59,7 +59,7 @@ describe('StockPortfolio', () => {
     });
 
     it('opens add dialog', () => {
-        (global.fetch as any).mockResolvedValue({ ok: true, json: async () => ({ stocks: {} }) });
+        (global.fetch as Mock).mockResolvedValue({ ok: true, json: async () => ({ stocks: {} }) });
         render(<StockPortfolio assets={[]} />);
 
         const addButtons = screen.getAllByText(/הוסף מניה/);

@@ -1,8 +1,8 @@
 "use client";
 
-import { motion, useAnimation, PanInfo, AnimatePresence } from "framer-motion";
+import { motion, useAnimation, PanInfo } from "framer-motion";
 import { Trash2, Edit2 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import {
     AlertDialog,
     AlertDialogAction,

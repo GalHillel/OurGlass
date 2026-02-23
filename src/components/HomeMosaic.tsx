@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
     HeartPulse,
     PiggyBank,
@@ -9,12 +8,10 @@ import {
     Shield,
     ChevronRight,
     TrendingUp,
-    TrendingDown,
     Wallet,
     Trophy,
     Zap,
     Users,
-    Plus,
     CalendarDays,
     PieChart
 } from "lucide-react";
@@ -42,7 +39,7 @@ import { BudgetHealthScore } from "@/components/BudgetHealthScore";
 import { SavingsTracker } from "@/components/SavingsTracker";
 import { StockPortfolio } from "@/components/StockPortfolio";
 import { cn } from "@/lib/utils";
-import { Transaction, Goal, Asset, Subscription, Liability } from "@/types";
+import { Transaction, Asset, Subscription, Liability } from "@/types";
 import { ReactorCore } from "@/components/ReactorCore";
 import { PartnerStats } from "@/components/PartnerStats";
 import { QuickActions } from "@/components/QuickActions";
@@ -50,7 +47,7 @@ import { MonthlyCalendar } from "@/components/MonthlyCalendar";
 import { CategoryBreakdown } from "@/components/CategoryBreakdown";
 import { MonthlySummary } from "@/components/MonthlySummary";
 
-interface HomeMosaicProps {
+export interface HomeMosaicProps {
     balance: number;
     budget: number;
     monthlyIncome: number;
@@ -112,11 +109,10 @@ export const HomeMosaic = ({
 
     // 3. Investments (Stocks)
     const stockAssets = assets.filter(a => a.type === 'stock');
-    const totalInvestments = stockAssets.reduce((sum, a) => sum + (Number(a.current_amount) || 0), 0); // Removed totalInvestments calculation
 
     // 4. Cash (Vault)
     const cashAssets = assets.filter(a => a.type === 'cash');
-    const totalCash = cashAssets.reduce((sum, a) => sum + (Number(a.current_amount) || 0), 0); // Removed totalCash calculation
+    const totalCash = cashAssets.reduce((sum, a) => sum + (Number(a.current_amount) || 0), 0);
 
     return (
         <div className="grid grid-cols-2 gap-3 w-full max-w-md px-4 perspective-1000 pb-20">

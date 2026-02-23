@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeftRight, Check, ChevronDown, ChevronUp, Users, Loader2 } from "lucide-react";
+import { ArrowLeftRight, Check, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSettleUp } from "@/hooks/useJointFinance";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -63,7 +63,7 @@ export function SettleUpCard() {
         },
         onError: (error: unknown) => {
             const err = error as { message?: string };
-            toast.error(`שגיאה בסידור חשבון: ${err.message || "Unknown error"}`);
+            toast.error(`שגיאה בסידור חשבון: ${err.message || "Unknown error"} `);
         }
     });
 
@@ -84,7 +84,7 @@ export function SettleUpCard() {
             <div className="p-6 pb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSettled ? "bg-emerald-500/20" : "bg-orange-500/20"
-                        }`}>
+                        } `}>
                         {isSettled ? (
                             <Check className="w-5 h-5 text-emerald-400" />
                         ) : (
@@ -96,7 +96,7 @@ export function SettleUpCard() {
                         <p className="text-sm text-white/60">
                             {isSettled
                                 ? "מסודר! אין חובות 🎉"
-                                : `${whoOwes} חייב/ת ₪${oweAmount.toLocaleString()}`}
+                                : `${whoOwes} חייב / ת ₪${oweAmount.toLocaleString()} `}
                         </p>
                     </div>
                 </div>
@@ -166,7 +166,7 @@ export function SettleUpCard() {
                         <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
                             <div
                                 className="h-full bg-gradient-to-r from-blue-500 to-pink-500"
-                                style={{ width: `${splitRatio * 100}%` }}
+                                style={{ width: `${splitRatio * 100}% ` }}
                             />
                         </div>
                         <span className="text-[10px] text-white/30">

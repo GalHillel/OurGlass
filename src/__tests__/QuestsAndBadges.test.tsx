@@ -13,13 +13,13 @@ vi.mock('@tanstack/react-query', async () => {
 
 describe('QuestsAndBadges', () => {
     it('renders loading state', () => {
-        vi.spyOn(query, 'useQuery').mockReturnValue({ data: undefined, isLoading: true } as any);
+        vi.spyOn(query, 'useQuery').mockReturnValue({ data: undefined, isLoading: true } as never);
         render(<QuestsAndBadges transactions={[]} subscriptions={[]} liabilities={[]} balance={100} budget={1000} />);
         expect(screen.getByText('טוען משימות...')).toBeInTheDocument();
     });
 
     it('renders empty quests state', () => {
-        vi.spyOn(query, 'useQuery').mockReturnValue({ data: [], isLoading: false } as any);
+        vi.spyOn(query, 'useQuery').mockReturnValue({ data: [], isLoading: false } as never);
         render(<QuestsAndBadges transactions={[]} subscriptions={[]} liabilities={[]} balance={100} budget={1000} />);
         expect(screen.getByText('אין משימות זמינות כרגע.')).toBeInTheDocument();
     });
@@ -30,7 +30,7 @@ describe('QuestsAndBadges', () => {
             { id: '2', title: 'Budget Master', description: 'Under budget', icon: 'Trophy', progress: 100, completed: true, xp: 150, color: 'emerald' },
         ];
 
-        vi.spyOn(query, 'useQuery').mockReturnValue({ data: mockQuests, isLoading: false } as any);
+        vi.spyOn(query, 'useQuery').mockReturnValue({ data: mockQuests, isLoading: false } as never);
         render(<QuestsAndBadges transactions={[]} subscriptions={[]} liabilities={[]} balance={100} budget={1000} />);
 
         // Quests

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 import { Goal } from "@/types";
-import { Loader2, Coins, TrendingUp, Building, Bitcoin, DollarSign } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { ASSET_TYPES } from "@/lib/constants";
 import { useAuth } from "@/components/AuthProvider";
 

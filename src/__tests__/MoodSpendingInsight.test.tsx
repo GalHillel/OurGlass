@@ -7,8 +7,8 @@ import * as query from '@tanstack/react-query';
 vi.mock('recharts', async () => {
     const ActualRecharts = await vi.importActual('recharts');
     return {
-        ...ActualRecharts,
-        ResponsiveContainer: ({ children }: any) => <div>{children}</div>
+        ...ActualRecharts as Record<string, unknown>,
+        ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>
     };
 });
 
@@ -22,7 +22,7 @@ vi.mock('@tanstack/react-query', async () => {
 
 describe('MoodSpendingInsight', () => {
     it('shows empty state when no mood data exists', () => {
-        vi.spyOn(query, 'useQuery').mockReturnValue({ data: undefined, isLoading: false, isError: false } as any);
+        vi.spyOn(query, 'useQuery').mockReturnValue({ data: undefined, isLoading: false, isError: false } as never);
 
         render(<MoodSpendingInsight transactions={[]} subscriptions={[]} liabilities={[]} />);
 
@@ -30,15 +30,15 @@ describe('MoodSpendingInsight', () => {
     });
 
     it('renders chart and insight when data is available', () => {
-        const txs: any[] = [
+        const txs = [
             { id: '1', amount: 100, mood_rating: 5 },
             { id: '2', amount: 50, mood_rating: 1 },
         ];
 
         const mockInsight = { type: 'success', text: 'You spend responsibly when happy!' };
-        vi.spyOn(query, 'useQuery').mockReturnValue({ data: mockInsight, isLoading: false, isError: false } as any);
+        vi.spyOn(query, 'useQuery').mockReturnValue({ data: mockInsight, isLoading: false, isError: false } as never);
 
-        render(<MoodSpendingInsight transactions={txs} subscriptions={[]} liabilities={[]} />);
+        render(<MoodSpendingInsight transactions={txs as never} subscriptions={[]} liabilities={[]} />);
 
         expect(screen.getByText('מצב רוח vs. הוצאות')).toBeInTheDocument();
         // Stats

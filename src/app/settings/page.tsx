@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { LogOut, Save, User, Smartphone } from "lucide-react";
 import { useAppStore } from "@/stores/appStore";
-import { motion } from "framer-motion";
 
 export default function SettingsPage() {
     console.log("Settings Page Rendering"); // Debug log for build verification

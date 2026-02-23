@@ -4,9 +4,8 @@ import React, { useState } from "react";
 import { Drawer } from "vaul";
 import { WishlistItem } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { Check, Banknote, Sparkles } from "lucide-react";
+import { Banknote, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/utils/haptics";
 

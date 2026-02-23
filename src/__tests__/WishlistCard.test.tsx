@@ -1,7 +1,7 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import { WishlistCard } from '@/components/WishlistCard';
-import * as dateFns from 'date-fns';
+
 
 vi.mock('@/utils/haptics', () => ({ triggerHaptic: vi.fn() }));
 
@@ -11,7 +11,7 @@ describe('WishlistCard', () => {
 
     it.skip('renders item details and allows deposit', () => {
         const onAction = vi.fn();
-        render(<WishlistCard item={standardItem as any} onAction={onAction} />);
+        render(<WishlistCard item={standardItem as never} onAction={onAction} />);
 
         expect(screen.getByText('Camera')).toBeInTheDocument();
         expect(screen.getByText('₪300')).toBeInTheDocument();
@@ -20,14 +20,14 @@ describe('WishlistCard', () => {
 
     it('displays fully funded state', () => {
         const fundedItem = { ...standardItem, saved_amount: 900 };
-        render(<WishlistCard item={fundedItem as any} onAction={vi.fn()} />);
+        render(<WishlistCard item={fundedItem as never} onAction={vi.fn()} />);
 
         expect(screen.getByText('מוכן!')).toBeInTheDocument();
     });
 
     it('enforces impulse control for expensive recent items', () => {
         const onAction = vi.fn();
-        render(<WishlistCard item={impulseItem as any} onAction={onAction} />);
+        render(<WishlistCard item={impulseItem as never} onAction={onAction} />);
 
         expect(screen.getByText(/ש׳ להירגעות/)).toBeInTheDocument();
         expect(screen.getByText('אני באמת חייב את זה')).toBeInTheDocument();
@@ -35,7 +35,7 @@ describe('WishlistCard', () => {
 
     it('triggers actions correctly', () => {
         const onAction = vi.fn();
-        render(<WishlistCard item={standardItem as any} onAction={onAction} />);
+        render(<WishlistCard item={standardItem as never} onAction={onAction} />);
 
         // Find buttons by their container wrapper or attributes if possible.
         // It's a bit hard to select icon buttons via text. Let's use getByTitle if present.

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, X, TrendingUp, AlertTriangle, PiggyBank, Calendar, Sparkles } from 'lucide-react';
+import { Lightbulb, X, AlertTriangle, PiggyBank, Calendar, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Transaction } from '@/types';
 import { useQuery } from '@tanstack/react-query';

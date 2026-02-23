@@ -1,17 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Scissors, AlertTriangle, Star, StarOff, Trash2, Copy } from "lucide-react";
+import { Scissors, Star, StarOff, Trash2, Copy } from "lucide-react";
 import { Subscription } from "@/types";
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/EmptyState";
 import CountUp from "react-countup";
 
 interface SubscriptionKillerProps {
     subscriptions: Subscription[];
     onDelete?: (id: string) => void;
-    onRate?: (id: string, rating: number) => void;
 }
 
 interface DuplicateGroup {
@@ -28,7 +26,7 @@ interface DuplicateGroup {
  * 2. Low-usage subscriptions (usage_rating <= 2)
  * 3. Total potential savings
  */
-export function SubscriptionKiller({ subscriptions, onDelete, onRate }: SubscriptionKillerProps) {
+export function SubscriptionKiller({ subscriptions, onDelete }: SubscriptionKillerProps) {
     const analysis = useMemo(() => {
         // 1. Find duplicates by similar name
         const nameMap = new Map<string, Subscription[]>();
@@ -168,8 +166,8 @@ export function SubscriptionKiller({ subscriptions, onDelete, onRate }: Subscrip
                                             <Star
                                                 key={star}
                                                 className={`w-3 h-3 ${star <= (sub.usage_rating ?? 0)
-                                                        ? "text-yellow-400 fill-yellow-400"
-                                                        : "text-white/10"
+                                                    ? "text-yellow-400 fill-yellow-400"
+                                                    : "text-white/10"
                                                     }`}
                                             />
                                         ))}

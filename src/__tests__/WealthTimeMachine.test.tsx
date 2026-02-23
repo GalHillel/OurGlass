@@ -4,7 +4,7 @@ import { WealthTimeMachine } from '@/components/WealthTimeMachine';
 
 // Mock slider since radix slider might be complex to test directly without full layout
 vi.mock('@/components/ui/slider', () => ({
-    Slider: ({ value, onValueChange, min, max, step }: any) => (
+    Slider: ({ value, onValueChange, min, max, step }: { value: number[]; onValueChange: (val: number[]) => void; min: number; max: number; step: number }) => (
         <input
             type="range"
             min={min}

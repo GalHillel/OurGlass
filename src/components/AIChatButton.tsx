@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Sparkles, X, RefreshCw, MessageCircle } from "lucide-react";
+import { Sparkles, X, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ChatInterface } from "./ChatInterface";
@@ -11,7 +11,7 @@ import { useAppStore } from "@/stores/appStore";
 import { useWealth } from "@/hooks/useWealth";
 import { PAYERS } from "@/lib/constants";
 import { motion, AnimatePresence } from "framer-motion";
-import { FinancialContext, Transaction, Subscription, Goal, WishlistItem, WealthSnapshot } from "@/types";
+import { FinancialContext, Transaction, Subscription, WishlistItem, WealthSnapshot } from "@/types";
 
 // Generates a dynamic one-liner insight from real financial data
 function generateDynamicInsight(context: FinancialContext | null, firstName: string): string | null {
@@ -55,7 +55,7 @@ export const AIChatButton = () => {
     const { appIdentity } = useAppStore();
     const { netWorth: liveNetWorth } = useWealth();
 
-    // Map device identity to display name
+    // Mapping device identity to display name
     const identityName = appIdentity === 'him' ? PAYERS.HIM : appIdentity === 'her' ? PAYERS.HER : '';
     const firstName = identityName || profile?.name?.split(' ')[0] || '';
 

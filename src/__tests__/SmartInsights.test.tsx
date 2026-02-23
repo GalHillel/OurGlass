@@ -22,16 +22,16 @@ describe('SmartInsights', () => {
     });
 
     it('returns null if no transactions', () => {
-        vi.spyOn(query, 'useQuery').mockReturnValue({ data: undefined, isLoading: false, isError: false } as any);
+        vi.spyOn(query, 'useQuery').mockReturnValue({ data: undefined, isLoading: false, isError: false } as never);
         const { container } = render(<SmartInsights transactions={[]} />);
         expect(container).toBeEmptyDOMElement();
     });
 
     it('displays insight after delay', async () => {
         const mockInsight = { type: 'tip', text: 'Consider saving more.', action: 'Save now' };
-        vi.spyOn(query, 'useQuery').mockReturnValue({ data: mockInsight, isLoading: false, isError: false } as any);
+        vi.spyOn(query, 'useQuery').mockReturnValue({ data: mockInsight, isLoading: false, isError: false } as never);
 
-        render(<SmartInsights transactions={[{ amount: 100 } as any]} />);
+        render(<SmartInsights transactions={[{ amount: 100 } as never]} />);
 
         // Initially not visible (due to 2.5s delay inside component)
         expect(screen.queryByText('Consider saving more.')).not.toBeInTheDocument();

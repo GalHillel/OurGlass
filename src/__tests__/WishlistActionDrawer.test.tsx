@@ -6,12 +6,12 @@ vi.mock('@/utils/haptics', () => ({ triggerHaptic: vi.fn() }));
 
 vi.mock('vaul', () => ({
     Drawer: {
-        Root: ({ children, open }: any) => open ? <div>{children}</div> : null,
-        Portal: ({ children }: any) => <div>{children}</div>,
+        Root: ({ children, open }: { children: React.ReactNode; open: boolean }) => open ? <div>{children}</div> : null,
+        Portal: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
         Overlay: () => <div />,
-        Content: ({ children }: any) => <div>{children}</div>,
-        Title: ({ children }: any) => <h2>{children}</h2>,
-        Description: ({ children }: any) => <p>{children}</p>,
+        Content: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+        Title: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
+        Description: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
     }
 }));
 
@@ -20,7 +20,7 @@ describe('WishlistActionDrawer', () => {
 
     it('renders deposit mode correctly', () => {
         const onConfirm = vi.fn();
-        render(<WishlistActionDrawer isOpen={true} onClose={vi.fn()} item={mockItem as any} mode="deposit" onConfirm={onConfirm} />);
+        render(<WishlistActionDrawer isOpen={true} onClose={vi.fn()} item={mockItem as never} mode="deposit" onConfirm={onConfirm} />);
 
         expect(screen.getByText('הפקדה לחלום')).toBeInTheDocument();
         expect(screen.getByText('MacBook')).toBeInTheDocument();
@@ -30,7 +30,7 @@ describe('WishlistActionDrawer', () => {
 
     it('renders withdraw mode correctly', () => {
         const onConfirm = vi.fn();
-        render(<WishlistActionDrawer isOpen={true} onClose={vi.fn()} item={mockItem as any} mode="withdraw" onConfirm={onConfirm} />);
+        render(<WishlistActionDrawer isOpen={true} onClose={vi.fn()} item={mockItem as never} mode="withdraw" onConfirm={onConfirm} />);
 
         expect(screen.getByText('משיכה מהחיסכון')).toBeInTheDocument();
         // available for withdraw: 2000
@@ -39,7 +39,7 @@ describe('WishlistActionDrawer', () => {
 
     it('allows confirming amount', () => {
         const onConfirm = vi.fn();
-        render(<WishlistActionDrawer isOpen={true} onClose={vi.fn()} item={mockItem as any} mode="deposit" onConfirm={onConfirm} />);
+        render(<WishlistActionDrawer isOpen={true} onClose={vi.fn()} item={mockItem as never} mode="deposit" onConfirm={onConfirm} />);
 
         const input = screen.getByPlaceholderText('0');
         fireEvent.change(input, { target: { value: '150' } });

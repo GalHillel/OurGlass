@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { format, subMonths, addMonths } from "date-fns";
+import { format, addMonths } from "date-fns";
 import { he } from "date-fns/locale";
 import { triggerHaptic } from "@/utils/haptics";
 

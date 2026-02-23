@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Gift, Eye, EyeOff, PartyPopper } from "lucide-react";
+import { Gift, EyeOff, PartyPopper } from "lucide-react";
 import { Transaction } from "@/types";
 import { cn } from "@/lib/utils";
 import { hapticSuccess, hapticHeavy } from "@/utils/haptics";

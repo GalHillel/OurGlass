@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Goal } from "@/types";
-import { PieChart as PieIcon, AlertTriangle, Check, ArrowRight, ChevronDown } from "lucide-react";
+import { AlertTriangle, Check, ArrowRight, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 

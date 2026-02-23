@@ -13,20 +13,20 @@ vi.mock('@/utils/supabase/client', () => ({
 vi.mock('recharts', async () => {
     const ActualRecharts = await vi.importActual('recharts');
     return {
-        ...ActualRecharts,
-        ResponsiveContainer: ({ children }: any) => <div>{children}</div>
+        ...ActualRecharts as Record<string, unknown>,
+        ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>
     };
 });
 
 describe('SP500Benchmark', () => {
     it('shows loading state initially', () => {
-        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [], isLoading: true } as any);
+        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [], isLoading: true } as never);
         const { container } = render(<SP500Benchmark initialWealth={100000} />);
         expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
     });
 
     it('returns null if insufficient snapshots', () => {
-        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [{ snapshot_date: '2023-01-01', net_worth: 100000 }], isLoading: false } as any);
+        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [{ snapshot_date: '2023-01-01', net_worth: 100000 }], isLoading: false } as never);
         const { container } = render(<SP500Benchmark initialWealth={100000} />);
         expect(container).toBeEmptyDOMElement();
     });
@@ -36,7 +36,7 @@ describe('SP500Benchmark', () => {
             { snapshot_date: new Date('2022-01-01').toISOString(), net_worth: 100000 },
             { snapshot_date: new Date('2023-01-01').toISOString(), net_worth: 120000 }, // 20% > SP500 10.5%
         ];
-        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: mockData, isLoading: false } as any);
+        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: mockData, isLoading: false } as never);
 
         render(<SP500Benchmark initialWealth={100000} />);
 

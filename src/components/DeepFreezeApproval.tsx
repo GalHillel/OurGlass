@@ -1,12 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Shield, ShieldCheck, ShieldAlert, X, Check, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { createClient } from "@/utils/supabase/client";
-import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 import { hapticWarning, hapticSuccess, hapticHeavy } from "@/utils/haptics";
 
@@ -134,8 +131,8 @@ export function DeepFreezeToggle({
                 onToggle();
             }}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${isFrozen
-                    ? "bg-blue-500/10 text-blue-300 border border-blue-500/20"
-                    : "bg-white/5 text-white/30 border border-white/10 hover:bg-white/10"
+                ? "bg-blue-500/10 text-blue-300 border border-blue-500/20"
+                : "bg-white/5 text-white/30 border border-white/10 hover:bg-white/10"
                 }`}
             title={isFrozen ? "נכס מוקפא — נדרש אישור למשיכה" : "הפעל הקפאה עמוקה"}
         >

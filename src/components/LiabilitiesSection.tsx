@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Home, Car, GraduationCap, CreditCard, Landmark, Wallet, Trash2, Edit2 } from "lucide-react";
+import { Plus, Home, Car, GraduationCap, CreditCard, Landmark, Wallet, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

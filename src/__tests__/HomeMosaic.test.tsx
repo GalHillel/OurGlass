@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { HomeMosaic } from '@/components/HomeMosaic';
+import { HomeMosaic, type HomeMosaicProps } from '@/components/HomeMosaic';
 
 vi.mock('framer-motion', () => ({
     motion: {
-        div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+        div: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => <div {...props}>{children}</div>,
     },
-    AnimatePresence: ({ children }: any) => <>{children}</>,
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 vi.mock('@/components/ReactorCore', () => ({ ReactorCore: () => <div data-testid="mock-reactor">Reactor</div> }));
@@ -40,7 +40,7 @@ describe('HomeMosaic', () => {
     };
 
     it('renders all mosaic tiles', () => {
-        render(<HomeMosaic {...defaultProps} />);
+        render(<HomeMosaic {...(defaultProps as unknown as HomeMosaicProps)} />);
 
         expect(screen.getByTestId('mock-reactor')).toBeInTheDocument();
         expect(screen.getByText('תחזית AI')).toBeInTheDocument();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Transaction } from "@/types";
@@ -66,18 +66,7 @@ export function useSettleUp(viewingDate: Date = new Date()) {
 
             // Joint split: him pays `splitRatio` share, her pays `1 - splitRatio`
             const himShareOfJoint = jointTotal * splitRatio;
-            const herShareOfJoint = jointTotal * (1 - splitRatio);
-
-            // Total each should have paid
-            const himFairShare = himTotal + himShareOfJoint;
-            const herFairShare = herTotal + herShareOfJoint;
-
-            // Who actually paid the joint expenses? We assume joint was evenly paid in practice,
-            // so the settlement is: him owes = his fair share - what he actually paid (ignoring joint for now)
-            // Simpler: total pool, each should pay their fair share
-            const totalAll = himTotal + herTotal + jointTotal;
-            const himShouldPay = himTotal + himShareOfJoint;
-            const herShouldPay = herTotal + herShareOfJoint;
+            // const herShareOfJoint = jointTotal * (1 - splitRatio);
 
             // If him paid himTotal but should have paid himShouldPay:
             // himOwes positive = him underpaid (owes her), negative = him overpaid (she owes him)

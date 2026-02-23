@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { POST } from '@/app/api/stocks/route';
 
 global.fetch = vi.fn();
@@ -24,7 +24,7 @@ describe('Stocks API', () => {
 
     it.skip('fetches exchange rate and stocks', async () => {
         // Mock two fetch calls: 1 for exchange rate, 1 for stock quote (AAPL)
-        (global.fetch as any).mockImplementation((url: string) => {
+        (global.fetch as Mock).mockImplementation((url: string) => {
             if (url.includes('exchangerate-api.com')) {
                 return Promise.resolve({
                     ok: true,

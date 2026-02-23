@@ -9,7 +9,7 @@ import { TrendingUp, PieChart, Shield, Rocket, Plus, Edit2, Coins, Building, Tra
 import { motion, AnimatePresence } from "framer-motion";
 import CountUp from "react-countup";
 import { toast } from "sonner";
-import { differenceInDays, format } from "date-fns";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { AddAssetDialog } from "@/components/AddAssetDialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,13 +26,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { TABS } from "@/lib/constants";
 import { StockPortfolio } from "@/components/StockPortfolio";
-import { WealthChart } from "@/components/WealthChart";
 import { RiskAnalysisCard } from "@/components/RiskAnalysisCard";
-import { DividendForecast } from "@/components/DividendForecast";
 
 import { getRank } from "@/lib/ranks";
 import { RankBadge } from "@/components/RankBadge";
-import { cn } from "@/lib/utils";
 
 // Phase 3: Wealth & Investment components
 import { NetWorthHistory } from "@/components/NetWorthHistory";
@@ -58,7 +55,7 @@ export default function WealthPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingAsset, setEditingAsset] = useState<Goal | null>(null);
     const [activeTab, setActiveTab] = useState<string>(TABS.ALL);
-    const [chartFilter, setChartFilter] = useState<string | null>(null);
+    const [chartFilter] = useState<string | null>(null);
 
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
@@ -105,13 +102,13 @@ export default function WealthPage() {
             if (error) throw error;
             toast.success("הנכס הוסר");
             refetch(); // Refetch from hook
-        } catch (error) {
+        } catch {
             toast.error("שגיאה במחיקה");
         }
     };
 
     // Calculate Rank using hook's netWorth
-    const { currentRank, nextRank, progress, remaining } = getRank(trueNetWorth);
+    const { currentRank } = getRank(trueNetWorth);
 
     return (
         <div className="min-h-screen bg-slate-950 text-white pb-24 px-4 space-y-6 pt-6">

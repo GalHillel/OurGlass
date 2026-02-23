@@ -1,11 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { IdentityGate } from '@/components/IdentityGate';
 
 // Mock dependencies
 const mockSetIdentity = vi.fn();
-let mockUser: any = null;
-let mockIdentity: any = null;
+let mockUser: { id: string } | null = null;
+let mockIdentity: string | null = null;
 
 vi.mock('@/components/AuthProvider', () => ({
     useAuth: () => ({

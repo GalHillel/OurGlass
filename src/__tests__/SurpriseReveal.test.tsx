@@ -14,7 +14,7 @@ describe('SurpriseReveal', () => {
     });
 
     it('returns null if not a surprise', () => {
-        const tx: any = { is_surprise: false };
+        const tx = { is_surprise: false } as never;
         const { container } = render(<SurpriseReveal transaction={tx} isRecipient={true} />);
         expect(container).toBeEmptyDOMElement();
     });
@@ -23,7 +23,7 @@ describe('SurpriseReveal', () => {
         const futureDate = new Date();
         futureDate.setDate(futureDate.getDate() + 5);
 
-        const tx: any = { is_surprise: true, surprise_reveal_date: futureDate.toISOString() };
+        const tx = { is_surprise: true, surprise_reveal_date: futureDate.toISOString() } as never;
         render(<SurpriseReveal transaction={tx} isRecipient={true} />);
 
         expect(screen.getByText(/הפתעה! תתגלה ב-/)).toBeInTheDocument();
@@ -33,7 +33,7 @@ describe('SurpriseReveal', () => {
         const pastDate = new Date();
         pastDate.setDate(pastDate.getDate() - 5);
 
-        const tx: any = { is_surprise: true, surprise_reveal_date: pastDate.toISOString(), amount: 500, description: 'Secret Gift' };
+        const tx = { is_surprise: true, surprise_reveal_date: pastDate.toISOString(), amount: 500, description: 'Secret Gift' } as never;
         render(<SurpriseReveal transaction={tx} isRecipient={true} />);
 
         expect(screen.getByText('לחץ/י לגלות! 🎁')).toBeInTheDocument();

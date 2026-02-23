@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { WishlistItem } from "@/types";
-import { Plus, Check, Clock, AlertTriangle, Sparkles, Trash2, Hourglass } from "lucide-react";
+import { Plus, Sparkles, Hourglass, AlertTriangle } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 
 import { WishlistCard } from "@/components/WishlistCard";
@@ -199,7 +199,7 @@ export default function WishlistPage() {
             if (wishError) throw wishError;
 
             // 2. Create Transaction
-            const txAmount = type === 'deposit' ? amount : -amount; // Positive amount in drawer logic means 'moving money'. BUT Transaction table...
+            // Positive amount in drawer logic means 'moving money'. BUT Transaction table...
             // Wait, Expenses are positive usually.
             // If I deposit to wishlist (Expense), Amount should be positive? 
             // Standard Logic: Expenses reduce balance. So positive Amount in transactions = expense.
@@ -316,7 +316,7 @@ export default function WishlistPage() {
                                     toast.success(`הועברו ₪${amount} ל-${targetItem.name}!`);
                                     confetti({ particleCount: 150, spread: 60, origin: { y: 0.6 } });
                                     fetchData(); // Refresh
-                                } catch (e) {
+                                } catch {
                                     toast.error("שגיאה בפעולה");
                                 }
                             }}

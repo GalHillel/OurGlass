@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, Check, Sparkles, Plus, Minus, ThumbsDown } from "lucide-react";
+import { Check, Sparkles, Plus, Minus, ThumbsDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WishlistItem } from "@/types";
 import { triggerHaptic } from "@/utils/haptics";
@@ -46,7 +46,7 @@ export const WishlistCard = ({ item, onAction, onClick }: WishlistCardProps) => 
     const saved = item.saved_amount || 0;
     const progress = Math.min((saved / item.price) * 100, 100);
     const isFullyFunded = saved >= item.price;
-    const remaining = item.price - saved;
+    // const remaining = item.price - saved;
 
     return (
         <motion.div
@@ -74,7 +74,7 @@ export const WishlistCard = ({ item, onAction, onClick }: WishlistCardProps) => 
                         "h-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(236,72,153,0.5)] relative overflow-hidden",
                         isFullyFunded ? "bg-gradient-to-r from-emerald-400 to-green-500" : "bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500"
                     )}
-                    style={{ width: `${progress}%` }}
+                    style={{ width: `${progress}% ` }}
                 >
                     {/* Shimmer Effect */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-[200%] animate-[shimmer_2s_infinite] translate-x-[-100%]" />

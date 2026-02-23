@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Gauge, Flame, TrendingDown, Target } from "lucide-react";
+import { Flame, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BudgetGaugesProps {
@@ -37,7 +37,7 @@ export const BudgetGauges = ({ balance, budget, daysRemaining }: BudgetGaugesPro
                 <div className="w-full h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
                     <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(100, (safeDaily / (budget / 30)) * 100)}%` }}
+                        animate={{ width: `${Math.min(100, (safeDaily / (budget / 30)) * 100)}% ` }}
                         className={cn("h-full rounded-full", isSafe ? "bg-blue-500" : "bg-red-500")}
                     />
                 </div>
@@ -55,7 +55,7 @@ export const BudgetGauges = ({ balance, budget, daysRemaining }: BudgetGaugesPro
                 <div className="w-full h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
                     <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: `${encodedBurn}%` }}
+                        animate={{ width: `${encodedBurn}% ` }}
                         className={cn("h-full rounded-full", encodedBurn > 90 ? "bg-red-500" : encodedBurn > 75 ? "bg-orange-500" : "bg-emerald-500")}
                     />
                 </div>

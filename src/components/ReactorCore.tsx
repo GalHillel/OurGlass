@@ -19,7 +19,7 @@ interface ReactorCoreProps {
 export const ReactorCore = ({ income, budget, expenses, balance, burnRateStatus, cycleStart, cycleEnd }: ReactorCoreProps) => {
     const [isPressed, setIsPressed] = useState(false);
 
-    const { percentage, projectedBalance, totalDaysInCycle, daysPassed, daysRemaining } = useMemo(() => {
+    const { percentage, projectedBalance, daysRemaining } = useMemo(() => {
         const totalDays = Math.max(1, Math.ceil((cycleEnd.getTime() - cycleStart.getTime()) / (1000 * 60 * 60 * 24)));
         const days = Math.max(1, Math.min(totalDays, Math.ceil((new Date().getTime() - cycleStart.getTime()) / (1000 * 60 * 60 * 24))));
         const avg = expenses / days;
@@ -28,33 +28,23 @@ export const ReactorCore = ({ income, budget, expenses, balance, burnRateStatus,
         return {
             percentage: pct,
             projectedBalance: projected,
-            totalDaysInCycle: totalDays,
-            daysPassed: days,
             daysRemaining: totalDays - days
         };
     }, [balance, income, budget, expenses, cycleStart, cycleEnd]);
 
-    const { color, gradientFrom, gradientTo, strokeColor, isCrisis, isWarning, isCritical, statusEmoji } = useMemo(() => {
+    const { color, isCrisis, isWarning } = useMemo(() => {
         const critical = burnRateStatus === 'critical';
         const crisis = balance < 0;
         const warning = !crisis && percentage < 20;
-        const good = !crisis && !warning && percentage >= 50;
 
         return {
-            isCritical: critical,
             isCrisis: crisis,
             isWarning: warning,
-            color: critical ? "text-red-400" : warning ? "text-amber-400" : "text-cyan-400",
-            gradientFrom: critical ? "#ef4444" : warning ? "#f59e0b" : "#06b6d4",
-            gradientTo: critical ? "#dc2626" : warning ? "#d97706" : "#0891b2",
-            strokeColor: critical ? "#ef4444" : warning ? "#f59e0b" : "#22d3ee",
-            statusEmoji: critical ? "🔴" : warning ? "⚠️" : good ? "✨" : "💎"
+            color: critical ? "text-red-400" : warning ? "text-amber-400" : "text-cyan-400"
         };
     }, [burnRateStatus, balance, percentage]);
 
-    const radius = 110;
-    const strokeWidth = 8;
-    const circumference = 2 * Math.PI * radius;
+    // const radius = 110;
 
     return (
         <div

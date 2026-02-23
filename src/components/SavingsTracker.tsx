@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Wallet, PiggyBank, Target, AlertTriangle, CheckCircle, Sparkles } from "lucide-react";
+import { TrendingDown, Wallet, PiggyBank, Target, AlertTriangle, CheckCircle, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SavingsTrackerProps {
@@ -14,7 +14,6 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
     // Calculations
     const actualSavings = monthlyIncome - totalSpent;
     const targetSavings = monthlyIncome - budget;
-    const budgetRemaining = budget - totalSpent;
     const isOverBudget = totalSpent > budget;
     const overBudgetAmount = isOverBudget ? totalSpent - budget : 0;
 

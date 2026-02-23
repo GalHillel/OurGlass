@@ -6,8 +6,8 @@ import * as billing from '@/lib/billing';
 vi.mock('recharts', async () => {
     const ActualRecharts = await vi.importActual('recharts');
     return {
-        ...ActualRecharts,
-        ResponsiveContainer: ({ children }: any) => <div>{children}</div>
+        ...ActualRecharts as Record<string, unknown>,
+        ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>
     };
 });
 
@@ -21,11 +21,11 @@ describe('PredictiveCashflow', () => {
         vi.useFakeTimers();
         vi.setSystemTime(new Date('2023-01-16'));
 
-        const transactions: any[] = [
+        const transactions = [
             { amount: 150, date: '2023-01-15' },
         ];
 
-        const subscriptions: any[] = [
+        const subscriptions = [
             { amount: 100, billing_day: 20, active: true },
         ];
 
@@ -33,8 +33,8 @@ describe('PredictiveCashflow', () => {
             <PredictiveCashflow
                 balance={5000}
                 budget={10000}
-                transactions={transactions}
-                subscriptions={subscriptions}
+                transactions={transactions as never}
+                subscriptions={subscriptions as never}
                 liabilities={[]}
             />
         );

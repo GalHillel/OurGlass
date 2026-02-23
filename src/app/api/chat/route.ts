@@ -1,6 +1,6 @@
 import { google } from '@ai-sdk/google';
-import { streamText, convertToModelMessages, UIMessage } from 'ai';
-import { Transaction, Subscription, Liability, WealthSnapshot, WishlistItem, FinancialContext } from "@/types";
+import { streamText, convertToModelMessages, type UIMessage } from 'ai';
+import { FinancialContext } from "@/types";
 
 interface TransactionSummary {
   [category: string]: {
@@ -14,6 +14,32 @@ export const maxDuration = 30;
 
 export async function POST(req: Request) {
   const { messages, context }: { messages: UIMessage[], context: FinancialContext } = await req.json();
+
+  /*
+# Strict CI/CD Lint Enforcement Plan
+
+Zero-tolerance cleanup of all ESLint problems to ensure the GitHub CI pass.
+
+## Proposed Changes
+
+### Mandate 1: Unused Variable Annihilation
+- **Imports**: Systematic removal of all unused imports identified by `no-unused-vars`.
+- **Variables**: prefixing callback params with `_` or removing local variables that are never read.
+
+### Mandate 2: `any` Type Extermination
+- **Tests**: Comprehensive refactor of `src/__tests__` to use `unknown`, `Record<string, unknown>`, or proper interface mocks.
+- **Supabase Mocks**: Use `as unknown as SupabaseClient` for strict type casting.
+- **SDK Mocks**: Use `vi.Mock` where appropriate.
+
+### Mandate 3: TS-IGNORE Fix
+- Specific fix for `src/__tests__/ui/popover.test.tsx` to use `@ts-expect-error`.
+
+## Execution Order
+1. Mandate 3 (Quick fix).
+2. Mandate 1 (Project-wide cleanup of warnings).
+3. Mandate 2 (Test suite refactoring for errors).
+4. Final local validation.
+   */
 
   // Aggregating transactions to save Gemini tokens
   const recentTx = context?.recentTransactions || [];

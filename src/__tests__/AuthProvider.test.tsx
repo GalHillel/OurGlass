@@ -15,7 +15,7 @@ vi.mock('@/utils/supabase/client', () => ({
             getSession: mockGetSession,
             onAuthStateChange: mockOnAuthStateChange
         },
-        from: (_table: string) => ({
+        from: () => ({
             select: mockSelect,
         })
     })
@@ -61,6 +61,13 @@ describe('AuthProvider', () => {
         });
 
         expect(screen.getByText('No User')).toBeInTheDocument();
+    });
+    it('returns error if table check fails', async () => {
+        const mockUser = { id: 'user123' };
+        const mockProfileData = { name: 'Gal' };
+
+        mockGetSession.mockResolvedValue({ data: { session: { user: mockUser } } });
+        mockSingle.mockResolvedValue({ data: mockProfileData });
     });
 
     it('fetches profile if session exists', async () => {

@@ -9,13 +9,13 @@ describe('SpendingBreakdown', () => {
     });
 
     it('renders breakdowns correctly grouped and sorted', () => {
-        const transactions: any[] = [
+        const transactions = [
             { category: 'אוכל', amount: 300 },
             { category: 'תחבורה', amount: 50 },
             { category: 'אוכל', amount: 200 }, // Total food = 500
         ];
 
-        render(<SpendingBreakdown transactions={transactions} />);
+        render(<SpendingBreakdown transactions={transactions as never} />);
 
         expect(screen.getByText('אוכל')).toBeInTheDocument();
         expect(screen.getByText('₪500')).toBeInTheDocument();

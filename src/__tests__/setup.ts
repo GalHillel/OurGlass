@@ -21,7 +21,7 @@ if (typeof window !== 'undefined') {
             this.pointerType = props.pointerType || 'mouse';
         }
     }
-    window.PointerEvent = MockPointerEvent as any;
+    window.PointerEvent = MockPointerEvent as unknown as typeof PointerEvent;
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
     window.HTMLElement.prototype.releasePointerCapture = vi.fn();
     window.HTMLElement.prototype.hasPointerCapture = vi.fn();

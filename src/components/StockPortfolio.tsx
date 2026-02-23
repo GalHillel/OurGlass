@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Plus, TrendingUp, TrendingDown, RefreshCcw, Trash2, Rocket, Edit2, Loader2, Sparkles } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Plus, TrendingUp, TrendingDown, RefreshCcw, Rocket, Loader2, Sparkles } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
@@ -222,7 +222,7 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
             if (error) throw error;
             toast.success("נמחק בהצלחה");
             window.location.reload();
-        } catch (e) {
+        } catch {
             toast.error("שגיאה במחיקה");
         }
     };
@@ -292,7 +292,7 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
             {/* 2. Stock Lists */}
             <div className="space-y-3">
                 <AnimatePresence mode="popLayout">
-                    {stocks.map((stock, i) => {
+                    {stocks.map((stock) => {
                         const isPositive = stock.changePercent >= 0;
 
                         return (

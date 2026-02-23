@@ -4,15 +4,13 @@ import { AddTransactionDrawer } from "@/components/AddTransactionDrawer";
 import { TransactionList } from "@/components/TransactionList";
 import { HomeMosaic } from "@/components/HomeMosaic";
 import { normalizeCategory } from "@/components/CategoryBreakdown";
-import { getDaysRemainingInCycle, getBillingPeriodForDate } from "@/lib/billing";
-import { triggerHaptic } from "@/utils/haptics";
+import { getBillingPeriodForDate } from "@/lib/billing";
 import { calculateBurnRate, cn } from "@/lib/utils";
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import dynamic from 'next/dynamic';
+import { useState, useEffect, useCallback, useRef } from "react";
 
 
 import { createClient } from "@/utils/supabase/client";
-import { Transaction, Goal, Subscription, Liability } from "@/types";
+import { Transaction, Subscription, Liability } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { useWealth } from "@/hooks/useWealth";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,26 +27,10 @@ import { GuiltFreeWallets } from "@/components/GuiltFreeWallets";
 import { AIChatButton } from "@/components/AIChatButton";
 
 // Simplified PullToRefresh Component that doesn't block scroll
-const PullToRefresh = ({ children, onRefresh }: { children: React.ReactNode, onRefresh: () => Promise<void> }) => {
-  const [isRefreshing, setIsRefreshing] = useState(false);
+const PullToRefresh = ({ children }: { children: React.ReactNode, onRefresh: () => Promise<void> }) => {
+  const [isRefreshing] = useState(false);
 
-  const handleRefresh = async () => {
-    if (isRefreshing) return;
-    setIsRefreshing(true);
-    triggerHaptic();
-
-    // Safety timeout - force stop spinning after 2 seconds
-    const safetyTimeout = setTimeout(() => {
-      setIsRefreshing(false);
-    }, 2000);
-
-    try {
-      await onRefresh();
-    } finally {
-      clearTimeout(safetyTimeout);
-      setIsRefreshing(false);
-    }
-  };
+  // handleRefresh removed as it was unused
 
   return (
     <div className="w-full touch-pan-y">
@@ -65,7 +47,8 @@ const PullToRefresh = ({ children, onRefresh }: { children: React.ReactNode, onR
 
 export default function Home() {
   const [balance, setBalance] = useState<number | null>(null);
-  const [comparisonDiff, setComparisonDiff] = useState<number | null>(null);
+  // comparisonDiff removed as it was unused
+
   // const [goals, setGoals] = useState<Goal[]>([]); // Removed: Using assets from useWealth
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -123,7 +106,7 @@ export default function Home() {
 
       const { data: txData, error: txError } = txResult;
       const { data: subsData, error: subsError } = subsResult;
-      const { data: liabData, error: liabError } = liabResult;
+      const { data: liabData } = liabResult;
 
       if (txError) {
         console.error("Supabase Transaction Error:", txError);
@@ -193,7 +176,7 @@ export default function Home() {
       const prevStart = subMonths(start, 1);
       const prevLimit = addDays(prevStart, daysIntoPeriod);
 
-      const { data: prevTxData, error: prevError } = await supabase
+      const { error: prevError } = await supabase
         .from('transactions')
         .select('amount')
         .gte('date', prevStart.toISOString())
@@ -201,15 +184,10 @@ export default function Home() {
 
       if (prevError) console.error("Prev Data Error:", prevError);
 
-      const prevExpenses = prevTxData?.reduce((sum: number, tx: { amount: number }) => sum + Number(tx.amount), 0) || 0;
-      const currentExpensesSoFar = transactionsData
-        .filter(tx => new Date(tx.date) <= limitDate)
-        .reduce((sum: number, tx: Transaction) => sum + Number(tx.amount), 0) || 0;
-
-      setComparisonDiff(currentExpensesSoFar - prevExpenses);
-    } catch (error: unknown) {
-      console.error("API Error Detailed:", error);
-      toast.error(`שגיאה בטעינת הנתונים: ${error instanceof Error ? error.message : "Unknown error"}`);
+      // setComparisonDiff(currentExpensesSoFar - prevExpenses); // Removed as comparisonDiff is unused
+    } catch (_error: unknown) {
+      console.error("API Error Detailed:", _error);
+      toast.error(`שגיאה בטעינת הנתונים: ${_error instanceof Error ? _error.message : "Unknown error"}`);
     } finally {
       setLoading(false);
     }

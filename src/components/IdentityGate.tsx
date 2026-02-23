@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { useAppStore } from "@/stores/appStore";
-import { motion, AnimatePresence } from "framer-motion";
-import { User, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
+import { Sparkles } from "lucide-react";
 import { hapticSuccess } from "@/utils/haptics";
-import { cn } from "@/lib/utils";
 
 export const IdentityGate = ({ children }: { children: React.ReactNode }) => {
     const { user, loading } = useAuth();

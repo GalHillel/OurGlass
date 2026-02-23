@@ -13,16 +13,16 @@ vi.mock('@tanstack/react-query', async () => {
 
 describe('MonthlyRoastPraise', () => {
     it('shows empty state when no transactions', () => {
-        vi.spyOn(query, 'useQuery').mockReturnValue({ data: undefined, isLoading: false, isError: false } as any);
+        vi.spyOn(query, 'useQuery').mockReturnValue({ data: undefined, isLoading: false, isError: false } as never);
         render(<MonthlyRoastPraise transactions={[]} subscriptions={[]} liabilities={[]} balance={100} budget={1000} monthlyIncome={5000} />);
 
         expect(screen.getByText('הוסף הוצאה כדי לקבל ניתוח AI')).toBeInTheDocument();
     });
 
     it('shows loading state', () => {
-        vi.spyOn(query, 'useQuery').mockReturnValue({ data: undefined, isLoading: true, isError: false } as any);
-        const txs: any[] = [{ id: '1' }];
-        render(<MonthlyRoastPraise transactions={txs} subscriptions={[]} liabilities={[]} balance={100} budget={1000} monthlyIncome={5000} />);
+        vi.spyOn(query, 'useQuery').mockReturnValue({ data: undefined, isLoading: true, isError: false } as never);
+        const txs = [{ id: '1' }];
+        render(<MonthlyRoastPraise transactions={txs as never} subscriptions={[]} liabilities={[]} balance={100} budget={1000} monthlyIncome={5000} />);
 
         expect(screen.getByText('ה-AI מנתח את ההוצאות שלך...')).toBeInTheDocument();
     });
@@ -32,10 +32,10 @@ describe('MonthlyRoastPraise', () => {
             { type: 'roast', emoji: '🔥', text: 'You spent too much on coffee' },
             { type: 'praise', emoji: '✨', text: 'Great job saving' }
         ];
-        vi.spyOn(query, 'useQuery').mockReturnValue({ data: mockInsights, isLoading: false, isError: false } as any);
+        vi.spyOn(query, 'useQuery').mockReturnValue({ data: mockInsights, isLoading: false, isError: false } as never);
 
-        const txs: any[] = [{ id: '1' }];
-        render(<MonthlyRoastPraise transactions={txs} subscriptions={[]} liabilities={[]} balance={100} budget={1000} monthlyIncome={5000} />);
+        const txs = [{ id: '1' }];
+        render(<MonthlyRoastPraise transactions={txs as never} subscriptions={[]} liabilities={[]} balance={100} budget={1000} monthlyIncome={5000} />);
 
         expect(screen.getByText('You spent too much on coffee')).toBeInTheDocument();
         expect(screen.getByText('Great job saving')).toBeInTheDocument();

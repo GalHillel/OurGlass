@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useWealth } from '@/hooks/useWealth';
 import { renderReactQueryHook } from './test-utils';
-import { waitFor, act } from '@testing-library/react';
+import { waitFor } from '@testing-library/react';
 
 // Mock Supabase
 const mockSelect = vi.fn();
@@ -16,7 +16,7 @@ vi.mock('@/utils/supabase/client', () => ({
 }));
 
 // Mock Auth Provider
-let mockUser: any = null;
+let mockUser: { id: string } | null = null;
 let mockAuthLoading = false;
 vi.mock('@/components/AuthProvider', () => ({
     useAuth: () => ({

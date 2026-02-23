@@ -9,18 +9,18 @@ describe('PartnerStats', () => {
     });
 
     it('calculates totals correctly from transactions and subscriptions', () => {
-        const transactions: any[] = [
+        const transactions = [
             { payer: 'him', amount: 100 },
             { payer: 'joint', amount: 200 },
             { payer: 'her', amount: 300 }
         ];
 
-        const subscriptions: any[] = [
+        const subscriptions = [
             { owner: 'him', amount: 50 },
             { owner: 'joint', amount: 150 }
         ];
 
-        render(<PartnerStats transactions={transactions} subscriptions={subscriptions} />);
+        render(<PartnerStats transactions={transactions as never} subscriptions={subscriptions as never} />);
 
         // him = 100 + 50 = 150
         // joint = 200 + 150 = 350

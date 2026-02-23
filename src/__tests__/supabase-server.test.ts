@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import * as supabaseSsr from '@supabase/ssr';
@@ -19,7 +19,7 @@ describe('Supabase Server Utility', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        (cookies as any).mockResolvedValue(mockCookieStore);
+        (cookies as Mock).mockResolvedValue(mockCookieStore);
 
         process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://localhost';
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-key';

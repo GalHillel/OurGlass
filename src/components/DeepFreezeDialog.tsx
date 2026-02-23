@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertTriangle, ThermometerSnowflake, ShoppingBag, ArrowRight } from "lucide-react";
+import { ThermometerSnowflake, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DeepFreezeDialogProps {
@@ -13,7 +13,7 @@ interface DeepFreezeDialogProps {
     onCancel: () => void;
 }
 
-export const DeepFreezeDialog = ({ isOpen, amount, itemName, onFreeze, onBuyAnyway, onCancel }: DeepFreezeDialogProps) => {
+export const DeepFreezeDialog = ({ isOpen, amount, onFreeze, onBuyAnyway, onCancel }: DeepFreezeDialogProps) => {
     return (
         <AnimatePresence>
             {isOpen && (

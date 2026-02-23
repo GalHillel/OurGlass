@@ -21,7 +21,7 @@ vi.mock('@/utils/supabase/client', () => ({
 }));
 
 // Mock Auth Provider
-let mockProfile: any = null;
+let mockProfile: { couple_id: string } | null = null;
 vi.mock('@/components/AuthProvider', () => ({
     useAuth: () => ({
         profile: mockProfile

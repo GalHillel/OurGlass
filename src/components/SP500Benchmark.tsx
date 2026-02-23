@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { useMemo } from "react";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { BarChart3 } from "lucide-react";
 import { useWealthHistory } from "@/hooks/useWealthData";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -130,8 +130,7 @@ export function SP500Benchmark({ initialWealth }: BenchmarkProps) {
                                 color: "#fff",
                                 fontSize: "11px",
                             }}
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            formatter={(value: any, name: any) => [
+                            formatter={(value: unknown, name: string | undefined) => [
                                 `₪${Number(value).toLocaleString()}`,
                                 name === "yours" ? "אתם" : "S&P 500",
                             ]}

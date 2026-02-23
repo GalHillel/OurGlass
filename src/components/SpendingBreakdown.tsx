@@ -15,8 +15,6 @@ import {
     Coffee,
     Fuel,
     Film,
-    Car,
-    FileText,
     ShoppingCart
 } from "lucide-react";
 import { cn } from "@/lib/utils";

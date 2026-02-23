@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-        const { chartData, transactions, subscriptions, liabilities = [] } = await req.json();
+        const { chartData, subscriptions, liabilities = [] } = await req.json();
 
         if (!chartData || chartData.length < 2) {
             return NextResponse.json({ text: "", type: "info" });
@@ -48,7 +48,7 @@ Return EXACTLY a JSON object:
         let parsed = { text: "הנתונים מנותחים...", type: "info" };
         try {
             parsed = JSON.parse(content);
-        } catch (e) { }
+        } catch { }
 
         return NextResponse.json(parsed);
     } catch (error: unknown) {

@@ -17,7 +17,7 @@ vi.mock('@/utils/supabase/client', () => ({
     })
 }));
 
-vi.mock('@/components/SwipeableRow', () => ({ SwipeableRow: ({ children }: any) => <div data-testid="swipeable">{children}</div> }));
+vi.mock('@/components/SwipeableRow', () => ({ SwipeableRow: ({ children }: { children: React.ReactNode }) => <div data-testid="swipeable">{children}</div> }));
 
 describe('Subscriptions Page', () => {
     beforeEach(() => {

@@ -21,17 +21,17 @@ vi.mock('@/utils/supabase/client', () => ({
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 
 // Mock dynamic components and framer motion
-vi.mock('@/components/SwipeableRow', () => ({ SwipeableRow: ({ children }: any) => <div data-testid="swipeable">{children}</div> }));
+vi.mock('@/components/SwipeableRow', () => ({ SwipeableRow: ({ children }: { children: React.ReactNode }) => <div data-testid="swipeable">{children}</div> }));
 vi.mock('@/components/WishlistCard', () => ({ WishlistCard: () => <div data-testid="wishlist-card" /> }));
 
 vi.mock('framer-motion', async () => {
     const actual = await vi.importActual('framer-motion');
     return {
-        ...actual as any,
-        AnimatePresence: ({ children }: any) => <>{children}</>,
+        ...actual as Record<string, unknown>,
+        AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
         motion: {
-            div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-            button: ({ children, ...props }: any) => <button {...props}>{children}</button>
+            div: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => <div {...props}>{children}</div>,
+            button: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => <button {...props}>{children}</button>
         }
     };
 });

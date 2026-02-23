@@ -12,7 +12,7 @@ vi.mock('@/utils/supabase/client', () => ({
 
 describe('GuiltFreeWallets', () => {
     it('renders skeleton while loading', () => {
-        vi.spyOn(hooks, 'useGuiltFreeWallets').mockReturnValue({ data: undefined, isLoading: true } as any);
+        vi.spyOn(hooks, 'useGuiltFreeWallets').mockReturnValue({ data: undefined, isLoading: true } as never);
 
         const { container } = render(<GuiltFreeWallets />);
         expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
@@ -22,7 +22,7 @@ describe('GuiltFreeWallets', () => {
         vi.spyOn(hooks, 'useGuiltFreeWallets').mockReturnValue({
             data: { pocketHim: 0, pocketHer: 0, himRemaining: 0, himSpent: 0, herRemaining: 0, herSpent: 0 },
             isLoading: false
-        } as any);
+        } as never);
 
         const { container } = render(<GuiltFreeWallets />);
         expect(container).toBeEmptyDOMElement();
@@ -30,12 +30,8 @@ describe('GuiltFreeWallets', () => {
 
     it('renders wallets correctly', () => {
         vi.spyOn(hooks, 'useGuiltFreeWallets').mockReturnValue({
-            data: {
-                pocketHim: 1000, himRemaining: 200, himSpent: 800,
-                pocketHer: 1500, herRemaining: 1000, herSpent: 500
-            },
             isLoading: false
-        } as any);
+        } as never);
 
         render(<GuiltFreeWallets />);
 

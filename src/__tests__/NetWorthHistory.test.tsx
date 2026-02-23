@@ -13,36 +13,36 @@ vi.mock('@/utils/supabase/client', () => ({
 vi.mock('recharts', async () => {
     const ActualRecharts = await vi.importActual('recharts');
     return {
-        ...ActualRecharts,
-        ResponsiveContainer: ({ children }: any) => <div>{children}</div>
+        ...ActualRecharts as Record<string, unknown>,
+        ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>
     };
 });
 
 // Mock framer-motion
 vi.mock('framer-motion', () => ({
     motion: {
-        div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-        button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+        div: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => <div {...props}>{children}</div>,
+        button: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => <button {...props}>{children}</button>,
     },
-    AnimatePresence: ({ children }: any) => <>{children}</>,
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 describe('NetWorthHistory', () => {
     it('shows loading state', () => {
-        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [], isLoading: true } as any);
+        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [], isLoading: true } as never);
         const { container } = render(<NetWorthHistory />);
         expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
     });
 
     it('shows collapsed header with title when no data exists', () => {
-        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [], isLoading: false } as any);
+        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [], isLoading: false } as never);
         render(<NetWorthHistory />);
         // The collapsed accordion should show the title
         expect(screen.getByText('היסטוריית שווי')).toBeInTheDocument();
     });
 
     it('shows empty state message when expanded and no data exists', () => {
-        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [], isLoading: false } as any);
+        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [], isLoading: false } as never);
         render(<NetWorthHistory />);
         // Click to expand the accordion
         fireEvent.click(screen.getByText('היסטוריית שווי'));
@@ -54,7 +54,7 @@ describe('NetWorthHistory', () => {
             { snapshot_date: new Date('2023-01-01').toISOString(), net_worth: 100000, cash_value: 0, investments_value: 0, liabilities_value: 0 },
             { snapshot_date: new Date('2023-01-02').toISOString(), net_worth: 110000, cash_value: 0, investments_value: 0, liabilities_value: 0 },
         ];
-        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: mockSnapshots, isLoading: false } as any);
+        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: mockSnapshots, isLoading: false } as never);
 
         render(<NetWorthHistory />);
         expect(screen.getByText('היסטוריית שווי')).toBeInTheDocument();
@@ -63,7 +63,7 @@ describe('NetWorthHistory', () => {
     });
 
     it.skip('changes period when button clicked', () => {
-        const spy = vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [], isLoading: false } as any);
+        const spy = vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [], isLoading: false } as never);
         render(<NetWorthHistory />);
 
         fireEvent.click(screen.getByText('30 יום'));

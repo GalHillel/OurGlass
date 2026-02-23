@@ -2,7 +2,8 @@
 
 import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { Heart, Laugh, HeartPulse, Smile, Meh, Frown, Sparkles, Flame, Coffee, ShoppingBag, Music } from "lucide-react";
+import { Smile, Heart, Laugh, Meh, Frown } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { Transaction, Subscription, Liability } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -61,7 +62,7 @@ export function MoodSpendingInsight({ transactions, subscriptions, liabilities }
         }).filter((d) => d.count > 0);
     }, [transactions]);
 
-    const { data: insight, isLoading, isError } = useQuery<MoodInsight | null>({
+    const { data: insight, isLoading } = useQuery<MoodInsight | null>({
         queryKey: ['mood-insight', chartData, subscriptions, liabilities],
         queryFn: async () => {
             if (chartData.length < 2) return null;
@@ -114,7 +115,7 @@ export function MoodSpendingInsight({ transactions, subscriptions, liabilities }
                             tick={{ fontSize: 9, fill: "rgba(255,255,255,0.2)" }}
                             axisLine={false}
                             tickLine={false}
-                            tickFormatter={(v: number) => `₪${v}`}
+                            tickFormatter={(v: number) => `₪${v} `}
                             width={40}
                         />
                         <Tooltip
@@ -126,7 +127,7 @@ export function MoodSpendingInsight({ transactions, subscriptions, liabilities }
                                 fontSize: "11px",
                             }}
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            formatter={(value: any) => [`₪${Number(value).toLocaleString()}`, "ממוצע להוצאה"]}
+                            formatter={(value: any) => [`₪${Number(value).toLocaleString()} `, "ממוצע להוצאה"]}
                             labelFormatter={() => ""}
                         />
                         <Bar dataKey="avgSpend" radius={[6, 6, 0, 0]}>

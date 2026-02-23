@@ -12,7 +12,7 @@ export async function POST(req: Request) {
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const body = await req.json();
-        const { transactions = [], subscriptions = [], liabilities = [], balance = 0, budget = 0, xpParams } = body;
+        const { subscriptions = [], liabilities = [], budget = 0, xpParams } = body;
 
         const subTotal = (subscriptions as { amount: number }[]).reduce((s: number, sub) => s + (sub.amount || 0), 0);
         const liabTotal = (liabilities as { monthly_payment: number }[]).reduce((s: number, l) => s + (l.monthly_payment || 0), 0);
@@ -71,7 +71,7 @@ Rules:
             } else if (temp && Array.isArray(temp.quests)) {
                 parsed = temp;
             }
-        } catch (e) {
+        } catch {
             console.error("Failed to parse quests json", content);
         }
 

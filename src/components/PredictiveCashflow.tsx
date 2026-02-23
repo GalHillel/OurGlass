@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-import { TrendingUp, AlertTriangle, ArrowDown } from "lucide-react";
+import { TrendingUp, AlertTriangle } from "lucide-react";
 import { Transaction, Subscription, Liability } from "@/types";
 import { getBillingPeriodForDate, getDaysRemainingInCycle } from "@/lib/billing";
 import { differenceInDays, addDays, format, isSameDay } from "date-fns";
@@ -22,12 +22,11 @@ interface PredictiveCashflowProps {
  * Projects remaining balance through the end of the billing cycle
  * based on average daily spending rate.
  */
-export function PredictiveCashflow({ balance, budget, transactions, subscriptions, liabilities }: PredictiveCashflowProps) {
+export function PredictiveCashflow({ balance, budget, transactions, subscriptions }: PredictiveCashflowProps) {
     const chartData = useMemo(() => {
         const { start, end } = getBillingPeriodForDate(new Date());
         const today = new Date();
         const daysIntoCycle = Math.max(1, differenceInDays(today, start));
-        const totalDays = differenceInDays(end, start);
         const remaining = differenceInDays(end, today);
 
         // 1 & 2. Clean Daily Burn Rate (Variable only)

@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowUp, ArrowDown, Activity } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { Activity } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface StockTickerProps {
     userSymbols?: string[];

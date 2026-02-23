@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import * as haptics from '../utils/haptics';
 
 // Original vibrate mock store
-let vibrateMock: any;
+let vibrateMock: Mock;
 
 describe('Haptics System', () => {
     beforeEach(() => {

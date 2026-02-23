@@ -14,8 +14,6 @@ import {
     ShoppingBag,
     Utensils,
     Beer,
-    User,
-    Users,
     X,
     Briefcase,
     Zap,
@@ -24,14 +22,11 @@ import {
     Calendar as CalendarIcon,
     ChevronDown,
     Fuel,
-    Film,
     Car,
-    FileText,
     GraduationCap,
     Sparkles,
     Shield,
     Brain,
-    ThermometerSnowflake,
     Repeat
 } from "lucide-react";
 import { addMonths } from "date-fns";
@@ -56,8 +51,6 @@ interface AddTransactionDrawerProps {
     initialData?: Transaction | null;
     onSuccess?: (amount: number, newTx?: Transaction) => void;
 }
-
-const LAST_PAYER_KEY = "ourglass_last_payer";
 
 // Hebrew categories that match the database category text field
 const CATEGORIES = [
@@ -117,8 +110,6 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                 // Installments Logic
                 const totalAmount = numericAmount;
                 const perInstallment = Math.round((totalAmount / installments) * 100) / 100;
-                // Fix rounding error on last installment if needed, but keeping simple for now
-                // Actually, let's just use perInstallment for all, small diffs ok.
 
                 const txs = [];
                 for (let i = 0; i < installments; i++) {
@@ -173,7 +164,6 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                 if (onSuccess) onSuccess(numericAmount, mappedTx);
             }
 
-            // We no longer save LAST_PAYER_KEY, we rely on appIdentity
             onClose();
 
         } catch (error: unknown) {
@@ -194,18 +184,15 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
             const { error } = await supabase.from('wishlist').insert({
                 name: `❄️ [מוקפא] ${itemName}`,
                 price: numericAmount,
-                status: 'pending', // or 'frozen' if supported
+                status: 'pending',
                 user_id: user?.id,
-                link: null // Could add metadata here if schema allows
+                link: null
             });
 
             if (error) throw error;
 
             toast.success("הוקפא בהצלחה! 🧊", { description: "ההוצאה הועברה לרשימת המשאלות ל-24 שעות." });
-            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); // Need confetti import? It's global or need import? 
-            // Check if confetti is available. It's used in wishlist/page.tsx but imported? 
-            // wishlist/page.tsx uses `import confetti from 'canvas-confetti'`. 
-            // I should add that import or just skip confetti for now to avoid errors if not installed.
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             onClose();
         } catch (e: unknown) {
             const err = e as { message?: string };
@@ -238,6 +225,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
 
         performSave();
     };
+
     useEffect(() => {
         if (isOpen) {
             triggerHaptic();
@@ -252,7 +240,6 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                 setAmountStr("");
                 setDescription("");
                 setMoodRating(null);
-                // If category prop is provided (from QuickActions), use it
                 if (category) {
                     setSelectedCategory(category);
                     setDescription('');
@@ -280,8 +267,6 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
         triggerHaptic();
         setAmountStr(prev => prev.slice(0, -1));
     };
-
-
 
     return (
         <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()} dismissible={false}>

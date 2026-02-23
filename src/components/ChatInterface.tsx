@@ -16,7 +16,7 @@ interface ChatInterfaceProps {
 function generateSuggestedQuestions(context: FinancialContext): string[] {
     if (!context) return [];
 
-    const { recentTransactions, subscriptions, liabilities, budget, income, wishlist, wealthSnapshot } = context;
+    const { recentTransactions, subscriptions, liabilities, budget, wishlist, wealthSnapshot } = context;
 
     const totalSpent = recentTransactions?.reduce((s: number, t: Transaction) => s + Number(t.amount), 0) || 0;
     const budgetPct = budget > 0 ? Math.round((totalSpent / budget) * 100) : 0;
@@ -78,6 +78,7 @@ export const ChatInterface = ({ context, onClose }: ChatInterfaceProps) => {
 };
 
 const ChatInterfaceInner = ({ initialMessages, context, onClose }: { initialMessages: UIMessage[], context: FinancialContext, onClose: () => void }) => {
+    // Context is used globally by the AI prompt
     const { messages, setMessages, sendMessage, status } = useChat();
     const [input, setInput] = useState('');
     const [showScrollBtn, setShowScrollBtn] = useState(false);

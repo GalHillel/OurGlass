@@ -16,7 +16,7 @@ describe('Mass Validation - UI Components', () => {
 
     describe('Badge extensive permutations', () => {
         it.each(badgeCases)('renders correctly for ID %i with variant %s', (id, text, variant) => {
-            render(<Badge variant={variant as any}>{text as string}</Badge>);
+            render(<Badge variant={variant as "default" | "secondary" | "destructive" | "outline"}>{text as string}</Badge>);
             const element = screen.getByText(text as string);
             expect(element).toBeInTheDocument();
         });
@@ -37,7 +37,7 @@ describe('Mass Validation - UI Components', () => {
 
     describe('Button extensive permutations', () => {
         it.each(buttonCases)('renders correctly for ID %i with variant %s, size %s, disabled: %s', (id, text, variant, size, disabled) => {
-            render(<Button variant={variant as any} size={size as any} disabled={disabled as boolean}>{text as string}</Button>);
+            render(<Button variant={variant as "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"} size={size as "default" | "sm" | "lg" | "icon"} disabled={disabled as boolean}>{text as string}</Button>);
             const element = screen.getByText(text as string);
             expect(element).toBeInTheDocument();
             expect(element.tagName).toBe('BUTTON');
