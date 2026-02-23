@@ -9,45 +9,41 @@ interface TransactionSummary {
   };
 }
 
+const toSafeNumber = (value: unknown): number => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+};
+
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
   const { messages, context }: { messages: UIMessage[], context: FinancialContext } = await req.json();
 
-  /*
-# Strict CI/CD Lint Enforcement Plan
-
-Zero-tolerance cleanup of all ESLint problems to ensure the GitHub CI pass.
-
-## Proposed Changes
-
-### Mandate 1: Unused Variable Annihilation
-- **Imports**: Systematic removal of all unused imports identified by `no-unused-vars`.
-- **Variables**: prefixing callback params with `_` or removing local variables that are never read.
-
-### Mandate 2: `any` Type Extermination
-- **Tests**: Comprehensive refactor of `src/__tests__` to use `unknown`, `Record<string, unknown>`, or proper interface mocks.
-- **Supabase Mocks**: Use `as unknown as SupabaseClient` for strict type casting.
-- **SDK Mocks**: Use `vi.Mock` where appropriate.
-
-### Mandate 3: TS-IGNORE Fix
-- Specific fix for `src/__tests__/ui/popover.test.tsx` to use `@ts-expect-error`.
-
-## Execution Order
-1. Mandate 3 (Quick fix).
-2. Mandate 1 (Project-wide cleanup of warnings).
-3. Mandate 2 (Test suite refactoring for errors).
-4. Final local validation.
-   */
-
   // Aggregating transactions to save Gemini tokens
   const recentTx = context?.recentTransactions || [];
+  const monthlyIncome = toSafeNumber(context?.income);
+  const rawBudget = toSafeNumber(context?.budget);
+  const totalSpentThisMonth = recentTx.reduce((sum, tx) => sum + toSafeNumber(tx.amount), 0);
+  const subscriptions = context?.subscriptions || [];
+  const activeSubscriptionsTotal = subscriptions
+    .filter(subscription => subscription.active !== false)
+    .reduce((sum, subscription) => sum + toSafeNumber(subscription.amount), 0);
+
+  const fallbackBudget = monthlyIncome > 0
+    ? Math.max(monthlyIncome, totalSpentThisMonth)
+    : totalSpentThisMonth > 0
+      ? totalSpentThisMonth
+      : toSafeNumber(context?.fixedExpenses);
+  const resolvedBudget = rawBudget > 0 ? rawBudget : fallbackBudget;
+
+  const currentLeftoverIncome = monthlyIncome - totalSpentThisMonth;
+
   const txSummary = recentTx.reduce((acc: TransactionSummary, tx) => {
     const cat = tx.category || 'Other';
     if (!acc[cat]) acc[cat] = { count: 0, total: 0 };
     acc[cat].count += 1;
-    acc[cat].total += Number(tx.amount);
+    acc[cat].total += toSafeNumber(tx.amount);
     return acc;
   }, {});
 
@@ -64,12 +60,24 @@ Zero-tolerance cleanup of all ESLint problems to ensure the GitHub CI pass.
   const systemMessage = `אתה פסיכולוג/יועץ פיננסי חכם, שנון, מעט קשוח אך אמפתי עבור הזוג.
     אתה מדבר עם ${identityName || 'המשתמש'}. פנה אליו/אליה בשמו/ה.
     אתה מקבל את כל הנתונים שלהם עד היום. השתמש במידע זה כדי לתת תשובות סופר-מדויקות, מותאמות אישית, שמראות שאתה מכיר את כל החשבונות שלהם.
+
+    Financial Summary:
+    - Income: ₪${monthlyIncome.toLocaleString()}
+    - Budget: ₪${resolvedBudget.toLocaleString()}
+    - Total Spent This Month (Including Subscriptions): ₪${totalSpentThisMonth.toLocaleString()}
+    - Active Subscriptions Total: ₪${activeSubscriptionsTotal.toLocaleString()}
+    - Monthly Budget Limit: ${resolvedBudget} NIS.
+    - Current Leftover Income: ₪${currentLeftoverIncome.toLocaleString()}
+
+    CRITICAL MATH RULE: The 'Total Spent This Month' figure ALREADY INCLUDES all paid subscriptions and recurring bills. DO NOT add 'Total Subscriptions Cost' to 'Total Spent This Month'. Doing so is double-counting and strictly forbidden.
+    The 'Subscriptions' list is provided ONLY so you know the user's fixed obligations. Do not treat them as extra unrecorded expenses unless predicting future unpaid bills.
+    Current Leftover Income = (Monthly Income) - (Total Spent This Month).
     
     Financial Context:
-    - Monthly Income (from settings): ₪${context?.income ?? '0'}
-    - Monthly Budget for variable expenses (from settings): ₪${context?.budget ?? '0'}
-    - Fixed Expenses (Total: ₪${context?.fixedExpenses || '0'}):
-      * Subscriptions: ${JSON.stringify(context?.subscriptions || 'None')}
+    - Monthly Income (from settings): ₪${monthlyIncome.toLocaleString()}
+    - Monthly Budget for variable expenses (from settings): ₪${resolvedBudget.toLocaleString()}
+    - Fixed Expenses (Total: ₪${toSafeNumber(context?.fixedExpenses).toLocaleString()}):
+      * Subscriptions: ${JSON.stringify(subscriptions || 'None')}
       * Loans/Liabilities: ${JSON.stringify(context?.liabilities || 'None')}
     - LIVE Net Worth (calculated right now): ${liveNetWorth !== null ? '₪' + Number(liveNetWorth).toLocaleString() : 'לא זמין'}
     - Last DB Wealth Snapshot (historical reference): ${JSON.stringify(context?.wealthSnapshot || 'No snapshot')}
@@ -82,7 +90,8 @@ Zero-tolerance cleanup of all ESLint problems to ensure the GitHub CI pass.
     2. ענה תמיד בעברית בלבד, בלשון דיבור טבעית.
     3. שמור על תשובות קצרות וקולעות (עד 4 משפטים), אלא אם התבקשת לפרט.
     4. השתמש באימוג'י רלוונטיים. אם פנוי כסף - תוציא אותם לקניות! אם בחובות או חריגה מהתקציב - תהיה קשוח אבל מעודד.
-    5. ההכנסה החודשית והתקציב הם מהגדרות המשתמש - אל תנחש אותם. אם הם 0, שאל את המשתמש לעדכן בהגדרות.`;
+    5. ההכנסה החודשית והתקציב הם מהגדרות המשתמש - אל תנחש אותם. אם הם 0, שאל את המשתמש לעדכן בהגדרות.
+    6. כשאתה מחשב מצב כספי נוכחי, השתמש רק ב-Total Spent This Month כהוצאה בפועל. אל תוסיף שוב מנויים שכבר שולמו.`;
 
   const modelMessages = await convertToModelMessages(messages);
 
