@@ -21,22 +21,25 @@ describe('LiabilitiesSection', () => {
         vi.spyOn(hooks, 'useLiabilities').mockReturnValue({ data: [], isLoading: false } as unknown as UseQueryResult<Liability[], Error>);
         vi.spyOn(hooks, 'useAddLiability').mockReturnValue({ mutate: vi.fn(), isPending: false } as unknown as UseMutationResult<Liability, Error, Omit<Liability, "id" | "couple_id" | "created_at">, unknown>);
         vi.spyOn(hooks, 'useDeleteLiability').mockReturnValue({ mutate: vi.fn() } as unknown as UseMutationResult<void, Error, string, unknown>);
+        vi.spyOn(hooks, 'isLiabilityActive').mockReturnValue(true);
 
         render(<LiabilitiesSection />);
 
         expect(screen.getByText('אין התחייבויות')).toBeInTheDocument();
     });
 
-    it('renders liabilities correctly', () => {
+    it('renders liabilities with progress and category', () => {
         const mockLiabilities = [
             {
                 id: '1',
                 name: 'Car Loan',
+                category: 'Car Loan',
                 type: 'car' as const,
-                principal: 100000,
-                current_balance: 80000,
-                interest_rate: 3,
+                total_amount: 100000,
+                remaining_amount: 80000,
+                interest_rate: 8.9,
                 monthly_payment: 2000,
+                end_date: '2999-01-01',
                 owner: 'joint' as const
             }
         ];
@@ -44,12 +47,12 @@ describe('LiabilitiesSection', () => {
         vi.spyOn(hooks, 'useLiabilities').mockReturnValue({ data: mockLiabilities, isLoading: false } as unknown as UseQueryResult<Liability[], Error>);
         vi.spyOn(hooks, 'useAddLiability').mockReturnValue({ mutate: vi.fn(), isPending: false } as unknown as UseMutationResult<Liability, Error, Omit<Liability, "id" | "couple_id" | "created_at">, unknown>);
         vi.spyOn(hooks, 'useDeleteLiability').mockReturnValue({ mutate: vi.fn() } as unknown as UseMutationResult<void, Error, string, unknown>);
+        vi.spyOn(hooks, 'isLiabilityActive').mockReturnValue(true);
 
         render(<LiabilitiesSection />);
 
-        expect(screen.getByText('Car Loan')).toBeInTheDocument();
+        expect(screen.getAllByText('Car Loan').length).toBeGreaterThan(0);
         expect(screen.getByText('₪80,000')).toBeInTheDocument();
-        // 100k - 80k = 20k / 100k = 20%
-        expect(screen.getByText('20% שולם')).toBeInTheDocument();
+        expect(screen.getByText('20%')).toBeInTheDocument();
     });
 });
