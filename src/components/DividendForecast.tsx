@@ -2,14 +2,24 @@
 
 import { Calendar, TrendingUp } from "lucide-react";
 import { Goal } from "@/types";
+import { useMemo } from "react";
 
 interface DividendForecastProps {
     assets?: Goal[];
 }
 
+const seededRandom = (seed: string) => {
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+        hash = (hash << 5) - hash + seed.charCodeAt(i);
+        hash |= 0;
+    }
+    return (Math.abs(hash) % 100) / 100;
+};
+
 export const DividendForecast = ({ assets = [] }: DividendForecastProps) => {
     // Generate dividends based on actual assets
-    const upcomingDividends = assets
+    const upcomingDividends = useMemo(() => assets
         .filter(a => a.type === 'stock')
         .map(asset => {
             // Mock dividend logic based on name/randomness for demo
@@ -19,7 +29,7 @@ export const DividendForecast = ({ assets = [] }: DividendForecastProps) => {
                 asset.name.toLowerCase().includes('etf') ||
                 asset.name.toLowerCase().includes('s&p');
 
-            if (!isDividendPayer && Math.random() > 0.3) return null; // Randomly assign dividends to others
+            if (!isDividendPayer && seededRandom(asset.name) > 0.3) return null;
 
             return {
                 name: asset.name,
@@ -27,8 +37,8 @@ export const DividendForecast = ({ assets = [] }: DividendForecastProps) => {
                 date: "15/05" // Next quarter mock
             };
         })
-        .filter(Boolean)
-        .slice(0, 3); // Take top 3
+        .filter((div): div is { name: string; amount: number; date: string } => div !== null)
+        .slice(0, 3), [assets]);
 
     const totalForecast = upcomingDividends.reduce((sum, item) => sum + (item?.amount || 0), 0);
 

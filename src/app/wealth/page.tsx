@@ -319,7 +319,7 @@ export default function WealthPage() {
                                                 </div>
                                                 <div className="text-left">
                                                     <div className="font-black text-xl tracking-tight neon-text">
-                                                        ₪{Number((asset as any).calculatedValue || asset.current_amount).toLocaleString()}
+                                                        ₪{Number(asset.calculatedValue || asset.current_amount).toLocaleString()}
                                                     </div>
                                                     {(asset.investment_type === 'usd_cash' || asset.type === 'usd_cash') && (
                                                         <div className="flex justify-end gap-1">

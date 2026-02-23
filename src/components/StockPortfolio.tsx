@@ -205,9 +205,10 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
 
             closeModals();
             fetchPrices();
-        } catch (e) {
+        } catch (e: unknown) {
             console.error("Save Error:", JSON.stringify(e, null, 2));
-            toast.error("שגיאה בשמירה: " + ((e as any).message || "Unknown error"));
+            const err = e as { message?: string };
+            toast.error("שגיאה בשמירה: " + (err.message || "Unknown error"));
         } finally {
             setLoading(false);
         }

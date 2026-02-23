@@ -1,34 +1,16 @@
 "use client";
 
-import { QuickActions } from "@/components/QuickActions";
 import { AddTransactionDrawer } from "@/components/AddTransactionDrawer";
 import { TransactionList } from "@/components/TransactionList";
-import { PartnerStats } from "@/components/PartnerStats";
 import { HomeMosaic } from "@/components/HomeMosaic";
-import { CategoryBreakdown, normalizeCategory } from "@/components/CategoryBreakdown";
+import { normalizeCategory } from "@/components/CategoryBreakdown";
 import { getDaysRemainingInCycle, getBillingPeriodForDate } from "@/lib/billing";
 import { triggerHaptic } from "@/utils/haptics";
 import { calculateBurnRate, cn } from "@/lib/utils";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { BudgetGauges } from "@/components/BudgetGauges";
-import { BudgetHealthScore } from "@/components/BudgetHealthScore";
-import { SavingsTracker } from "@/components/SavingsTracker";
 import dynamic from 'next/dynamic';
 
-import { TimeTravelSlider } from "@/components/TimeTravelSlider";
 
-const ReactorCore = dynamic(() => import('@/components/ReactorCore').then(mod => mod.ReactorCore), {
-  loading: () => <div className="w-[300px] h-[300px] rounded-full border border-white/10 animate-pulse" />,
-  ssr: false
-});
-
-const MonthlyCalendar = dynamic(() => import('@/components/MonthlyCalendar').then(mod => mod.MonthlyCalendar), {
-  ssr: false
-});
-
-const SmartInsights = dynamic(() => import('@/components/SmartInsights').then(mod => mod.SmartInsights), {
-  ssr: false
-});
 import { createClient } from "@/utils/supabase/client";
 import { Transaction, Goal, Subscription, Liability } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
@@ -36,30 +18,15 @@ import { useWealth } from "@/hooks/useWealth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isSameDay, addMonths, subMonths, format, differenceInDays, addDays } from "date-fns";
 import { he } from "date-fns/locale";
-import { Shield, Rocket, ChevronLeft, ChevronRight, LayoutGrid, EyeOff, CalendarRange, Calendar, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarRange, Calendar, X } from "lucide-react";
 import { toast } from "sonner";
-import CountUp from "react-countup";
 
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
+import { motion, LayoutGroup } from "framer-motion";
 import { Loader2 } from "lucide-react";
 
 // Phase 4-6 components
-const PredictiveCashflow = dynamic(() => import('@/components/PredictiveCashflow').then(mod => mod.PredictiveCashflow), {
-  ssr: false,
-  loading: () => <Skeleton className="h-64 w-full rounded-3xl bg-white/5" />
-});
-
-import { SettleUpCard } from "@/components/SettleUpCard";
 import { GuiltFreeWallets } from "@/components/GuiltFreeWallets";
-
-const MoodSpendingInsight = dynamic(() => import('@/components/MoodSpendingInsight').then(mod => mod.MoodSpendingInsight), {
-  ssr: false,
-  loading: () => <Skeleton className="h-48 w-full rounded-3xl bg-white/5" />
-});
-
-import { MonthlyRoastPraise } from "@/components/MonthlyRoastPraise";
 import { AIChatButton } from "@/components/AIChatButton";
-import { QuestsAndBadges } from "@/components/QuestsAndBadges";
 
 // Simplified PullToRefresh Component that doesn't block scroll
 const PullToRefresh = ({ children, onRefresh }: { children: React.ReactNode, onRefresh: () => Promise<void> }) => {
@@ -110,15 +77,12 @@ export default function Home() {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewingDate, setViewingDate] = useState(new Date());
-  const [budgetInfo, setBudgetInfo] = useState({ budget: 20000, fixed: 0 });
-  const [isPrivacyMode, setIsPrivacyMode] = useState(false); // Manual Privacy Mode
-
-  const daysRemaining = getDaysRemainingInCycle(); // This is for current cycle only, maybe update if needed for UI but keeping for now
+  const [isPrivacyMode] = useState(false); // Manual Privacy Mode
 
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
   const { user, profile, loading: authLoading } = useAuth();
-  const { netWorth, investmentsValue, cashValue, assets, loading: wealthLoading } = useWealth();
+  const { assets } = useWealth();
 
   const [burnRateData, setBurnRateData] = useState<{ status: 'safe' | 'warning' | 'critical', projectedDate: Date | null }>({ status: 'safe', projectedDate: null });
 
@@ -176,10 +140,9 @@ export default function Home() {
       setSubscriptions(subsData || []);
       setLiabilities(liabData || []);
 
-      const MONTHLY_BUDGET = profile?.budget || 20000;
-      const totalFixed = subsData?.reduce((sum: number, sub: any) => sum + Number(sub.amount), 0) || 0;
-      setBudgetInfo({ budget: MONTHLY_BUDGET, fixed: totalFixed });
+      const totalFixed = subsData?.reduce((sum: number, sub: Subscription) => sum + Number(sub.amount), 0) || 0;
 
+      const MONTHLY_BUDGET = profile?.budget || 20000;
       const totalExpenses = transactionsData.reduce((sum: number, tx: Transaction) => sum + Number(tx.amount), 0) || 0;
       const currentBalance = Math.round((MONTHLY_BUDGET - totalFixed - totalExpenses) * 100) / 100;
       setBalance(currentBalance);
@@ -193,7 +156,7 @@ export default function Home() {
         const daysIntoPeriod = differenceInDays(new Date(), start) + 1;
 
         // 1. Identify Fixed Amounts from Subscriptions
-        const fixedAmounts = new Set(subsData?.map((s: any) => Number(s.amount)) || []);
+        const fixedAmounts = new Set(subsData?.map((s: Subscription) => Number(s.amount)) || []);
 
         // 2. Filter Transactions: Exclude matches (Fixed)
         // We use a small tolerance or exact match. Exact is safer to avoid excluding common prices like 50.
@@ -238,20 +201,15 @@ export default function Home() {
 
       if (prevError) console.error("Prev Data Error:", prevError);
 
-      const prevExpenses = prevTxData?.reduce((sum: number, tx: any) => sum + Number(tx.amount), 0) || 0;
+      const prevExpenses = prevTxData?.reduce((sum: number, tx: { amount: number }) => sum + Number(tx.amount), 0) || 0;
       const currentExpensesSoFar = transactionsData
         .filter(tx => new Date(tx.date) <= limitDate)
         .reduce((sum: number, tx: Transaction) => sum + Number(tx.amount), 0) || 0;
 
       setComparisonDiff(currentExpensesSoFar - prevExpenses);
-
-    } catch (error: any) {
-      console.error("API Error Detailed:", {
-        message: error?.message,
-        stack: error?.stack,
-        raw: error
-      });
-      toast.error(`שגיאה בטעינת הנתונים: ${error?.message || "Unknown error"}`);
+    } catch (error: unknown) {
+      console.error("API Error Detailed:", error);
+      toast.error(`שגיאה בטעינת הנתונים: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setLoading(false);
     }
@@ -272,10 +230,7 @@ export default function Home() {
     );
   }
 
-  const handleQuickAction = (id: string) => {
-    setSelectedCategory(id);
-    setIsDrawerOpen(true);
-  };
+
 
   const handleTransactionAdded = (amount: number, newTx?: Transaction) => {
     if (balance !== null) {
@@ -303,23 +258,9 @@ export default function Home() {
     filteredTransactions = filteredTransactions.filter(tx => normalizeCategory(tx.category) === selectedFilterCategory);
   }
 
-  const balanceRatio = balance && profile?.budget ? balance / profile.budget : 0.5;
-  const isLowFunds = balanceRatio < 0.2;
-  // Removed gradient backgrounds to fix colored square glitch
-  const environmentClass = '';
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    const billingPeriod = getBillingPeriodForDate(viewingDate);
-    const daysRemaining = Math.max(1, differenceInDays(billingPeriod.end, new Date()));
-    const dailyBudget = balance && balance > 0 ? Math.round(balance / daysRemaining) : 0;
 
-    if (balance && balance < 0) return "שים לב למינוס";
-    if (hour < 5) return "לילה טוב";
-    if (hour < 12) return `בוקר טוב! התקציב להיום: ₪${dailyBudget}`;
-    if (hour < 18) return `המשך יום נעים (נותרו ₪${dailyBudget})`;
-    return "ערב טוב, נרגעים?";
-  };
+
 
   return (
     <div className="flex flex-col min-h-screen pb-20 text-white selection:bg-blue-500/50 bg-slate-950">

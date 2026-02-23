@@ -1,10 +1,9 @@
-"use client";
-
 import { useMemo } from "react";
 import { Shield, AlertTriangle, CheckCircle } from "lucide-react";
+import { Goal } from "@/types";
 
 interface RiskAnalysisProps {
-    investments: any[]; // Replace with specific type if available
+    investments: Goal[];
     totalWealth: number;
     cash: number;
 }
@@ -18,12 +17,12 @@ export const RiskAnalysisCard = ({ investments, totalWealth, cash }: RiskAnalysi
 
         // 2. Crypto Exposure (Mock detection based on asset name or type)
         // Assuming 'crypto' type exists, or checking names like BTC, ETH
-        const cryptoAssets = investments.filter(i => i.type === 'crypto' || i.name.toLowerCase().includes('btc') || i.name.toLowerCase().includes('eth'));
-        const cryptoTotal = cryptoAssets.reduce((sum, i) => sum + Number(i.amount), 0);
+        const cryptoAssets = investments.filter(i => (i.type as string) === 'crypto' || i.name.toLowerCase().includes('btc') || i.name.toLowerCase().includes('eth'));
+        const cryptoTotal = cryptoAssets.reduce((sum, i) => sum + Number(i.current_amount), 0);
         const cryptoRatio = cryptoTotal / totalWealth;
 
         let riskLevel: 'low' | 'medium' | 'high' = 'low';
-        let messages: string[] = [];
+        const messages: string[] = [];
 
         if (cryptoRatio > 0.2) {
             riskLevel = 'high';
@@ -43,9 +42,9 @@ export const RiskAnalysisCard = ({ investments, totalWealth, cash }: RiskAnalysi
         // 3. Concentration Risk (Single Asset > 20% of Portfolio)
         const portfolioValue = totalWealth - cash;
         if (portfolioValue > 0) {
-            const biggestAsset = investments.reduce((prev, current) => (Number(prev.amount || prev.current_amount) > Number(current.amount || current.current_amount)) ? prev : current, investments[0]);
+            const biggestAsset = investments.reduce((prev, current) => (Number(prev.current_amount) > Number(current.current_amount)) ? prev : current, investments[0]);
             if (biggestAsset) {
-                const concentrationRatio = Number(biggestAsset.amount || biggestAsset.current_amount) / portfolioValue;
+                const concentrationRatio = Number(biggestAsset.current_amount) / portfolioValue;
                 if (concentrationRatio > 0.25) {
                     riskLevel = 'medium';
                     messages.push(`תלות גבוהה בנכס בודד: ${biggestAsset.name} (${Math.round(concentrationRatio * 100)}% מהתיק).`);
@@ -64,7 +63,7 @@ export const RiskAnalysisCard = ({ investments, totalWealth, cash }: RiskAnalysi
         high: { color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20", icon: Shield, label: "סיכון גבוה" }
     };
 
-    const Theme = config[analysis.riskLevel];
+    const Theme = config[analysis.riskLevel as keyof typeof config];
     const Icon = Theme.icon;
 
     return (

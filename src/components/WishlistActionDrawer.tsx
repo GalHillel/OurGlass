@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Drawer } from "vaul";
 import { WishlistItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { Minus, Plus, Check, X, Banknote, Sparkles } from "lucide-react";
+import { Check, Banknote, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/utils/haptics";
 
@@ -22,13 +22,7 @@ export const WishlistActionDrawer = ({ isOpen, onClose, item, mode, onConfirm }:
     const [amount, setAmount] = useState<number>(0);
     const [sliderValue, setSliderValue] = useState([0]);
 
-    // Reset when opening
-    useEffect(() => {
-        if (isOpen) {
-            setAmount(0);
-            setSliderValue([0]);
-        }
-    }, [isOpen, item]);
+
 
     if (!item) return null;
 

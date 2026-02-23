@@ -65,7 +65,7 @@ export default function LoginPage() {
 
                 router.refresh();
                 router.replace("/");
-            } catch (error: any) {
+            } catch (error: unknown) {
                 console.error("Auto-login failed:", error);
                 setHasError(true);
                 toast.error("שגיאה בהתחברות אוטומטית", {
@@ -76,7 +76,7 @@ export default function LoginPage() {
 
         autoLogin();
         // Empty dependency array - run only once on mount
-    }, []);
+    }, [router, supabase.auth]);
 
     const handleRetry = () => {
         if (cooldownSeconds > 0) return;

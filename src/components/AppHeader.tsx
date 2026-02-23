@@ -1,7 +1,7 @@
 "use client";
 
-import { memo, useState, useEffect } from "react";
-import { format } from "date-fns";
+import { memo, useState, useMemo } from "react";
+
 import { LucideIcon, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -17,21 +17,22 @@ interface AppHeaderProps {
 }
 
 export const AppHeader = memo(({ title, subtitle, icon: Icon, iconColor = "text-blue-400", titleColor = "text-blue-500", className, onIconClick }: AppHeaderProps) => {
-    const [greeting, setGreeting] = useState("");
-    const [isZen, setIsZen] = useState(false);
-
-    useEffect(() => {
+    const greeting = useMemo(() => {
         const hour = new Date().getHours();
-        if (hour >= 5 && hour < 12) setGreeting("בוקר טוב ☕");
-        else if (hour >= 12 && hour < 17) setGreeting("המשך יום מעולה ☀️");
-        else if (hour >= 17 && hour < 22) setGreeting("ערב טוב 🌙");
-        else setGreeting("לילה טוב, חסכת היום? ✨");
-
-        // Check if Zen mode was active
-        if (typeof document !== 'undefined' && document.body.classList.contains("zen-mode")) {
-            setIsZen(true);
-        }
+        if (hour >= 5 && hour < 12) return "בוקר טוב ☕";
+        if (hour >= 12 && hour < 17) return "המשך יום מעולה ☀️";
+        if (hour >= 17 && hour < 22) return "ערב טוב 🌙";
+        return "לילה טוב, חסכת היום? ✨";
     }, []);
+
+    const [isZen, setIsZen] = useState(() => {
+        if (typeof document !== 'undefined') {
+            return document.body.classList.contains("zen-mode");
+        }
+        return false;
+    });
+
+
 
     const toggleZenMode = () => {
         const newState = !isZen;

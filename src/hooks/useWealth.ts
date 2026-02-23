@@ -3,6 +3,14 @@ import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Goal } from "@/types";
 
+interface SupabaseError {
+    message?: string;
+    details?: string;
+    hint?: string;
+    code?: string;
+    stack?: string;
+}
+
 export const useWealth = () => {
     const [netWorth, setNetWorth] = useState<number>(0);
     const [investmentsValue, setInvestmentsValue] = useState<number>(0);
@@ -65,11 +73,11 @@ export const useWealth = () => {
                         livePrices = data.stocks || {};
                         usdToIls = data.usdToIls || data.exchangeRate || 3.65;
                     }
-                } catch (apiError) {
+                } catch (apiError: unknown) {
                     const errorDetails = {
-                        message: (apiError as any)?.message,
-                        stack: (apiError as any)?.stack,
-                        fullError: JSON.stringify(apiError, Object.getOwnPropertyNames(apiError), 2)
+                        message: apiError instanceof Error ? apiError.message : String(apiError),
+                        stack: apiError instanceof Error ? apiError.stack : undefined,
+                        fullError: JSON.stringify(apiError, Object.getOwnPropertyNames(apiError || {}), 2)
                     };
                     console.error("Failed to fetch stock prices:", errorDetails);
                     console.error("Failed to fetch stock prices Raw JSON:", JSON.stringify(apiError, Object.getOwnPropertyNames(apiError), 2));
@@ -80,7 +88,7 @@ export const useWealth = () => {
             let totalInvestments = 0;
             let totalCash = 0;
 
-            const calculatedAssets = goals.map((asset: any) => {
+            const calculatedAssets = (goals as unknown as Goal[]).map((asset: Goal) => {
                 let calculatedValue = 0;
 
                 if (asset.type === 'stock' && asset.symbol) {
@@ -108,7 +116,7 @@ export const useWealth = () => {
                 } else {
                     calculatedValue = Number(asset.current_amount) || 0;
 
-                    if (asset.interest_rate > 0 && asset.last_interest_calc) {
+                    if (asset.interest_rate && asset.interest_rate > 0 && asset.last_interest_calc) {
                         const lastCalcDate = new Date(asset.last_interest_calc);
                         const today = new Date();
                         const diffTime = today.getTime() - lastCalcDate.getTime();
@@ -142,14 +150,15 @@ export const useWealth = () => {
             setInvestmentsValue(totalInvestments);
             setCashValue(totalCash);
 
-        } catch (error) {
+        } catch (error: unknown) {
+            const err = error as SupabaseError;
             const errorDetails = {
-                message: (error as any)?.message,
-                details: (error as any)?.details,
-                hint: (error as any)?.hint,
-                code: (error as any)?.code,
-                stack: (error as any)?.stack,
-                fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+                message: err.message,
+                details: err.details,
+                hint: err.hint,
+                code: err.code,
+                stack: err.stack,
+                fullError: JSON.stringify(error, Object.getOwnPropertyNames(error || {}), 2)
             };
             console.error("useWealth Error:", errorDetails);
             console.error("useWealth Error Raw JSON:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));

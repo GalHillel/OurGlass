@@ -14,7 +14,8 @@ export const IdentityGate = ({ children }: { children: React.ReactNode }) => {
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
-        setIsMounted(true);
+        const timer = setTimeout(() => setIsMounted(true), 0);
+        return () => clearTimeout(timer);
     }, []);
 
     // Don't show anything while determining mount/auth/identity status

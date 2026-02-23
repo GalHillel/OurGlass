@@ -8,6 +8,7 @@ import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { motion } from "framer-motion";
+import { Goal } from "@/types";
 
 interface MonthlySummaryProps {
     currentBalance: number;
@@ -31,7 +32,7 @@ export const MonthlySummary = ({ currentBalance, onRefresh }: MonthlySummaryProp
                 .from('goals')
                 .select('*')
                 .eq('type', 'cash')
-                .single();
+                .single() as { data: Goal | null };
 
             if (!fortress) throw new Error("לא נמצא מחסנית 'מבצר' (cash)");
 
@@ -78,8 +79,9 @@ export const MonthlySummary = ({ currentBalance, onRefresh }: MonthlySummaryProp
 
             setStep('done');
             onRefresh();
-        } catch (error: any) {
-            toast.error("שגיאה בסגירת חודש", { description: error.message });
+        } catch (error: unknown) {
+            const err = error as { message?: string };
+            toast.error("שגיאה בסגירת חודש", { description: err.message || "Unknown error" });
         } finally {
             setLoading(false);
         }

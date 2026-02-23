@@ -85,6 +85,7 @@ export interface Goal {
     quantity?: number;
     investment_type?: string;
     last_updated?: string;
+    calculatedValue?: number;
 }
 
 export type Asset = Goal;
@@ -131,5 +132,18 @@ export interface WealthSnapshot {
     investments_value: number;
     liabilities_value: number;
     created_at: string;
+}
+
+export interface FinancialContext {
+    recentTransactions: Transaction[];
+    subscriptions: Subscription[];
+    liabilities: Liability[];
+    wishlist: WishlistItem[];
+    wealthSnapshot: WealthSnapshot | null;
+    fixedExpenses: number;
+    budget: number;
+    income: number;
+    identityName: string;
+    liveNetWorth: number | null;
 }
 

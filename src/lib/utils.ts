@@ -5,11 +5,12 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function getHebrewError(error: any): string {
+export function getHebrewError(error: unknown): string {
   if (!error) return "שגיאה לא ידועה";
-  const msg = error.message?.toLowerCase() || "";
+  const err = error as { message?: string; code?: string };
+  const msg = err.message?.toLowerCase() || "";
 
-  if (msg.includes("unique constraint") || error.code === '23505') return "הפריט כבר קיים במערכת";
+  if (msg.includes("unique constraint") || err.code === '23505') return "הפריט כבר קיים במערכת";
   if (msg.includes("violates check constraint")) return "נתונים לא תקינים";
   if (msg.includes("null value")) return "חסרים נתונים בגוף הבקשה";
   if (msg.includes("foreign key")) return "לא ניתן למחוק פריט זה מכיוון שהוא מקושר לנתונים אחרים";

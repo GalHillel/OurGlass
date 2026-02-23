@@ -32,7 +32,7 @@ export const ReactorCore = ({ income, budget, expenses, balance, burnRateStatus,
             daysPassed: days,
             daysRemaining: totalDays - days
         };
-    }, [balance, income, expenses, cycleStart, cycleEnd]);
+    }, [balance, income, budget, expenses, cycleStart, cycleEnd]);
 
     const { color, gradientFrom, gradientTo, strokeColor, isCrisis, isWarning, isCritical, statusEmoji } = useMemo(() => {
         const critical = burnRateStatus === 'critical';

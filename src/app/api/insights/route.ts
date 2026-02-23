@@ -15,18 +15,18 @@ export async function POST(req: Request) {
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const body = await req.json();
-        const { transactions, balance, budget, monthlyIncome, subscriptions, liabilities = [] } = body;
+        const { transactions, budget, monthlyIncome, subscriptions, liabilities = [] } = body;
 
-        const totalSpent = transactions.reduce((s: number, t: any) => s + t.amount, 0);
-        const subTotal = subscriptions.reduce((s: number, sub: any) => s + (sub.amount || 0), 0);
-        const liabTotal = liabilities.reduce((s: number, l: any) => s + (l.monthly_payment || 0), 0);
+        const totalSpent = (transactions as { amount: number }[]).reduce((s: number, t) => s + t.amount, 0);
+        const subTotal = (subscriptions as { amount: number }[]).reduce((s: number, sub) => s + (sub.amount || 0), 0);
+        const liabTotal = (liabilities as { monthly_payment: number }[]).reduce((s: number, l) => s + (l.monthly_payment || 0), 0);
         const totalFixed = subTotal + liabTotal;
         const budgetUsage = budget > 0 ? (totalSpent / budget) * 100 : 0;
         const savingsRate = monthlyIncome > 0 ? ((monthlyIncome - totalSpent) / monthlyIncome) * 100 : 0;
 
         // Group categories securely to avoid token limit explosions
         const categoryTotals: Record<string, number> = {};
-        transactions.forEach((tx: any) => {
+        (transactions as { category?: string; amount: number }[]).forEach((tx) => {
             const cat = tx.category || "אחר";
             categoryTotals[cat] = (categoryTotals[cat] || 0) + tx.amount;
         });
@@ -85,21 +85,24 @@ Example Output format:
                 // If it returned an object with an array inside
                 const values = Object.values(parsedContent);
                 const arrayVal = values.find(v => Array.isArray(v));
-                if (arrayVal) parsed = arrayVal as any[];
+                if (arrayVal) parsed = arrayVal as unknown[];
             }
-        } catch (e) {
-            console.error("Failed to parse Gemini/AI response", content);
+        } catch (e: unknown) {
+            console.error("Failed to parse Gemini/AI response", content, e);
         }
 
         return NextResponse.json({ insights: parsed.slice(0, 3) });
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const err = error as { status?: number | string; code?: number | string; message?: string };
         const isQuotaError =
-            error?.status === 429 ||
-            error?.code === 429 ||
-            error?.status === 'RESOURCE_EXHAUSTED' ||
-            error?.code === 'insufficient_quota' ||
-            error?.message?.toLowerCase().includes('quota') ||
-            error?.message?.toLowerCase().includes('exhausted');
+            err?.status === 429 ||
+            err?.code === 429 ||
+            err?.status === 'RESOURCE_EXHAUSTED' ||
+            err?.code === 'insufficient_quota' ||
+            (typeof err?.message === 'string' && (
+                err.message.toLowerCase().includes('quota') ||
+                err.message.toLowerCase().includes('exhausted')
+            ));
 
         if (isQuotaError) {
             return NextResponse.json({
@@ -110,7 +113,7 @@ Example Output format:
                 }]
             });
         }
-        console.error("Gemini Insights Error Detailed:", error?.message || error, "Status:", error?.status);
+        console.error("Gemini Insights Error Detailed:", err.message || err, "Status:", err.status);
 
         // Catch-all fallback so the frontend never crashes
         return NextResponse.json({

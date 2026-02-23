@@ -14,8 +14,8 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { transactions = [], subscriptions = [], liabilities = [], balance = 0, budget = 0, xpParams } = body;
 
-        const subTotal = subscriptions.reduce((s: number, sub: any) => s + (sub.amount || 0), 0);
-        const liabTotal = liabilities.reduce((s: number, l: any) => s + (l.monthly_payment || 0), 0);
+        const subTotal = (subscriptions as { amount: number }[]).reduce((s: number, sub) => s + (sub.amount || 0), 0);
+        const liabTotal = (liabilities as { monthly_payment: number }[]).reduce((s: number, l) => s + (l.monthly_payment || 0), 0);
         const totalFixed = subTotal + liabTotal;
 
         const prompt = `
@@ -63,7 +63,7 @@ Rules:
         });
 
         const content = result.response.text() || "{}";
-        let parsed: { quests: any[] } = { quests: [] };
+        let parsed: { quests: unknown[] } = { quests: [] };
         try {
             const temp = JSON.parse(content);
             if (Array.isArray(temp)) {
@@ -76,8 +76,9 @@ Rules:
         }
 
         return NextResponse.json(parsed);
-    } catch (error: any) {
-        if (error?.status === 429 || error?.code === 'insufficient_quota' || error?.type === 'insufficient_quota') {
+    } catch (error: unknown) {
+        const err = error as { status?: number; code?: string; type?: string; message?: string };
+        if (err?.status === 429 || err?.code === 'insufficient_quota' || err?.type === 'insufficient_quota') {
             return NextResponse.json({
                 quests: [
                     {
@@ -93,7 +94,7 @@ Rules:
                 ]
             });
         }
-        console.error("Gemini Quests Error:", error?.message || error);
+        console.error("Gemini Quests Error:", err?.message || err);
         return NextResponse.json({ quests: [] });
     }
 }

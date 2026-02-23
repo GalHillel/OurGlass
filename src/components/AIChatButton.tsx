@@ -11,20 +11,21 @@ import { useAppStore } from "@/stores/appStore";
 import { useWealth } from "@/hooks/useWealth";
 import { PAYERS } from "@/lib/constants";
 import { motion, AnimatePresence } from "framer-motion";
+import { FinancialContext, Transaction, Subscription, Goal, WishlistItem, WealthSnapshot } from "@/types";
 
 // Generates a dynamic one-liner insight from real financial data
-function generateDynamicInsight(context: any, firstName: string): string | null {
+function generateDynamicInsight(context: FinancialContext | null, firstName: string): string | null {
     if (!context) return null;
 
-    const { recentTransactions, budget, income, subscriptions, fixedExpenses } = context;
+    const { recentTransactions, budget, subscriptions } = context;
 
-    const totalSpent = recentTransactions?.reduce((s: number, t: any) => s + Number(t.amount), 0) || 0;
+    const totalSpent = recentTransactions?.reduce((s: number, t: Transaction) => s + Number(t.amount), 0) || 0;
     const budgetUsedPct = budget > 0 ? Math.round((totalSpent / budget) * 100) : 0;
     const remaining = Math.max(0, budget - totalSpent);
 
     // Category breakdown
     const cats: Record<string, number> = {};
-    recentTransactions?.forEach((t: any) => {
+    recentTransactions?.forEach((t: Transaction) => {
         const cat = t.category || 'אחר';
         cats[cat] = (cats[cat] || 0) + Number(t.amount);
     });
@@ -43,7 +44,7 @@ function generateDynamicInsight(context: any, firstName: string): string | null 
 
 export const AIChatButton = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const [context, setContext] = useState<any>(null);
+    const [context, setContext] = useState<FinancialContext | null>(null);
     const [error, setError] = useState(false);
     const [loading, setLoading] = useState(false);
     const [bubbleMessage, setBubbleMessage] = useState<string | null>(null);
@@ -87,15 +88,15 @@ export const AIChatButton = () => {
                 supabase.from('wealth_history').select('*').order('snapshot_date', { ascending: false }).limit(1)
             ]);
 
-            const subTotal = subs?.reduce((acc: number, curr: any) => acc + Number(curr.amount), 0) || 0;
-            const liabTotal = liabs?.reduce((acc: number, curr: any) => acc + Number(curr.monthly_payment), 0) || 0;
+            const subTotal = (subs as Subscription[] | null)?.reduce((acc: number, curr) => acc + Number(curr.amount), 0) || 0;
+            const liabTotal = liabs?.reduce((acc: number, curr) => acc + Number(curr.monthly_payment), 0) || 0;
 
-            const ctx = {
-                recentTransactions: txs || [],
-                subscriptions: subs || [],
+            const ctx: FinancialContext = {
+                recentTransactions: (txs as Transaction[]) || [],
+                subscriptions: (subs as Subscription[]) || [],
                 liabilities: liabs || [],
-                wishlist: wishlist || [],
-                wealthSnapshot: wealth?.[0] || null,
+                wishlist: (wishlist as WishlistItem[]) || [],
+                wealthSnapshot: (wealth?.[0] as WealthSnapshot) || null,
                 fixedExpenses: subTotal + liabTotal,
                 budget: profileData?.budget || 0,
                 income: profileData?.monthly_income || 0,
@@ -112,7 +113,7 @@ export const AIChatButton = () => {
         } finally {
             setLoading(false);
         }
-    }, [supabase]);
+    }, [supabase, identityName, liveNetWorth]);
 
     // Dynamic proactive bubble — fetch data, then generate insight
     useEffect(() => {
@@ -218,7 +219,7 @@ export const AIChatButton = () => {
                             </Button>
                         </div>
                     ) : (
-                        <ChatInterface context={context} onClose={() => setIsOpen(false)} />
+                        context && <ChatInterface context={context} onClose={() => setIsOpen(false)} />
                     )}
                 </DialogContent>
             </Dialog>

@@ -3,7 +3,7 @@
 import { Transaction, Subscription } from "@/types";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { Trash2, Edit2, ShoppingBag, Coffee, Car, Film, FileText, Utensils, Fuel, ShoppingCart, Calendar } from "lucide-react";
+import { Trash2, ShoppingBag, Coffee, Car, Film, FileText, Utensils, Fuel, ShoppingCart, Calendar } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 import { SwipeableRow } from "@/components/SwipeableRow";
@@ -145,14 +145,15 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
             if (error) throw error;
             toast.success("העסקה נמחקה");
             onRefresh();
-        } catch (error: any) {
+        } catch (error: unknown) {
             // Rollback
             setDeletedIds(prev => {
                 const next = new Set(prev);
                 next.delete(id);
                 return next;
             });
-            toast.error("שגיאה במחיקה", { description: error.message });
+            const errorMessage = error instanceof Error ? error.message : "שגיאה לא ידועה";
+            toast.error("שגיאה במחיקה", { description: errorMessage });
         }
     };
 

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Goal } from "@/types";
 
 interface WealthChartProps {
@@ -22,7 +22,7 @@ export const WealthChart = ({ assets, selectedType, onSelect }: WealthChartProps
         // Parent uses: 'stock', 'cash', 'crypto', 'real_estate'
         // But chart groups them. Let's use simple keys.
 
-        assets.forEach((asset: any) => {
+        assets.forEach((asset: Goal) => {
             const val = Number(asset.calculatedValue || asset.current_amount || 0);
 
             if (asset.investment_type === 'crypto') crypto += val;
@@ -87,7 +87,7 @@ export const WealthChart = ({ assets, selectedType, onSelect }: WealthChartProps
                         ))}
                     </Pie>
                     <Tooltip
-                        formatter={(value: any) => `₪${Number(value).toLocaleString()}`}
+                        formatter={(value: number | string | undefined) => `₪${Number(value || 0).toLocaleString()}`}
                         contentStyle={{
                             backgroundColor: 'rgba(15, 23, 42, 0.9)',
                             borderColor: 'rgba(255,255,255,0.1)',

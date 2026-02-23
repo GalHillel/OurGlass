@@ -1,15 +1,23 @@
 import { google } from '@ai-sdk/google';
-import { streamText, convertToModelMessages } from 'ai';
+import { streamText, convertToModelMessages, UIMessage } from 'ai';
+import { Transaction, Subscription, Liability, WealthSnapshot, WishlistItem, FinancialContext } from "@/types";
+
+interface TransactionSummary {
+  [category: string]: {
+    count: number;
+    total: number;
+  };
+}
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const { messages, context } = await req.json();
+  const { messages, context }: { messages: UIMessage[], context: FinancialContext } = await req.json();
 
   // Aggregating transactions to save Gemini tokens
   const recentTx = context?.recentTransactions || [];
-  const txSummary = recentTx.reduce((acc: any, tx: any) => {
+  const txSummary = recentTx.reduce((acc: TransactionSummary, tx) => {
     const cat = tx.category || 'Other';
     if (!acc[cat]) acc[cat] = { count: 0, total: 0 };
     acc[cat].count += 1;

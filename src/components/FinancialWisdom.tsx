@@ -17,14 +17,13 @@ const TIPS = [
 
 export const FinancialWisdom = () => {
     const [isVisible, setIsVisible] = useState(false);
-    const [tip, setTip] = useState("");
+    const [tip] = useState(() => {
+        const dayOfYear = Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24);
+        return TIPS[dayOfYear % TIPS.length];
+    });
     const STORAGE_KEY = 'last_daily_tip_date';
 
     useEffect(() => {
-        // Pick random tip based on day of year to keep it daily
-        const dayOfYear = Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24);
-        setTip(TIPS[dayOfYear % TIPS.length]);
-
         // Check if seen today
         const today = new Date().toDateString();
         const lastSeen = localStorage.getItem(STORAGE_KEY);
@@ -50,7 +49,7 @@ export const FinancialWisdom = () => {
         localStorage.setItem(STORAGE_KEY, new Date().toDateString());
     };
 
-    const handleDragEnd = (event: any, info: PanInfo) => {
+    const handleDragEnd = (_: unknown, info: PanInfo) => {
         if (info.offset.y < -50) { // Swiped up
             handleDismiss();
         }

@@ -19,8 +19,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ text: "", type: "info" });
         }
 
-        const subTotal = subscriptions?.reduce((s: number, sub: any) => s + (sub.amount || 0), 0) || 0;
-        const liabTotal = liabilities?.reduce((s: number, l: any) => s + (l.monthly_payment || 0), 0) || 0;
+        const subTotal = (subscriptions as { amount: number }[] | undefined)?.reduce((s: number, sub) => s + (sub.amount || 0), 0) || 0;
+        const liabTotal = (liabilities as { monthly_payment: number }[] | undefined)?.reduce((s: number, l) => s + (l.monthly_payment || 0), 0) || 0;
         const totalFixed = subTotal + liabTotal;
 
         const prompt = `
@@ -51,14 +51,15 @@ Return EXACTLY a JSON object:
         } catch (e) { }
 
         return NextResponse.json(parsed);
-    } catch (error: any) {
-        if (error?.status === 429 || error?.code === 'insufficient_quota' || error?.type === 'insufficient_quota') {
+    } catch (error: unknown) {
+        const err = error as { status?: number; code?: string; type?: string; message?: string };
+        if (err?.status === 429 || err?.code === 'insufficient_quota' || err?.type === 'insufficient_quota') {
             return NextResponse.json({
                 text: "מכסת ה-Gemini שלכם הסתיימה בחשבון הפיתוח, לא ניתן לנתח רגשות כרגע.",
                 type: "warning"
             });
         }
-        console.error("Gemini Mood Error:", error?.message || error);
+        console.error("Gemini Mood Error:", err?.message || err);
         return NextResponse.json({ text: "שגיאה בניתוח AI", type: "error" });
     }
 }

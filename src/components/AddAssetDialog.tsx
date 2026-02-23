@@ -38,7 +38,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData }: AddA
         if (isOpen) {
             if (initialData) {
                 setName(initialData.name);
-                const initAmount = (initialData as any).calculatedValue ?? initialData.current_amount;
+                const initAmount = initialData.calculatedValue ?? initialData.current_amount;
                 setAmount(initAmount.toString());
                 // Map existing types
                 if (initialData.type === 'money_market' || initialData.investment_type === 'money_market') setType('money_market');
@@ -82,18 +82,18 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData }: AddA
             const isMoneyMarket = type === 'money_market';
             const isUsdCash = type === 'usd_cash';
 
-            const payload: any = {
+            const payload: Partial<Goal> = {
                 name,
                 current_amount: numericAmount,
                 quantity: numericQty,
-                symbol: (type === 'stock' || type === 'crypto') ? symbol.toUpperCase() : null,
+                symbol: (type === 'stock' || type === 'crypto') ? symbol.toUpperCase() : undefined,
                 type: isMoneyMarket ? 'money_market' : isUsdCash ? 'usd_cash' : (type === 'stock' || type === 'crypto') ? 'stock' : 'cash',
                 investment_type: type,
                 interest_rate: isMoneyMarket ? (numericYield || 4.5) : numericYield,
                 last_interest_calc: isMoneyMarket ? new Date(investmentDate).toISOString() : new Date().toISOString(),
                 last_updated: new Date().toISOString(),
-                couple_id: profile?.couple_id,
-                currency: isUsdCash ? 'USD' : null,
+                couple_id: profile?.couple_id || null,
+                currency: isUsdCash ? 'USD' : undefined,
             };
 
             if (initialData) {
@@ -113,8 +113,9 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData }: AddA
             onSuccess();
             onClose();
 
-        } catch (error: any) {
-            toast.error("שגיאה בשמירה", { description: error.message });
+        } catch (error: unknown) {
+            const err = error as { message?: string };
+            toast.error("שגיאה בשמירה", { description: err.message || "Unknown error" });
         } finally {
             setLoading(false);
         }
@@ -132,7 +133,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData }: AddA
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
                         <Label>סוג הנכס</Label>
-                        <Select value={type} onValueChange={(v: any) => setType(v)}>
+                        <Select value={type} onValueChange={(v: typeof type) => setType(v)}>
                             <SelectTrigger className="bg-slate-950 border-white/10 text-white">
                                 <SelectValue />
                             </SelectTrigger>

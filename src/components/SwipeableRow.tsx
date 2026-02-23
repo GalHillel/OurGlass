@@ -38,7 +38,7 @@ export const SwipeableRow = ({
     const [action, setAction] = useState<'none' | 'edit' | 'delete'>('none');
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-    const handleDragEnd = async (_: any, info: PanInfo) => {
+    const handleDragEnd = async (_: unknown, info: PanInfo) => {
         const offset = info.offset.x;
 
         if (offset > editThreshold && onEdit) {
@@ -67,7 +67,7 @@ export const SwipeableRow = ({
         }
     };
 
-    const handleDrag = (_: any, info: PanInfo) => {
+    const handleDrag = (_: unknown, info: PanInfo) => {
         const offset = info.offset.x;
         if (offset > 50 && onEdit) {
             setAction('edit');

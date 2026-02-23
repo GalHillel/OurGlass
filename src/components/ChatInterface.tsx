@@ -5,24 +5,25 @@ import { useChat, UIMessage } from '@ai-sdk/react';
 import { Button } from "@/components/ui/button";
 import { Send, Sparkles, X, ArrowDown, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { FinancialContext, Transaction } from "@/types";
 
 interface ChatInterfaceProps {
-    context: any;
+    context: FinancialContext;
     onClose: () => void;
 }
 
 // Generate dynamic suggested questions from actual financial context
-function generateSuggestedQuestions(context: any): string[] {
+function generateSuggestedQuestions(context: FinancialContext): string[] {
     if (!context) return [];
 
     const { recentTransactions, subscriptions, liabilities, budget, income, wishlist, wealthSnapshot } = context;
 
-    const totalSpent = recentTransactions?.reduce((s: number, t: any) => s + Number(t.amount), 0) || 0;
+    const totalSpent = recentTransactions?.reduce((s: number, t: Transaction) => s + Number(t.amount), 0) || 0;
     const budgetPct = budget > 0 ? Math.round((totalSpent / budget) * 100) : 0;
 
     // Category breakdown for targeted questions
     const cats: Record<string, number> = {};
-    recentTransactions?.forEach((t: any) => {
+    recentTransactions?.forEach((t: Transaction) => {
         const cat = t.category || 'אחר';
         cats[cat] = (cats[cat] || 0) + Number(t.amount);
     });
@@ -57,22 +58,26 @@ function generateSuggestedQuestions(context: any): string[] {
 }
 
 export const ChatInterface = ({ context, onClose }: ChatInterfaceProps) => {
-    const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
+    const [initialMessages] = useState<UIMessage[]>(() => {
+        if (typeof window === 'undefined') return [];
+        const saved = localStorage.getItem('ai_chat_history');
+        if (saved) {
+            try { return JSON.parse(saved); } catch { return []; }
+        }
+        return [];
+    });
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
-        const saved = localStorage.getItem('ai_chat_history');
-        if (saved) {
-            try { setInitialMessages(JSON.parse(saved)); } catch { /* ignore */ }
-        }
-        setIsLoaded(true);
+        const timer = setTimeout(() => setIsLoaded(true), 0);
+        return () => clearTimeout(timer);
     }, []);
 
     if (!isLoaded) return null;
     return <ChatInterfaceInner initialMessages={initialMessages} context={context} onClose={onClose} />;
 };
 
-const ChatInterfaceInner = ({ initialMessages, context, onClose }: { initialMessages: UIMessage[], context: any, onClose: () => void }) => {
+const ChatInterfaceInner = ({ initialMessages, context, onClose }: { initialMessages: UIMessage[], context: FinancialContext, onClose: () => void }) => {
     const { messages, setMessages, sendMessage, status } = useChat();
     const [input, setInput] = useState('');
     const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -236,8 +241,8 @@ const ChatInterfaceInner = ({ initialMessages, context, onClose }: { initialMess
                                     : 'bg-white/[0.06] text-white/90 rounded-tl-md border border-white/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.15)]'
                                     }`}
                             >
-                                {m.parts?.filter((p) => p.type === 'text').map((p: any, i) => (
-                                    <span key={i} className="whitespace-pre-wrap">{p.text}</span>
+                                {m.parts?.filter((p) => p.type === 'text').map((p, i) => (
+                                    <span key={i} className="whitespace-pre-wrap">{(p as { text: string }).text}</span>
                                 ))}
                             </div>
                         </motion.div>

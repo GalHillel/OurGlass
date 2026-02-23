@@ -61,8 +61,9 @@ export function SettleUpCard() {
             toast.success("בום! החשבון סודר 🎉");
             setExpanded(false);
         },
-        onError: (error: any) => {
-            toast.error(`שגיאה בסידור חשבון: ${error.message}`);
+        onError: (error: unknown) => {
+            const err = error as { message?: string };
+            toast.error(`שגיאה בסידור חשבון: ${err.message || "Unknown error"}`);
         }
     });
 

@@ -1,11 +1,33 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Gift, Eye, EyeOff, PartyPopper } from "lucide-react";
 import { Transaction } from "@/types";
 import { cn } from "@/lib/utils";
 import { hapticSuccess, hapticHeavy } from "@/utils/haptics";
+
+const generateParticles = () =>
+    Array.from({ length: 24 }).map((_, i) => ({
+        x: (Math.random() - 0.5) * 200,
+        y: (Math.random() - 0.5) * 200,
+        rotate: Math.random() * 720,
+        duration: 1.5 + Math.random() * 0.5,
+        delay: Math.random() * 0.3,
+        bg: [
+            "#f472b6", "#a78bfa", "#60a5fa", "#34d399",
+            "#fbbf24", "#fb923c", "#f87171", "#c084fc",
+        ][i % 8],
+    }));
+
+interface Particle {
+    x: number;
+    y: number;
+    rotate: number;
+    duration: number;
+    delay: number;
+    bg: string;
+}
 
 interface SurpriseRevealProps {
     transaction: Transaction;
@@ -27,6 +49,8 @@ export function SurpriseReveal({ transaction, isRecipient }: SurpriseRevealProps
     const canReveal =
         !transaction.surprise_reveal_date ||
         new Date(transaction.surprise_reveal_date) <= new Date();
+
+    const particles = useMemo(() => generateParticles(), []);
 
     const handleReveal = useCallback(() => {
         if (!canReveal || revealed) return;
@@ -58,29 +82,26 @@ export function SurpriseReveal({ transaction, isRecipient }: SurpriseRevealProps
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0, transition: { duration: 1 } }}
                     >
-                        {Array.from({ length: 24 }).map((_, i) => (
+                        {particles.map((p: Particle, i: number) => (
                             <motion.div
                                 key={i}
                                 className="absolute w-2 h-2 rounded-full"
                                 style={{
                                     left: "50%",
                                     top: "50%",
-                                    backgroundColor: [
-                                        "#f472b6", "#a78bfa", "#60a5fa", "#34d399",
-                                        "#fbbf24", "#fb923c", "#f87171", "#c084fc",
-                                    ][i % 8],
+                                    backgroundColor: p.bg,
                                 }}
                                 initial={{ x: 0, y: 0, scale: 0, opacity: 1 }}
                                 animate={{
-                                    x: (Math.random() - 0.5) * 200,
-                                    y: (Math.random() - 0.5) * 200,
+                                    x: p.x,
+                                    y: p.y,
                                     scale: [0, 1.5, 0.5],
                                     opacity: [1, 1, 0],
-                                    rotate: Math.random() * 720,
+                                    rotate: p.rotate,
                                 }}
                                 transition={{
-                                    duration: 1.5 + Math.random() * 0.5,
-                                    delay: Math.random() * 0.3,
+                                    duration: p.duration,
+                                    delay: p.delay,
                                     ease: "easeOut",
                                 }}
                             />

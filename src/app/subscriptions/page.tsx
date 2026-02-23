@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Subscription } from "@/types";
 import { Plus, Calendar, Utensils, Bus, ShoppingBag, Beer, Home, Heart, Briefcase, Zap, Coffee, Fuel, Car, GraduationCap, Sparkles, Shield } from "lucide-react";
@@ -59,7 +59,7 @@ export default function SubscriptionsPage() {
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
-    const fetchSubscriptions = async () => {
+    const fetchSubscriptions = useCallback(async () => {
         try {
             setLoading(true);
             const { data, error } = await supabase
@@ -74,11 +74,11 @@ export default function SubscriptionsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [supabase]);
 
     useEffect(() => {
         fetchSubscriptions();
-    }, []);
+    }, [fetchSubscriptions]);
 
     const openAddDialog = () => {
         setEditingSub(null);
@@ -131,12 +131,13 @@ export default function SubscriptionsPage() {
 
             setIsDialogOpen(false);
             fetchSubscriptions();
-        } catch (error: any) {
-            console.error("Save error:", error);
-            if (error.message?.includes("subscriptions_owner_check") || error.details?.includes("subscriptions_owner_check")) {
+        } catch (error: unknown) {
+            const err = error as { message?: string; details?: string };
+            console.error("Save error:", err);
+            if (err.message?.includes("subscriptions_owner_check") || err.details?.includes("subscriptions_owner_check")) {
                 toast.error("שגיאה: אי תאימות בבסיס הנתונים", { description: "נא לעדכן את אילוצי הטבלה (CHECK constraint)" });
             } else {
-                toast.error("שגיאה בשמירה", { description: error.message });
+                toast.error("שגיאה בשמירה", { description: err.message });
             }
         }
     };
@@ -147,8 +148,9 @@ export default function SubscriptionsPage() {
             if (error) throw error;
             toast.success("מנוי הוסר");
             fetchSubscriptions();
-        } catch (error: any) {
-            toast.error("שגיאה במחיקה", { description: error.message });
+        } catch (error: unknown) {
+            const err = error as { message?: string };
+            toast.error("שגיאה במחיקה", { description: err.message });
         }
     };
 

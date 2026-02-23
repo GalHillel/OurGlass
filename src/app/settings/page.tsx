@@ -65,8 +65,9 @@ export default function SettingsPage() {
                 monthly_income: parseFloat(income) || 0,
             });
             toast.success("הפרופיל עודכן בהצלחה");
-        } catch (error: any) {
-            toast.error("שגיאה בעדכון הפרופיל", { description: error.message });
+        } catch (error: unknown) {
+            const err = error as { message?: string };
+            toast.error("שגיאה בעדכון הפרופיל", { description: err.message });
         } finally {
             setLoading(false);
         }
@@ -180,8 +181,8 @@ export default function SettingsPage() {
                             <button
                                 onClick={() => setAppIdentity('him')}
                                 className={`flex-1 flex flex-col items-center justify-center p-3 rounded-xl transition-all ${appIdentity === 'him'
-                                        ? 'bg-blue-500/20 border border-blue-500/30 text-white shadow-[0_0_15px_rgba(59,130,246,0.2)]'
-                                        : 'hover:bg-white/5 text-white/50 border border-transparent'
+                                    ? 'bg-blue-500/20 border border-blue-500/30 text-white shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                                    : 'hover:bg-white/5 text-white/50 border border-transparent'
                                     }`}
                             >
                                 <span className="text-2xl mb-1">👨🏻</span>
@@ -190,8 +191,8 @@ export default function SettingsPage() {
                             <button
                                 onClick={() => setAppIdentity('her')}
                                 className={`flex-1 flex flex-col items-center justify-center p-3 rounded-xl transition-all ${appIdentity === 'her'
-                                        ? 'bg-pink-500/20 border border-pink-500/30 text-white shadow-[0_0_15px_rgba(236,72,153,0.2)]'
-                                        : 'hover:bg-white/5 text-white/50 border border-transparent'
+                                    ? 'bg-pink-500/20 border border-pink-500/30 text-white shadow-[0_0_15px_rgba(236,72,153,0.2)]'
+                                    : 'hover:bg-white/5 text-white/50 border border-transparent'
                                     }`}
                             >
                                 <span className="text-2xl mb-1">👩🏻</span>

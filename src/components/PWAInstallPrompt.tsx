@@ -5,31 +5,41 @@ import Image from "next/image";
 import { Share, PlusSquare, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+interface NavigatorStandalone extends Navigator {
+    standalone?: boolean;
+}
+
 export const PWAInstallPrompt = () => {
     const [isIOS, setIsIOS] = useState(false);
     const [isStandalone, setIsStandalone] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
+        if (typeof window === 'undefined') return;
+
         // Check if iOS
         const userAgent = window.navigator.userAgent.toLowerCase();
         const ios = /iphone|ipad|ipod/.test(userAgent);
-        setIsIOS(ios);
 
-        // Check if already installed (standalone)
-        const standalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
-        setIsStandalone(standalone);
+        // Use timeout to avoid synchronous state update in effect
+        const timer = setTimeout(() => {
+            setIsIOS(ios);
 
-        // Show prompt if iOS and NOT standalone
-        if (ios && !standalone) {
-            // Check if user dismissed it recently (optional, skipping for now to ensure visibility)
-            const hasSeen = localStorage.getItem("pwa_prompt_dismissed");
-            if (!hasSeen) {
-                // Delay slightly for effect
-                const timer = setTimeout(() => setIsVisible(true), 3000);
-                return () => clearTimeout(timer);
+            // Check if already installed (standalone)
+            const standalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as NavigatorStandalone).standalone;
+            setIsStandalone(!!standalone);
+
+            // Show prompt if iOS and NOT standalone
+            if (ios && !standalone) {
+                // Check if user dismissed it recently
+                const hasSeen = localStorage.getItem("pwa_prompt_dismissed");
+                if (!hasSeen) {
+                    setIsVisible(true);
+                }
             }
-        }
+        }, 100);
+
+        return () => clearTimeout(timer);
     }, []);
 
     const dismiss = () => {
@@ -70,7 +80,7 @@ export const PWAInstallPrompt = () => {
                         </div>
                         <div className="flex items-center gap-3">
                             <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white/10 text-white font-bold text-xs">2</span>
-                            <span>בחרו באפשרות <span className="font-bold text-white">"הוסף למסך הבית"</span></span>
+                            <span>בחרו באפשרות <span className="font-bold text-white">&quot;הוסף למסך הבית&quot;</span></span>
                         </div>
                         <div className="flex items-center gap-3">
                             <PlusSquare className="w-5 h-5 text-slate-400 ml-9" />

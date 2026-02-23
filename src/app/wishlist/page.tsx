@@ -67,8 +67,8 @@ export default function WishlistPage() {
             const { data: txData } = await supabase.from('transactions').select('amount').gte('date', startOfMonth.toISOString());
             const { data: subData } = await supabase.from('subscriptions').select('amount');
 
-            const totalExpenses = txData?.reduce((sum: number, tx: any) => sum + Number(tx.amount), 0) || 0;
-            const totalFixed = subData?.reduce((sum: number, sub: any) => sum + Number(sub.amount), 0) || 0;
+            const totalExpenses = txData?.reduce((sum: number, tx: { amount: number }) => sum + Number(tx.amount), 0) || 0;
+            const totalFixed = subData?.reduce((sum: number, sub: { amount: number }) => sum + Number(sub.amount), 0) || 0;
             const budget = profile?.budget || 20000;
 
             setRealNumberBalance(budget - totalFixed - totalExpenses);
@@ -104,7 +104,7 @@ export default function WishlistPage() {
             setNewItemPrice("");
             setNewItemLink("");
             fetchData();
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast.error("שגיאה בהוספה", { description: getHebrewError(error) });
         }
     };
@@ -117,8 +117,9 @@ export default function WishlistPage() {
         try {
             const { error } = await supabase.from('wishlist').delete().eq('id', id);
             if (error) throw error;
-        } catch (error: any) {
-            toast.error("שגיאה במחיקה", { description: error.message });
+        } catch (error: unknown) {
+            const err = error as { message?: string };
+            toast.error("שגיאה במחיקה", { description: err.message });
             fetchData();
         }
     };
@@ -164,9 +165,10 @@ export default function WishlistPage() {
             // Delete Wishlist Item
             await supabase.from('wishlist').delete().eq('id', item.id);
 
-        } catch (e: any) {
-            console.error(e);
-            toast.error("שגיאה בפעולה", { description: e.message });
+        } catch (e: unknown) {
+            const err = e as { message?: string };
+            console.error(err);
+            toast.error("שגיאה בפעולה", { description: err.message });
             fetchData(); // Revert on error
         }
     };
@@ -239,8 +241,9 @@ export default function WishlistPage() {
             }
 
             fetchData();
-        } catch (e: any) {
-            toast.error("שגיאה בפעולה", { description: e.message });
+        } catch (e: unknown) {
+            const err = e as { message?: string };
+            toast.error("שגיאה בפעולה", { description: err.message });
         }
     };
 
@@ -484,6 +487,7 @@ export default function WishlistPage() {
 
             {/* Smart Action Drawer */}
             <WishlistActionDrawer
+                key={isDrawerOpen ? `${activeItem?.id}-${actionType}` : 'closed'}
                 isOpen={isDrawerOpen}
                 onClose={() => setIsDrawerOpen(false)}
                 item={activeItem}

@@ -85,7 +85,7 @@ export const SmartInsights = ({ transactions = [], monthlyIncome = 0, hourlyWage
         info: "bg-purple-500/10 border-purple-500/20 text-purple-100"
     };
 
-    const icons: Record<string, any> = {
+    const icons: Record<string, React.ComponentType<{ className?: string }>> = {
         tip: Lightbulb,
         warning: AlertTriangle,
         opportunity: PiggyBank,

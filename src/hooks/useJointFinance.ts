@@ -127,9 +127,9 @@ export function useGuiltFreeWallets(viewingDate: Date = new Date()) {
 
             if (error) throw error;
 
-            const txs = data ?? [];
-            const himSpent = txs.filter((t: any) => t.payer === "him").reduce((s: number, t: any) => s + Number(t.amount), 0);
-            const herSpent = txs.filter((t: any) => t.payer === "her").reduce((s: number, t: any) => s + Number(t.amount), 0);
+            const txs = (data ?? []) as unknown as Transaction[];
+            const himSpent = txs.filter((t) => t.payer === "him").reduce((s, t) => s + Number(t.amount), 0);
+            const herSpent = txs.filter((t) => t.payer === "her").reduce((s, t) => s + Number(t.amount), 0);
 
             return {
                 himRemaining: Math.max(0, pocketHim - himSpent),

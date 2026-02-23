@@ -207,8 +207,10 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
             // wishlist/page.tsx uses `import confetti from 'canvas-confetti'`. 
             // I should add that import or just skip confetti for now to avoid errors if not installed.
             onClose();
-        } catch (e) {
+        } catch (e: unknown) {
+            const err = e as { message?: string };
             toast.error("שגיאה בהקפאה");
+            console.error("Freeze error:", err.message);
         } finally {
             setLoading(false);
         }
@@ -265,7 +267,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                 setInstallments(1);
             }
         }
-    }, [isOpen, category, initialData]);
+    }, [isOpen, category, initialData, appIdentity]);
 
     const handleKeyPress = (key: string) => {
         triggerHaptic();
