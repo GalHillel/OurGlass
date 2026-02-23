@@ -267,6 +267,7 @@ function AddLiabilityDialog({ onClose }: { onClose: () => void }) {
                 start_date: null,
                 owner,
                 couple_id: coupleId,
+                couple_id: profile?.couple_id,
             },
             {
                 onSuccess: () => {
