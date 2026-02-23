@@ -32,7 +32,9 @@ describe('Chat API', () => {
         expect(res).toBeInstanceOf(Response);
         expect(ai.streamText).toHaveBeenCalled();
         const callArgs = vi.mocked(ai.streamText).mock.calls[0][0];
-        expect(callArgs.system).toContain('₪10000');
+        expect(callArgs.system).toContain('₪10,000');
+        expect(callArgs.system).toContain("CRITICAL MATH RULE: The 'Total Spent This Month' figure ALREADY INCLUDES all paid subscriptions and recurring bills. DO NOT add 'Total Subscriptions Cost' to 'Total Spent This Month'. Doing so is double-counting and strictly forbidden.");
+        expect(callArgs.system).toContain('Monthly Budget Limit: 10000 NIS.');
         expect(callArgs.system).toContain('Food');
     });
 });

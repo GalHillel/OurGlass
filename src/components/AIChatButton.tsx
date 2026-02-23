@@ -90,6 +90,17 @@ export const AIChatButton = () => {
 
             const subTotal = (subs as Subscription[] | null)?.reduce((acc: number, curr) => acc + Number(curr.amount), 0) || 0;
             const liabTotal = liabs?.reduce((acc: number, curr) => acc + Number(curr.monthly_payment), 0) || 0;
+            const monthlySpent = ((txs as Transaction[]) || []).reduce((acc: number, curr) => acc + Number(curr.amount), 0);
+            const profileBudget = Number(profileData?.budget);
+            const profileIncome = Number(profileData?.monthly_income);
+            const resolvedBudget = Number.isFinite(profileBudget) && profileBudget > 0
+                ? profileBudget
+                : Number.isFinite(profileIncome) && profileIncome > 0
+                    ? Math.max(profileIncome, monthlySpent)
+                    : monthlySpent > 0
+                        ? monthlySpent
+                        : subTotal + liabTotal;
+            const resolvedIncome = Number.isFinite(profileIncome) ? profileIncome : 0;
 
             const ctx: FinancialContext = {
                 recentTransactions: (txs as Transaction[]) || [],
@@ -98,8 +109,8 @@ export const AIChatButton = () => {
                 wishlist: (wishlist as WishlistItem[]) || [],
                 wealthSnapshot: (wealth?.[0] as WealthSnapshot) || null,
                 fixedExpenses: subTotal + liabTotal,
-                budget: profileData?.budget || 0,
-                income: profileData?.monthly_income || 0,
+                budget: resolvedBudget,
+                income: resolvedIncome,
                 identityName,
                 liveNetWorth,
             };
