@@ -242,6 +242,12 @@ function AddLiabilityDialog({ onClose }: { onClose: () => void }) {
             return;
         }
 
+        const coupleId = profile?.couple_id;
+        if (!coupleId) {
+            toast.error("לא נמצא מזהה זוגי לשמירה");
+            return;
+        }
+
         const selectedType = CATEGORY_TO_TYPE[category] ?? "other";
         const remaining = Number(remainingAmount) || 0;
         const total = Number(totalAmount) || remaining;
@@ -260,6 +266,7 @@ function AddLiabilityDialog({ onClose }: { onClose: () => void }) {
                 current_balance: remaining,
                 start_date: null,
                 owner,
+                couple_id: coupleId,
                 couple_id: profile?.couple_id,
             },
             {
