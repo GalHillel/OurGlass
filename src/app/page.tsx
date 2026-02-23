@@ -123,7 +123,13 @@ export default function Home() {
       setSubscriptions(subsData || []);
       setLiabilities(liabData || []);
 
-      const totalFixed = subsData?.reduce((sum: number, sub: Subscription) => sum + Number(sub.amount), 0) || 0;
+      const totalSubscriptions = subsData?.reduce((sum: number, sub: Subscription) => sum + Number(sub.amount), 0) || 0;
+      const activeLiabilityPayments = (liabData || []).reduce((sum: number, liab: { remaining_amount?: number; amount?: number; monthly_payment?: number }) => {
+        const remaining = Number(liab.remaining_amount ?? liab.amount ?? 0);
+        if (remaining <= 0) return sum;
+        return sum + Number(liab.monthly_payment ?? 0);
+      }, 0);
+      const totalFixed = totalSubscriptions + activeLiabilityPayments;
 
       const MONTHLY_BUDGET = profile?.budget || 20000;
       const totalExpenses = transactionsData.reduce((sum: number, tx: Transaction) => sum + Number(tx.amount), 0) || 0;
