@@ -114,6 +114,7 @@ export interface Liability {
     name: string;
     category: string;
     total_amount: number;
+    amount?: number;
     remaining_amount: number;
     monthly_payment: number;
     interest_rate: number;
