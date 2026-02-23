@@ -15,6 +15,7 @@ export const WealthChart = ({ assets, selectedType, onSelect }: WealthChartProps
         let cash = 0;
         let crypto = 0;
         let realEstate = 0;
+        let usdCash = 0;
         let other = 0;
 
         // Map internal types to IDs we can filter by in the parent
@@ -26,6 +27,7 @@ export const WealthChart = ({ assets, selectedType, onSelect }: WealthChartProps
 
             if (asset.investment_type === 'crypto') crypto += val;
             else if (asset.investment_type === 'real_estate') realEstate += val;
+            else if (asset.investment_type === 'usd_cash' || asset.type === 'usd_cash') usdCash += val;
             else if (asset.type === 'stock') stocks += val;
             else if (asset.type === 'cash') cash += val;
             else other += val;
@@ -36,11 +38,12 @@ export const WealthChart = ({ assets, selectedType, onSelect }: WealthChartProps
             { name: "מזומן", value: cash, color: "#10b981", type: 'cash' }, // Emerald
             { name: "נדל״ן", value: realEstate, color: "#3b82f6", type: 'real_estate' }, // Blue
             { name: "קריפטו", value: crypto, color: "#f472b6", type: 'crypto' }, // Pink
+            { name: "דולר", value: usdCash, color: "#22c55e", type: 'usd_cash' }, // Green
         ].filter(item => item.value > 0);
 
         if (other > 0) result.push({ name: "אחר", value: other, color: "#9ca3af", type: 'other' });
 
-        const total = stocks + cash + crypto + realEstate + other;
+        const total = stocks + cash + crypto + realEstate + usdCash + other;
 
         return { data: result, totalValue: total };
 

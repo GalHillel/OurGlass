@@ -1,18 +1,19 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Heebo } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
+import { QueryProvider } from "@/components/QueryProvider";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Toaster } from "sonner";
 import { BottomNav } from "@/components/BottomNav";
-import { AIChatButton } from "@/components/AIChatButton";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { LiquidBackground } from "@/components/LiquidBackground";
+import { IdentityGate } from "@/components/IdentityGate";
 
 const heebo = Heebo({
   subsets: ["hebrew", "latin"],
   variable: "--font-heebo",
 });
-
-import { Viewport } from "next";
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -37,11 +38,6 @@ export const metadata: Metadata = {
   },
 };
 
-import { LiquidBackground } from "@/components/LiquidBackground";
-// ... imports
-
-// ...
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -51,27 +47,33 @@ export default function RootLayout({
     <html lang="he" dir="rtl" className="dark">
       <body className={`${heebo.variable} text-white antialiased font-sans h-full overflow-x-hidden overflow-y-auto`}>
         <LiquidBackground />
-        <AuthProvider>
-          <main className="native-scroll touch-scroll relative z-10 w-full p-4 pt-[env(safe-area-inset-top)] pb-[calc(6rem+env(safe-area-inset-bottom))]">
-            {children}
-          </main>
-          <BottomNav />
-          <PWAInstallPrompt />
-          <Toaster
-            position="top-center"
-            theme="dark"
-            richColors
-            toastOptions={{
-              className: "border-white/20 text-white font-sans",
-              style: {
-                background: "rgba(15, 23, 42, 0.9)", // slate-900/90
-                backdropFilter: "blur(10px)",
-                color: "white",
-                borderColor: "rgba(255,255,255,0.1)"
-              }
-            }}
-          />
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <ErrorBoundary>
+              <IdentityGate>
+                <main className="native-scroll touch-scroll relative z-10 w-full p-4 pt-[env(safe-area-inset-top)] pb-[calc(6rem+env(safe-area-inset-bottom))]">
+                  {children}
+                </main>
+              </IdentityGate>
+            </ErrorBoundary>
+            <BottomNav />
+            <PWAInstallPrompt />
+            <Toaster
+              position="top-center"
+              theme="dark"
+              richColors
+              toastOptions={{
+                className: "border-white/20 text-white font-sans",
+                style: {
+                  background: "rgba(15, 23, 42, 0.9)",
+                  backdropFilter: "blur(10px)",
+                  color: "white",
+                  borderColor: "rgba(255,255,255,0.1)"
+                }
+              }}
+            />
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

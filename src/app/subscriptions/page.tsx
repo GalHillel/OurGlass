@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/client";
 import { Subscription } from "@/types";
 import { Plus, Calendar, Utensils, Bus, ShoppingBag, Beer, Home, Heart, Briefcase, Zap, Coffee, Fuel, Car, GraduationCap, Sparkles, Shield } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
@@ -21,6 +21,7 @@ import { SwipeableRow } from "@/components/SwipeableRow";
 import { cn } from "@/lib/utils";
 
 import { useAuth } from "@/components/AuthProvider";
+import { SubscriptionKiller } from "@/components/SubscriptionKiller";
 
 // Use the SAME categories as transactions - unified category system
 const CATEGORIES = [
@@ -55,7 +56,7 @@ export default function SubscriptionsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingSub, setEditingSub] = useState<Subscription | null>(null);
     const { profile } = useAuth();
-    const supabaseRef = useRef(createClientComponentClient());
+    const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
     const fetchSubscriptions = async () => {
@@ -112,6 +113,7 @@ export default function SubscriptionsPage() {
                 billing_day: parseInt(day) || 1,
                 owner: owner,
                 category: category,
+                couple_id: profile?.couple_id,
             };
 
             if (editingSub) {
@@ -156,35 +158,23 @@ export default function SubscriptionsPage() {
         <div className="flex flex-col gap-6 w-full mx-auto pt-8 pb-24 px-4">
 
 
-            {/* Vampire Index Analysis */}
+            {/* Fixed Overhead Indicator */}
             {profile?.budget && (
                 (() => {
                     const ratio = (totalMonthly / (profile.budget || 20000)) * 100;
-                    const isVampire = ratio > 50;
+                    const isHigh = ratio > 50;
 
                     return (
-                        <div className={`p-4 rounded-3xl border mb-2 relative overflow-hidden transition-all ${isVampire ? 'bg-red-950/40 border-red-500/30' : 'bg-emerald-950/40 border-emerald-500/30'}`}>
-                            <div className="flex justify-between items-start relative z-10">
-                                <div>
-                                    <h3 className={`text-sm font-bold uppercase tracking-wider ${isVampire ? 'text-red-300' : 'text-emerald-300'}`}>
-                                        מדד הערפד 🧛
-                                    </h3>
-                                    <p className="text-xs text-white/60 mt-1 max-w-[200px]">
-                                        {isVampire
-                                            ? "ההוצאות הקבועות מדממות את ההכנסה שלך. בטל מנוי אחד כדי לנשום."
-                                            : "מצב מעולה! ההוצאות הקבועות בשליטה."}
-                                    </p>
-                                </div>
-                                <div className={`text-3xl font-black ${isVampire ? 'text-red-400' : 'text-emerald-400'}`}>
-                                    {ratio.toFixed(0)}%
-                                </div>
+                        <div className="neon-card p-4 rounded-3xl border border-white/5 flex items-center justify-between group overflow-hidden relative mb-2">
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                            <div>
+                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">עומס הוצאות קבועות</h3>
+                                <p className="text-[10px] text-white/50 mt-0.5">
+                                    {isHigh ? "אחוז גבוה מהתקציב. כדאי לצמצם מעט." : "ההוצאות הקבועות ביחס מעולה לתקציב."}
+                                </p>
                             </div>
-                            {/* Progress Bar */}
-                            <div className="mt-3 h-2 w-full bg-black/20 rounded-full overflow-hidden">
-                                <div
-                                    className={`h-full rounded-full ${isVampire ? 'bg-red-500' : 'bg-emerald-500'}`}
-                                    style={{ width: `${Math.min(ratio, 100)}%` }}
-                                />
+                            <div className={`text-2xl font-black font-mono tracking-tighter ${isHigh ? 'text-orange-400' : 'text-emerald-400'}`}>
+                                {ratio.toFixed(0)}%
                             </div>
                         </div>
                     );
@@ -281,6 +271,14 @@ export default function SubscriptionsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Subscription Killer Analysis */}
+            {!loading && subscriptions.length > 0 && (
+                <SubscriptionKiller
+                    subscriptions={subscriptions}
+                    onDelete={handleDelete}
+                />
+            )}
 
             {/* Edit/Add Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

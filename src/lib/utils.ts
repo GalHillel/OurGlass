@@ -79,6 +79,11 @@ export function calculateFutureWealth(currentWealth: number, monthlySavings: num
   const months = years * 12;
   const monthlyRate = annualReturnRate / 12;
 
+  if (monthlyRate === 0) {
+    // No growth — simple addition
+    return Math.round(currentWealth + monthlySavings * months);
+  }
+
   // Future Value of Lump Sum: PV * (1 + r)^n
   const fvLumpSum = currentWealth * Math.pow(1 + monthlyRate, months);
 

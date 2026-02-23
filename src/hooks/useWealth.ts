@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Goal } from "@/types";
 
@@ -9,7 +9,7 @@ export const useWealth = () => {
     const [cashValue, setCashValue] = useState<number>(0);
     const [assets, setAssets] = useState<Goal[]>([]);
     const [loading, setLoading] = useState(true);
-    const supabaseRef = useRef(createClientComponentClient());
+    const supabaseRef = useRef(createClient());
     const { user, loading: authLoading } = useAuth();
 
     const fetchWealth = useCallback(async () => {
@@ -28,16 +28,16 @@ export const useWealth = () => {
         try {
             const { data: goals, error } = await supabase
                 .from('goals')
-                .select('id, name, current_amount, type, brick_color, growth_rate, investment_type, symbol, quantity')
+                .select('id, name, current_amount, type, brick_color, growth_rate, investment_type, symbol, quantity, interest_rate, last_interest_calc')
                 .order('created_at', { ascending: true });
 
             if (error || !goals) {
                 const errorDetails = {
-                  message: error?.message,
-                  details: error?.details,
-                  hint: error?.hint,
-                  code: error?.code,
-                  fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+                    message: error?.message,
+                    details: error?.details,
+                    hint: error?.hint,
+                    code: error?.code,
+                    fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
                 };
                 console.error("useWealth fetch error:", errorDetails);
                 console.error("useWealth fetch error Raw JSON:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
@@ -67,9 +67,9 @@ export const useWealth = () => {
                     }
                 } catch (apiError) {
                     const errorDetails = {
-                      message: (apiError as any)?.message,
-                      stack: (apiError as any)?.stack,
-                      fullError: JSON.stringify(apiError, Object.getOwnPropertyNames(apiError), 2)
+                        message: (apiError as any)?.message,
+                        stack: (apiError as any)?.stack,
+                        fullError: JSON.stringify(apiError, Object.getOwnPropertyNames(apiError), 2)
                     };
                     console.error("Failed to fetch stock prices:", errorDetails);
                     console.error("Failed to fetch stock prices Raw JSON:", JSON.stringify(apiError, Object.getOwnPropertyNames(apiError), 2));
@@ -101,8 +101,24 @@ export const useWealth = () => {
                     } else {
                         calculatedValue = Number(asset.current_amount) || 0;
                     }
+                } else if (asset.investment_type === 'usd_cash' || asset.type === 'usd_cash') {
+                    // USD Cash: current_amount is in USD, convert to ILS
+                    const usdAmount = Number(asset.current_amount) || 0;
+                    calculatedValue = usdAmount * usdToIls;
                 } else {
                     calculatedValue = Number(asset.current_amount) || 0;
+
+                    if (asset.interest_rate > 0 && asset.last_interest_calc) {
+                        const lastCalcDate = new Date(asset.last_interest_calc);
+                        const today = new Date();
+                        const diffTime = today.getTime() - lastCalcDate.getTime();
+                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+                        if (diffDays >= 1) {
+                            const dailyRate = (Number(asset.interest_rate) / 100) / 365;
+                            calculatedValue = calculatedValue * Math.pow(1 + dailyRate, diffDays);
+                        }
+                    }
                 }
 
                 totalNetWorth += calculatedValue;
@@ -128,12 +144,12 @@ export const useWealth = () => {
 
         } catch (error) {
             const errorDetails = {
-              message: (error as any)?.message,
-              details: (error as any)?.details,
-              hint: (error as any)?.hint,
-              code: (error as any)?.code,
-              stack: (error as any)?.stack,
-              fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+                message: (error as any)?.message,
+                details: (error as any)?.details,
+                hint: (error as any)?.hint,
+                code: (error as any)?.code,
+                stack: (error as any)?.stack,
+                fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
             };
             console.error("useWealth Error:", errorDetails);
             console.error("useWealth Error Raw JSON:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));

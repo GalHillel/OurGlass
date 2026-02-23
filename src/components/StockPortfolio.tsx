@@ -9,9 +9,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { SwipeableRow } from "@/components/SwipeableRow";
 import { EmptyState } from "@/components/EmptyState";
 import { Goal } from "@/types";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/components/AuthProvider";
 
 interface StockPortfolioProps {
     assets?: Goal[];
@@ -28,8 +29,9 @@ interface StockDisplay {
 }
 
 export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
-    const supabaseRef = useRef(createClientComponentClient());
+    const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
+    const { profile } = useAuth();
     const [stocks, setStocks] = useState<StockDisplay[]>([]);
     const [exchangeRate, setExchangeRate] = useState(3.65); // Default fallback
     const [loading, setLoading] = useState(false);
@@ -166,6 +168,7 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
 
             const payload = {
                 user_id: user.id,
+                couple_id: profile?.couple_id,
                 type: 'stock',
                 symbol: symbolInput.toUpperCase(),
                 quantity: quantity,

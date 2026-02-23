@@ -10,7 +10,9 @@ export const ASSET_TYPES = {
     CASH: "מזומן / חיסכון",
     STOCK: "מניות",
     CRYPTO: "קריפטו",
-    REAL_ESTATE: "נדל״ן"
+    REAL_ESTATE: "נדל״ן",
+    MONEY_MARKET: "קרן כספית",
+    USD_CASH: "דולר מזומן"
 } as const;
 
 export const TABS = {

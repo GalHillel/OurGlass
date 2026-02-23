@@ -1,0 +1,31 @@
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { WealthChart } from '@/components/WealthChart';
+
+vi.mock('recharts', async () => {
+    const ActualRecharts = await vi.importActual('recharts');
+    return {
+        ...ActualRecharts,
+        ResponsiveContainer: ({ children }: any) => <div>{children}</div>
+    };
+});
+
+describe('WealthChart', () => {
+    it('shows empty state if no value', () => {
+        render(<WealthChart assets={[]} />);
+        expect(screen.getByText('אין נתונים להצגה')).toBeInTheDocument();
+    });
+
+    it('renders chart data based on assets', async () => {
+        const assets: any[] = [
+            { id: '1', type: 'cash', current_amount: 10000 },
+            { id: '2', type: 'investment', investment_type: 'crypto', calculatedValue: 5000 },
+            { id: '3', type: 'stock', calculatedValue: 15000 },
+        ];
+
+        render(<WealthChart assets={assets} selectedType={null} onSelect={vi.fn()} />);
+
+        // Total value = 30k
+        expect(screen.getByText('₪30k')).toBeInTheDocument();
+    });
+});

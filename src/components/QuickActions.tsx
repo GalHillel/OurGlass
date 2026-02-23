@@ -1,18 +1,26 @@
 "use client";
 
 import { useRef } from "react";
-import { Coffee, ShoppingCart, Fuel, Utensils, ShoppingBag, Film, Car, FileText } from "lucide-react";
+import { Utensils, Coffee, ShoppingBag, Bus, Fuel, Car, Beer, Home, Heart, Shield, GraduationCap, Sparkles, Briefcase, Zap } from "lucide-react";
 import { triggerHaptic } from "@/utils/haptics";
 
 const actions = [
-    { id: "coffee", label: "קפה", icon: Coffee, color: "text-amber-400" },
-    { id: "supermarket", label: "סופר", icon: ShoppingCart, color: "text-emerald-400" },
-    { id: "restaurant", label: "מסעדה", icon: Utensils, color: "text-rose-400" },
-    { id: "fuel", label: "דלק", icon: Fuel, color: "text-blue-400" },
-    { id: "shopping", label: "קניות", icon: ShoppingBag, color: "text-purple-400" },
-    { id: "entertainment", label: "בילוי", icon: Film, color: "text-pink-400" },
-    { id: "transport", label: "תחבורה", icon: Car, color: "text-cyan-400" },
-    { id: "bills", label: "חשבונות", icon: FileText, color: "text-orange-400" },
+    { id: 'אוכל', label: 'אוכל', icon: Utensils, color: 'text-orange-400' },
+    { id: 'קפה', label: 'קפה', icon: Coffee, color: 'text-amber-400' },
+    { id: 'סופר', label: 'סופר', icon: ShoppingBag, color: 'text-green-400' },
+    { id: 'תחבורה', label: 'תחבורה', icon: Bus, color: 'text-blue-400' },
+    { id: 'דלק', label: 'דלק', icon: Fuel, color: 'text-cyan-400' },
+    { id: 'רכב', label: 'רכב', icon: Car, color: 'text-red-400' },
+    { id: 'קניות', label: 'קניות', icon: ShoppingBag, color: 'text-purple-400' },
+    { id: 'בילוי', label: 'בילוי', icon: Beer, color: 'text-pink-400' },
+    { id: 'מסעדה', label: 'מסעדה', icon: Utensils, color: 'text-red-400' },
+    { id: 'חשבונות', label: 'חשבונות', icon: Home, color: 'text-emerald-400' },
+    { id: 'בריאות', label: 'בריאות', icon: Heart, color: 'text-rose-400' },
+    { id: 'ביטוח', label: 'ביטוח', icon: Shield, color: 'text-sky-400' },
+    { id: 'לימודים', label: 'לימודים', icon: GraduationCap, color: 'text-indigo-400' },
+    { id: 'קוסמטיקה', label: 'קוסמטיקה', icon: Sparkles, color: 'text-fuchsia-400' },
+    { id: 'עבודה', label: 'עבודה', icon: Briefcase, color: 'text-slate-400' },
+    { id: 'אחר', label: 'אחר', icon: Zap, color: 'text-yellow-400' },
 ];
 
 export const QuickActions = ({ onAction }: { onAction: (id: string, label: string) => void }) => {

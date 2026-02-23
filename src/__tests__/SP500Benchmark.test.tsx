@@ -1,0 +1,48 @@
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { SP500Benchmark } from '@/components/SP500Benchmark';
+import * as hooks from '@/hooks/useWealthData';
+
+vi.mock('@/utils/supabase/client', () => ({
+    createClient: () => ({
+        from: vi.fn().mockReturnValue({ select: vi.fn().mockResolvedValue({ data: [] }) })
+    })
+}));
+
+// Mock recharts
+vi.mock('recharts', async () => {
+    const ActualRecharts = await vi.importActual('recharts');
+    return {
+        ...ActualRecharts,
+        ResponsiveContainer: ({ children }: any) => <div>{children}</div>
+    };
+});
+
+describe('SP500Benchmark', () => {
+    it('shows loading state initially', () => {
+        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [], isLoading: true } as any);
+        const { container } = render(<SP500Benchmark initialWealth={100000} />);
+        expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
+    });
+
+    it('returns null if insufficient snapshots', () => {
+        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [{ snapshot_date: '2023-01-01', net_worth: 100000 }], isLoading: false } as any);
+        const { container } = render(<SP500Benchmark initialWealth={100000} />);
+        expect(container).toBeEmptyDOMElement();
+    });
+
+    it('renders comparison correctly', () => {
+        const mockData = [
+            { snapshot_date: new Date('2022-01-01').toISOString(), net_worth: 100000 },
+            { snapshot_date: new Date('2023-01-01').toISOString(), net_worth: 120000 }, // 20% > SP500 10.5%
+        ];
+        vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: mockData, isLoading: false } as any);
+
+        render(<SP500Benchmark initialWealth={100000} />);
+
+        expect(screen.getByText('בנצ׳מרק S&P 500')).toBeInTheDocument();
+        expect(screen.getByText('מנצח את השוק! 🎉')).toBeInTheDocument();
+        // 20% return
+        expect(screen.getByText('+20%')).toBeInTheDocument();
+    });
+});

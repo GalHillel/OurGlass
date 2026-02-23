@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useMemo, useRef } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/client";
 import { Goal } from "@/types";
 import { useWealth } from "@/hooks/useWealth";
-import { TrendingUp, PieChart, Shield, Rocket, Plus, Edit2, Coins, Building, Trash2 } from "lucide-react";
+import { TrendingUp, PieChart, Shield, Rocket, Plus, Edit2, Coins, Building, Trash2, DollarSign } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
 import CountUp from "react-countup";
@@ -25,7 +25,6 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { TABS } from "@/lib/constants";
-import { StockTicker } from "@/components/StockTicker";
 import { StockPortfolio } from "@/components/StockPortfolio";
 import { WealthChart } from "@/components/WealthChart";
 import { RiskAnalysisCard } from "@/components/RiskAnalysisCard";
@@ -34,6 +33,13 @@ import { DividendForecast } from "@/components/DividendForecast";
 import { getRank } from "@/lib/ranks";
 import { RankBadge } from "@/components/RankBadge";
 import { cn } from "@/lib/utils";
+
+// Phase 3: Wealth & Investment components
+import { NetWorthHistory } from "@/components/NetWorthHistory";
+import { LiabilitiesSection } from "@/components/LiabilitiesSection";
+import { RebalancingCoach } from "@/components/RebalancingCoach";
+import { SP500Benchmark } from "@/components/SP500Benchmark";
+import { useTotalLiabilities } from "@/hooks/useWealthData";
 
 export default function WealthPage() {
     // Use the centralized wealth hook
@@ -46,12 +52,15 @@ export default function WealthPage() {
         refetch
     } = useWealth();
 
+    const { total: totalLiabilities } = useTotalLiabilities();
+    const trueNetWorth = netWorth - totalLiabilities;
+
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingAsset, setEditingAsset] = useState<Goal | null>(null);
     const [activeTab, setActiveTab] = useState<string>(TABS.ALL);
     const [chartFilter, setChartFilter] = useState<string | null>(null);
 
-    const supabaseRef = useRef(createClientComponentClient());
+    const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
     // Note: Compound interest calculation has been moved to a separate function
@@ -69,7 +78,8 @@ export default function WealthPage() {
                 if (chartFilter === 'real_estate') return asset.investment_type === 'real_estate';
                 if (chartFilter === 'stock') return asset.type === 'stock' && asset.investment_type !== 'crypto'; // Ensure distinction
                 if (chartFilter === 'cash') return asset.type === 'cash';
-                if (chartFilter === 'other') return asset.type !== 'stock' && asset.type !== 'cash' && !asset.investment_type;
+                if (chartFilter === 'usd_cash') return asset.investment_type === 'usd_cash' || asset.type === 'usd_cash';
+                if (chartFilter === 'other') return asset.type !== 'stock' && asset.type !== 'cash' && asset.type !== 'usd_cash' && !asset.investment_type;
                 // Fallback
                 return true;
             }
@@ -101,16 +111,10 @@ export default function WealthPage() {
     };
 
     // Calculate Rank using hook's netWorth
-    const { currentRank, nextRank, progress, remaining } = getRank(netWorth);
+    const { currentRank, nextRank, progress, remaining } = getRank(trueNetWorth);
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white pb-24 px-4 space-y-6">
-
-
-            <StockTicker userSymbols={assets
-                .filter(a => (a.type === 'stock' || a.investment_type === 'crypto') && a.symbol)
-                .map(a => a.symbol!)
-            } />
+        <div className="min-h-screen bg-slate-950 text-white pb-24 px-4 space-y-6 pt-6">
 
             {/* Milestone Tracker (Next 100k) */}
             <div className="mx-2 p-4 neon-card rounded-2xl flex items-center gap-4 relative overflow-hidden group">
@@ -140,7 +144,7 @@ export default function WealthPage() {
                         <motion.div
                             className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 relative"
                             initial={{ width: 0 }}
-                            animate={{ width: `${Math.max(5, (netWorth % 100000) / 1000)}%` }}
+                            animate={{ width: `${Math.max(5, (trueNetWorth % 100000) / 1000)}%` }}
                             transition={{ duration: 1.5, ease: "circOut" }}
                         >
                             <div className="absolute top-0 right-0 bottom-0 w-1 bg-white/50 blur-[2px]" />
@@ -148,11 +152,11 @@ export default function WealthPage() {
                     </div>
 
                     <div className="flex justify-between text-xs font-mono">
-                        <span className="text-white font-bold">₪{netWorth.toLocaleString()}</span>
-                        <span className="text-white/40">₪{(Math.floor(netWorth / 100000) + 1) * 100000}</span>
+                        <span className="text-white font-bold">₪{trueNetWorth.toLocaleString()}</span>
+                        <span className="text-white/40">₪{(Math.floor(trueNetWorth / 100000) + 1) * 100000}</span>
                     </div>
                     <p className="text-[10px] text-blue-300/80 mt-1 text-right">
-                        נותרו ₪{(100000 - (netWorth % 100000)).toLocaleString()} ל-100k הבאים
+                        נותרו ₪{(100000 - (trueNetWorth % 100000)).toLocaleString()} ל-100k הבאים
                     </p>
                 </div>
             </div>
@@ -160,7 +164,7 @@ export default function WealthPage() {
 
 
             {/* Risk Analysis (Wide) */}
-            <RiskAnalysisCard investments={assets.filter(a => a.type === 'stock' || a.investment_type === 'crypto')} totalWealth={netWorth} cash={cashValue} />
+            <RiskAnalysisCard investments={assets.filter(a => a.type === 'stock' || a.investment_type === 'crypto')} totalWealth={trueNetWorth} cash={cashValue} />
 
             {/* Main Stats Grid - Full Width */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -176,8 +180,11 @@ export default function WealthPage() {
                             <Skeleton className="h-12 w-48 bg-white/10" />
                         ) : (
                             <div className="text-5xl font-black text-white neon-text relative z-10">
-                                ₪<CountUp end={netWorth} separator="," decimals={0} duration={1} />
+                                ₪<CountUp end={trueNetWorth} separator="," decimals={0} duration={1} />
                             </div>
+                        )}
+                        {totalLiabilities > 0 && (
+                            <p className="text-[10px] text-red-400/60 mt-1 relative z-10">אחרי התחייבויות: -₪{totalLiabilities.toLocaleString()}</p>
                         )}
                         <div className="mt-4 flex gap-3 relative z-10">
                             < RankBadge rank={currentRank} />
@@ -232,6 +239,18 @@ export default function WealthPage() {
                 </div>
             )}
 
+            {/* Net Worth History Chart */}
+            <NetWorthHistory liveNetWorth={trueNetWorth} />
+
+            {/* Liabilities */}
+            <LiabilitiesSection />
+
+            {/* Portfolio Rebalancing Coach */}
+            <RebalancingCoach assets={assets} totalWealth={trueNetWorth} />
+
+            {/* S&P 500 Benchmark */}
+            <SP500Benchmark initialWealth={trueNetWorth} />
+
             {/* Filter Tabs */}
             <div className="flex gap-2 p-1 bg-white/5 rounded-2xl mx-2">
                 {Object.values(TABS).map((tab) => (
@@ -280,11 +299,14 @@ export default function WealthPage() {
                                     className="neon-card p-4 rounded-2xl flex items-center justify-between group relative overflow-hidden"
                                 >
                                     <div className="flex items-center gap-4 relative z-10 w-full">
-                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border border-white/5 ${(asset.type === 'stock' || asset.investment_type === 'crypto') ? 'bg-purple-500/20 text-purple-400' : 'bg-emerald-500/20 text-emerald-400'
+                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border border-white/5 ${(asset.type === 'stock' || asset.investment_type === 'crypto') ? 'bg-purple-500/20 text-purple-400'
+                                            : (asset.investment_type === 'usd_cash' || asset.type === 'usd_cash') ? 'bg-green-500/20 text-green-400'
+                                                : 'bg-emerald-500/20 text-emerald-400'
                                             }`}>
                                             {asset.investment_type === 'crypto' ? <Coins className="w-6 h-6" /> :
                                                 asset.investment_type === 'real_estate' ? <Building className="w-6 h-6" /> :
-                                                    asset.type === 'stock' ? <Rocket className="w-6 h-6" /> : <Shield className="w-6 h-6" />}
+                                                    (asset.investment_type === 'usd_cash' || asset.type === 'usd_cash') ? <DollarSign className="w-6 h-6" /> :
+                                                        asset.type === 'stock' ? <Rocket className="w-6 h-6" /> : <Shield className="w-6 h-6" />}
                                         </div>
 
                                         <div className="flex-1">
@@ -299,6 +321,11 @@ export default function WealthPage() {
                                                     <div className="font-black text-xl tracking-tight neon-text">
                                                         ₪{Number((asset as any).calculatedValue || asset.current_amount).toLocaleString()}
                                                     </div>
+                                                    {(asset.investment_type === 'usd_cash' || asset.type === 'usd_cash') && (
+                                                        <div className="flex justify-end gap-1">
+                                                            <span className="text-[10px] bg-green-500/20 text-green-200 px-1.5 py-0.5 rounded border border-green-500/30">${Number(asset.current_amount).toLocaleString()}</span>
+                                                        </div>
+                                                    )}
                                                     {(asset.type === 'stock' || asset.investment_type === 'crypto') && (
                                                         <div className="flex justify-end">
                                                             <span className="text-[10px] bg-purple-500/20 text-purple-200 px-1.5 py-0.5 rounded border border-purple-500/30">חי</span>

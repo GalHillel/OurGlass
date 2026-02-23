@@ -39,7 +39,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useDeepFreeze } from "@/hooks/useDeepFreeze";
 import { DeepFreezeDialog } from "@/components/DeepFreezeDialog";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 import { triggerHaptic } from "@/utils/haptics";
@@ -47,6 +47,7 @@ import { Transaction } from "@/types";
 import { cn } from "@/lib/utils";
 import { NumericKeypad } from "./NumericKeypad";
 import confetti from "canvas-confetti";
+import { useAppStore } from "@/stores/appStore";
 
 interface AddTransactionDrawerProps {
     isOpen: boolean;
@@ -82,6 +83,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
     const [amountStr, setAmountStr] = useState("");
     const [description, setDescription] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string>("אחר");
+    const [moodRating, setMoodRating] = useState<number | null>(null);
     const [payer, setPayer] = useState<'him' | 'her' | 'joint'>('him');
     const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [installments, setInstallments] = useState<number>(1);
@@ -89,8 +91,9 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
 
     const [isImpulse, setIsImpulse] = useState(false);
 
-    const { user } = useAuth();
-    const supabaseRef = useRef(createClientComponentClient());
+    const { user, profile } = useAuth();
+    const { appIdentity } = useAppStore();
+    const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
     const performSave = async () => {
@@ -124,11 +127,13 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                     txs.push({
                         amount: perInstallment,
                         user_id: user?.id,
+                        couple_id: profile?.couple_id,
                         description: `${finalDescription} (תשלום ${i + 1}/${installments})`,
                         is_surprise: false,
                         date: installmentDate.toISOString(),
                         payer: payer,
                         category: selectedCategory,
+                        mood_rating: moodRating,
                     });
                 }
 
@@ -142,11 +147,13 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                 const txData = {
                     amount: numericAmount,
                     user_id: user?.id,
+                    couple_id: profile?.couple_id,
                     description: finalDescription,
                     is_surprise: false,
                     date: finalDate.toISOString(),
                     payer: payer,
                     category: selectedCategory,
+                    mood_rating: moodRating,
                 };
 
                 let resultTx;
@@ -166,7 +173,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                 if (onSuccess) onSuccess(numericAmount, mappedTx);
             }
 
-            if (typeof window !== "undefined") localStorage.setItem(LAST_PAYER_KEY, payer);
+            // We no longer save LAST_PAYER_KEY, we rely on appIdentity
             onClose();
 
         } catch (error: unknown) {
@@ -238,29 +245,22 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                 setSelectedCategory(initialData.category || "אחר");
                 setPayer(initialData.payer || 'him');
                 setDate(new Date(initialData.date).toISOString().split('T')[0]);
+                setMoodRating(initialData.mood_rating || null);
             } else {
                 setAmountStr("");
                 setDescription("");
+                setMoodRating(null);
                 // If category prop is provided (from QuickActions), use it
                 if (category) {
-                    // Map QuickActions labels to category IDs
-                    const categoryMap: Record<string, string> = {
-                        'קפה': 'קפה',
-                        'סופר': 'סופר',
-                        'מסעדה': 'מסעדה',
-                        'דלק': 'דלק',
-                        'קניות': 'קניות',
-                        'בילוי': 'בילוי',
-                        'תחבורה': 'תחבורה',
-                        'חשבונות': 'חשבונות',
-                    };
-                    setSelectedCategory(categoryMap[category] || "אחר");
-                    setDescription(category);
+                    setSelectedCategory(category);
+                    setDescription('');
                 } else {
                     setSelectedCategory("אחר");
                 }
-                const savedPayer = typeof window !== "undefined" ? localStorage.getItem(LAST_PAYER_KEY) : null;
-                setPayer((savedPayer === "him" || savedPayer === "her" || savedPayer === "joint") ? savedPayer : "him");
+
+                // Set default payer to the active app identity, or fallback to 'him'
+                setPayer(appIdentity || "him");
+
                 setDate(new Date().toISOString().split("T")[0]);
                 setInstallments(1);
             }
@@ -437,6 +437,34 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                                 <Shield className="w-5 h-5 text-emerald-400" />
                             )}
                         </div>
+
+                        {/* Mood Selector (AI Tracking) */}
+                        <div className="flex flex-col gap-3 bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                            <span className="text-white/80 text-xs text-center font-medium">איך הרגשת בקנייה? (מעקב AI)</span>
+                            <div className="flex justify-between items-center px-4">
+                                {[
+                                    { rating: 1, emoji: '😭' },
+                                    { rating: 2, emoji: '😞' },
+                                    { rating: 3, emoji: '😐' },
+                                    { rating: 4, emoji: '🙂' },
+                                    { rating: 5, emoji: '🤩' },
+                                ].map((mood) => (
+                                    <button
+                                        type="button"
+                                        key={mood.rating}
+                                        onClick={() => { triggerHaptic(); setMoodRating(mood.rating); }}
+                                        className={cn(
+                                            "text-3xl transition-all duration-300",
+                                            moodRating === mood.rating ? "scale-150 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] z-10" : "opacity-30 hover:opacity-80 hover:scale-110 grayscale"
+                                        )}
+                                        style={moodRating === mood.rating ? { filter: 'grayscale(0%)' } : undefined}
+                                    >
+                                        {mood.emoji}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 

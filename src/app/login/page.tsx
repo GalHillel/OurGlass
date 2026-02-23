@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { LoadingSplash } from "@/components/LoadingSplash";
 
 export default function LoginPage() {
     const router = useRouter();
-    const supabaseRef = useRef(createClientComponentClient());
+    const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
     const [hasError, setHasError] = useState(false);
     const [cooldownSeconds, setCooldownSeconds] = useState(0);

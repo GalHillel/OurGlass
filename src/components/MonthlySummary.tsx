@@ -1,171 +1,27 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Trophy, AlertTriangle, Shield, Check, Star, ShoppingBag, TrendingUp, ChevronLeft, ChevronRight, X } from "lucide-react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { ArrowRight, Trophy, AlertTriangle, Shield, Check, CalendarCheck } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
-import { Transaction } from "@/types";
-import { motion, AnimatePresence } from "framer-motion";
-import { RoundUpVault } from "@/components/RoundUpVault";
+import { motion } from "framer-motion";
 
 interface MonthlySummaryProps {
     currentBalance: number;
-    transactions: Transaction[];
     onRefresh: () => void;
-    customTrigger?: React.ReactNode;
 }
 
-export const MonthlySummary = ({ currentBalance, transactions = [], onRefresh, customTrigger }: MonthlySummaryProps) => {
+export const MonthlySummary = ({ currentBalance, onRefresh }: MonthlySummaryProps) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [slideIndex, setSlideIndex] = useState(0);
+    const [step, setStep] = useState<'summary' | 'action' | 'done'>('summary');
     const [loading, setLoading] = useState(false);
 
-    const supabaseRef = useRef(createClientComponentClient());
-    const supabase = supabaseRef.current;
+    const supabase = createClient();
     const isSurplus = currentBalance > 0;
     const absAmount = Math.abs(currentBalance);
-
-    // Calc Stats
-    const stats = useMemo(() => {
-        if (!isOpen) return null;
-
-        const totalSpent = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
-
-        // Mock Categories until we have real ones populated or joined
-        // Group by description keywords for now or category_id if available
-        const categoryMap: Record<string, number> = {};
-        let biggestPurchase = { amount: 0, name: '' };
-
-        transactions.forEach(t => {
-            const amount = Number(t.amount);
-            if (amount > biggestPurchase.amount) biggestPurchase = { amount, name: t.description || 'לא ידוע' };
-
-            // Simple keyword categorization
-            let cat = 'אחר';
-            const desc = (t.description || '').toLowerCase();
-            if (desc.includes('food') || desc.includes('אוכל') || desc.includes('סופר')) cat = 'מזון';
-            else if (desc.includes('car') || desc.includes('דלק') || desc.includes('רכב')) cat = 'רכב';
-            else if (desc.includes('house') || desc.includes('בית')) cat = 'בית';
-
-            categoryMap[cat] = (categoryMap[cat] || 0) + amount;
-        });
-
-        const sortedCats = Object.entries(categoryMap).sort((a, b) => b[1] - a[1]);
-        const topCategory = sortedCats[0] || ['כללי', 0];
-
-        return { totalSpent, topCategory, biggestPurchase };
-    }, [transactions, isOpen]);
-
-    const slides = [
-        // Slide 0: Intro
-        {
-            bg: "bg-slate-900",
-            content: (
-                <div className="text-center space-y-6">
-                    <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto ${isSurplus ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
-                        {isSurplus ? <Trophy className="w-12 h-12 text-emerald-400" /> : <AlertTriangle className="w-12 h-12 text-red-400" />}
-                    </div>
-                    <div>
-                        <h3 className="text-2xl font-bold mb-2">החודש שלכם</h3>
-                        <div className={`text-5xl font-black ${isSurplus ? 'text-emerald-400 neon-text' : 'text-red-400'}`}>
-                            ₪{currentBalance.toLocaleString()}
-                        </div>
-                        <p className="text-white/60 mt-2">{isSurplus ? "נשארתם בפלוס! איזה כיף 🤩" : "חרגתם מהתקציב... לא נורא 😬"}</p>
-                    </div>
-                </div>
-            )
-        },
-        // Slide 1: Spending
-        {
-            bg: "bg-blue-900",
-            content: (
-                <div className="text-center space-y-8">
-                    <div className="w-20 h-20 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto animate-pulse">
-                        <ShoppingBag className="w-10 h-10 text-blue-400" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold opacity-80">סך כל ההוצאות</h3>
-                        <div className="text-4xl font-black text-white mt-2">
-                            ₪{stats?.totalSpent.toLocaleString()}
-                        </div>
-                    </div>
-                    {stats?.biggestPurchase.name && (
-                        <div className="bg-white/10 rounded-xl p-4 mx-4">
-                            <p className="text-xs text-white/60 mb-1">הקנייה הכי גדולה</p>
-                            <p className="font-bold text-lg">{stats.biggestPurchase.name}</p>
-                            <p className="font-mono text-blue-300">₪{stats.biggestPurchase.amount.toLocaleString()}</p>
-                        </div>
-                    )}
-                </div>
-            )
-        },
-        // Slide 2: Categories (Mock)
-        {
-            bg: "bg-purple-900",
-            content: (
-                <div className="text-center space-y-8">
-                    <div className="w-20 h-20 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto">
-                        <Star className="w-10 h-10 text-purple-400" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold opacity-80">הקטגוריה המובילה</h3>
-                        <div className="text-4xl font-black text-white mt-2">
-                            {stats?.topCategory[0]}
-                        </div>
-                        <p className="text-purple-300 font-mono mt-1">₪{stats?.topCategory[1].toLocaleString()}</p>
-                    </div>
-                    <div className="px-8 text-sm opacity-60">
-                        "זה לא בזבוז אם זה עושה אתכם שמחים... או שבעים."
-                    </div>
-                </div>
-            )
-        },
-        // Slide 3: Round Up Vault
-        {
-            bg: "bg-yellow-900",
-            content: (
-                <div className="flex items-center justify-center h-full">
-                    <div className="w-full">
-                        <RoundUpVault transactions={transactions} />
-                        <p className="text-yellow-200/60 text-xs text-center mt-8">
-                            "הכסף הקטן של היום הוא החופש הגדול של מחר."
-                        </p>
-                    </div>
-                </div>
-            )
-        },
-        // Slide 4: Action
-        {
-            bg: "bg-slate-900",
-            isAction: true,
-            content: (
-                <div className="text-center space-y-6">
-                    <Shield className="w-16 h-16 text-blue-400 mx-auto" />
-                    <h3 className="text-2xl font-bold">סגירת חודש</h3>
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-right">
-                        <p className="text-white/80 text-sm leading-relaxed">
-                            {isSurplus
-                                ? `יש לכם עודף של ₪${absAmount.toLocaleString()}. האם להעביר אותו למבצר (חיסכון)?`
-                                : `יש גירעון של ₪${absAmount.toLocaleString()}. האם למשוך מהמבצר כדי לאזן?`
-                            }
-                        </p>
-                    </div>
-                    <Button
-                        onClick={() => handleAction()}
-                        disabled={loading}
-                        className={`relative z-50 w-full h-12 font-bold text-lg ${isSurplus ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-blue-500 hover:bg-blue-600'}`}
-                    >
-                        {loading ? "מבצע..." : isSurplus ? "כן, לחיסכון! 💰" : "איזון תקציב 🛡️"}
-                    </Button>
-                </div>
-            )
-        }
-    ];
-
-    const currentSlide = slides[slideIndex];
 
     const handleAction = async () => {
         setLoading(true);
@@ -183,9 +39,11 @@ export const MonthlySummary = ({ currentBalance, transactions = [], onRefresh, c
             let description = "";
 
             if (isSurplus) {
+                // Add surplus to fortress
                 newAmount += absAmount;
                 description = `סגירת חודש: הפקדת עודף (${absAmount})`;
             } else {
+                // Cover deficit from fortress
                 newAmount -= absAmount;
                 if (newAmount < 0) throw new Error("אין מספיק כסף במבצר לכיסוי הגירעון");
                 description = `סגירת חודש: כיסוי גירעון (${absAmount})`;
@@ -196,24 +54,29 @@ export const MonthlySummary = ({ currentBalance, transactions = [], onRefresh, c
                 .from('goals')
                 .update({ current_amount: newAmount })
                 .eq('id', fortress.id);
+
             if (goalError) throw goalError;
 
-            // Create Transaction
+            // Create Transaction to record this move (so budget resets sort of?)
             const { error: txError } = await supabase.from('transactions').insert({
-                amount: isSurplus ? absAmount : -absAmount,
+                amount: isSurplus ? absAmount : -absAmount, // Surplus = Expense (leaves pocket), Deficit = Income (enters pocket)
                 description: description,
                 date: new Date().toISOString(),
                 category_id: null,
                 is_surprise: false
             });
+
             if (txError) throw txError;
 
             if (isSurplus) {
-                confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+                confetti({
+                    particleCount: 150,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
             }
 
-            toast.success("החודש נסגר בהצלחה!");
-            setIsOpen(false);
+            setStep('done');
             onRefresh();
         } catch (error: any) {
             toast.error("שגיאה בסגירת חודש", { description: error.message });
@@ -222,76 +85,92 @@ export const MonthlySummary = ({ currentBalance, transactions = [], onRefresh, c
         }
     };
 
-    const nextSlide = () => {
-        if (slideIndex < slides.length - 1) setSlideIndex(prev => prev + 1);
-    };
-
-    const prevSlide = () => {
-        if (slideIndex > 0) setSlideIndex(prev => prev - 1);
-    };
-
     return (
         <Dialog open={isOpen} onOpenChange={(open) => {
             setIsOpen(open);
-            if (!open) setSlideIndex(0);
+            if (!open) setStep('summary'); // Reset on close
         }}>
             <DialogTrigger asChild>
-                {customTrigger ? customTrigger : (
-                    <Button variant="outline" className="border-white/10 text-white/60 hover:text-white hover:bg-white/5">
-                        סיכום חודש
-                    </Button>
-                )}
+                <motion.div
+                    whileTap={{ scale: 0.95 }}
+                    className="col-span-2 bg-gradient-to-br from-slate-800/80 to-slate-900/90 rounded-3xl p-4 border border-slate-700/50 backdrop-blur-md relative overflow-hidden flex items-center justify-between group cursor-pointer"
+                >
+                    <div className="absolute inset-0 bg-white/5 group-hover:bg-white/10 transition-colors" />
+                    <div className="flex items-center gap-3 relative z-10">
+                        <div className="p-2 bg-slate-700/50 rounded-xl">
+                            <CalendarCheck className="w-5 h-5 text-slate-300" />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-bold text-white">סגירת חודש</h3>
+                            <p className="text-[10px] text-slate-400">איפוס והעברת יתרות</p>
+                        </div>
+                    </div>
+                </motion.div>
             </DialogTrigger>
-            <DialogContent showCloseButton={false} className="p-0 border-none bg-transparent max-w-sm overflow-hidden rounded-[2rem] aspect-[9/16] max-h-[85vh]">
-                <DialogTitle className="sr-only">Monthly Summary</DialogTitle>
-                {/* Story Container */}
-                <div className={`relative w-full h-full ${currentSlide.bg} flex flex-col transition-colors duration-500`}>
+            <DialogContent showCloseButton={false} className="bg-slate-900/95 backdrop-blur-xl border-white/10 text-white sm:max-w-md w-[90vw] rounded-[2rem]">
+                <DialogHeader>
+                    <DialogTitle className="text-center text-2xl font-bold">סוגרים חודש 🌙</DialogTitle>
+                </DialogHeader>
 
-                    {/* Close Button */}
-                    <button
-                        onClick={() => setIsOpen(false)}
-                        className="absolute top-4 left-4 z-50 p-2 rounded-full bg-black/20 text-white/70 hover:bg-black/40 hover:text-white transition-colors"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
-
-                    {/* Progress Bar */}
-                    <div className="absolute top-4 left-16 right-4 flex gap-1 z-20">
-                        {slides.map((_, idx) => (
-                            <div key={idx} className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
-                                <div
-                                    className={`h-full bg-white transition-all duration-300 ${idx <= slideIndex ? 'w-full' : 'w-0'}`}
-                                />
+                <div className="py-6 text-center space-y-6">
+                    {step === 'summary' && (
+                        <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6">
+                            <div className="flex justify-center">
+                                <div className={`w-20 h-20 rounded-full flex items-center justify-center ${isSurplus ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
+                                    {isSurplus ? <Trophy className="w-10 h-10 text-emerald-400" /> : <AlertTriangle className="w-10 h-10 text-red-400" />}
+                                </div>
                             </div>
-                        ))}
-                    </div>
+                            <div>
+                                <h3 className="text-lg font-medium text-white/80">
+                                    {isSurplus ? "כל הכבוד! נשארתם בפלוס" : "אופס... נכנסתם למינוס"}
+                                </h3>
+                                <div className={`text-4xl font-black mt-2 ${isSurplus ? 'text-emerald-400' : 'text-red-400'}`}>
+                                    ₪{currentBalance.toLocaleString()}
+                                </div>
+                            </div>
+                            <Button className="w-full h-12 text-lg" onClick={() => setStep('action')}>
+                                {isSurplus ? "מה עושים עם הכסף?" : "איך מכסים את זה?"}
+                                <ArrowRight className="w-5 h-5 mr-2" />
+                            </Button>
+                        </div>
+                    )}
 
-                    {/* Content */}
-                    <div className="flex-1 flex items-center justify-center p-8 relative z-10">
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={slideIndex}
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 1.1 }}
-                                transition={{ duration: 0.3 }}
-                                className="w-full"
+                    {step === 'action' && (
+                        <div className="animate-in fade-in slide-in-from-right-8 space-y-6">
+                            <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
+                                <Shield className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                                <h4 className="text-xl font-bold mb-2">המבצר המשותף</h4>
+                                <p className="text-white/60 text-sm leading-relaxed">
+                                    {isSurplus
+                                        ? `להעביר את העודף (₪${absAmount.toLocaleString()}) לחיסכון במבצר?`
+                                        : `למשוך ₪${absAmount.toLocaleString()} מהמבצר כדי לאפס את העובר ושב?`
+                                    }
+                                </p>
+                            </div>
+                            <Button
+                                onClick={handleAction}
+                                disabled={loading}
+                                className={`w-full h-12 font-bold ${isSurplus ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-blue-500 hover:bg-blue-600'}`}
                             >
-                                {currentSlide.content}
-                            </motion.div>
-                        </AnimatePresence>
-                    </div>
+                                {loading ? "מבצע..." : isSurplus ? "כן, תעביר למבצר! 💰" : "כסה אותנו 🛡️"}
+                            </Button>
+                        </div>
+                    )}
 
-                    {/* Controls */}
-                    <div className="absolute inset-0 z-30 flex">
-                        <div className="w-1/3 h-full" onClick={prevSlide} />
-                        <div className="w-2/3 h-full" onClick={nextSlide} />
-                    </div>
-
-                    {/* Hint */}
-                    <div className="absolute bottom-6 w-full text-center text-xs text-white/30 z-20">
-                        {slideIndex < slides.length - 1 ? "הקש כדי להמשיך" : ""}
-                    </div>
+                    {step === 'done' && (
+                        <div className="animate-in zoom-in duration-300 space-y-6">
+                            <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto">
+                                <Check className="w-10 h-10 text-green-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold text-white">בוצע בהצלחה!</h3>
+                                <p className="text-white/60 mt-2">החודש נסגר והתקציב אופס.</p>
+                            </div>
+                            <Button onClick={() => setIsOpen(false)} variant="outline" className="w-full border-white/10">
+                                סגור
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </DialogContent>
         </Dialog>

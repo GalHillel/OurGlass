@@ -2,7 +2,6 @@
 
 import { QuickActions } from "@/components/QuickActions";
 import { AddTransactionDrawer } from "@/components/AddTransactionDrawer";
-import { MonthlySummary } from "@/components/MonthlySummary";
 import { TransactionList } from "@/components/TransactionList";
 import { PartnerStats } from "@/components/PartnerStats";
 import { HomeMosaic } from "@/components/HomeMosaic";
@@ -30,8 +29,8 @@ const MonthlyCalendar = dynamic(() => import('@/components/MonthlyCalendar').the
 const SmartInsights = dynamic(() => import('@/components/SmartInsights').then(mod => mod.SmartInsights), {
   ssr: false
 });
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { Transaction, Goal, Subscription } from "@/types";
+import { createClient } from "@/utils/supabase/client";
+import { Transaction, Goal, Subscription, Liability } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { useWealth } from "@/hooks/useWealth";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -43,6 +42,24 @@ import CountUp from "react-countup";
 
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { Loader2 } from "lucide-react";
+
+// Phase 4-6 components
+const PredictiveCashflow = dynamic(() => import('@/components/PredictiveCashflow').then(mod => mod.PredictiveCashflow), {
+  ssr: false,
+  loading: () => <Skeleton className="h-64 w-full rounded-3xl bg-white/5" />
+});
+
+import { SettleUpCard } from "@/components/SettleUpCard";
+import { GuiltFreeWallets } from "@/components/GuiltFreeWallets";
+
+const MoodSpendingInsight = dynamic(() => import('@/components/MoodSpendingInsight').then(mod => mod.MoodSpendingInsight), {
+  ssr: false,
+  loading: () => <Skeleton className="h-48 w-full rounded-3xl bg-white/5" />
+});
+
+import { MonthlyRoastPraise } from "@/components/MonthlyRoastPraise";
+import { AIChatButton } from "@/components/AIChatButton";
+import { QuestsAndBadges } from "@/components/QuestsAndBadges";
 
 // Simplified PullToRefresh Component that doesn't block scroll
 const PullToRefresh = ({ children, onRefresh }: { children: React.ReactNode, onRefresh: () => Promise<void> }) => {
@@ -85,6 +102,7 @@ export default function Home() {
   // const [goals, setGoals] = useState<Goal[]>([]); // Removed: Using assets from useWealth
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [liabilities, setLiabilities] = useState<Liability[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedFilterCategory, setSelectedFilterCategory] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -97,7 +115,7 @@ export default function Home() {
 
   const daysRemaining = getDaysRemainingInCycle(); // This is for current cycle only, maybe update if needed for UI but keeping for now
 
-  const supabaseRef = useRef(createClientComponentClient());
+  const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
   const { user, profile, loading: authLoading } = useAuth();
   const { netWorth, investmentsValue, cashValue, assets, loading: wealthLoading } = useWealth();
@@ -127,19 +145,21 @@ export default function Home() {
       const signal = controller.signal;
 
       // OPTIMIZATION: Select only needed columns
-      const [txResult, subsResult] = await Promise.all([
+      const [txResult, subsResult, liabResult] = await Promise.all([
         supabase
           .from('transactions')
-          .select('id, amount, date, description, category, payer, is_surprise, created_at')
+          .select('id, amount, date, description, category, payer, is_surprise, created_at, mood_rating')
           .gte('date', start.toISOString())
           .lt('date', end.toISOString())
           .order('date', { ascending: false })
           .abortSignal(signal),
         supabase.from('subscriptions').select('*').abortSignal(signal),
+        supabase.from('liabilities').select('*').abortSignal(signal),
       ]);
 
       const { data: txData, error: txError } = txResult;
       const { data: subsData, error: subsError } = subsResult;
+      const { data: liabData, error: liabError } = liabResult;
 
       if (txError) {
         console.error("Supabase Transaction Error:", txError);
@@ -154,6 +174,7 @@ export default function Home() {
       const transactionsData = (txData || []) as unknown as Transaction[];
       setTransactions(transactionsData);
       setSubscriptions(subsData || []);
+      setLiabilities(liabData || []);
 
       const MONTHLY_BUDGET = profile?.budget || 20000;
       const totalFixed = subsData?.reduce((sum: number, sub: any) => sum + Number(sub.amount), 0) || 0;
@@ -307,7 +328,12 @@ export default function Home() {
 
       {/* ... SmartInsights ... */}
 
-      <main className="flex-1 flex flex-col items-center gap-6 w-full mx-auto pb-8">
+      <motion.main
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="flex-1 flex flex-col items-center gap-6 w-full mx-auto pb-8"
+      >
         {/* Pull to Refresh Wrapper */}
         <PullToRefresh onRefresh={fetchData}>
           {loading || balance === null ? (
@@ -353,6 +379,7 @@ export default function Home() {
                   assets={assets}
                   transactions={transactions}
                   subscriptions={subscriptions}
+                  liabilities={liabilities}
                   onRefresh={fetchData}
                   // Reactor Props
                   burnRateStatus={burnRateData.status}
@@ -416,7 +443,25 @@ export default function Home() {
             }}
           />
         </LayoutGroup>
-      </main>
+
+        {/* Phase 4-6: Insights & Bento Box Gamification Layout */}
+        {!loading && balance !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="w-full max-w-md px-4 grid grid-cols-2 gap-3"
+          >
+            {/* Guilt-Free Wallets - Full Width (since SettleUp was moved) */}
+            <div className="col-span-2 flex flex-col h-full">
+              <GuiltFreeWallets />
+            </div>
+          </motion.div>
+        )}
+      </motion.main>
+
+      {/* AI Psychologist Nudge Button */}
+      <AIChatButton />
 
       <AddTransactionDrawer
         isOpen={isDrawerOpen}

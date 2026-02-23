@@ -4,7 +4,7 @@ import { Transaction, Subscription } from "@/types";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { Trash2, Edit2, ShoppingBag, Coffee, Car, Film, FileText, Utensils, Fuel, ShoppingCart, Calendar } from "lucide-react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 import { SwipeableRow } from "@/components/SwipeableRow";
 import { EmptyState } from "@/components/EmptyState";
@@ -40,7 +40,7 @@ import { ActivePress } from "@/components/ui/ActivePress";
 // ... imports ...
 
 export const TransactionList = memo(({ transactions, subscriptions = [], onRefresh, onEdit, activeFilter, activeDateFilter }: TransactionListProps) => {
-    const supabaseRef = useRef(createClientComponentClient());
+    const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
     const [detectedSub, setDetectedSub] = React.useState<{ name: string, amount: number } | null>(null);
 

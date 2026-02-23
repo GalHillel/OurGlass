@@ -1,19 +1,21 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { LogOut, Save, User } from "lucide-react";
+import { LogOut, Save, User, Smartphone } from "lucide-react";
+import { useAppStore } from "@/stores/appStore";
+import { motion } from "framer-motion";
 
 export default function SettingsPage() {
     console.log("Settings Page Rendering"); // Debug log for build verification
     const { user, profile, updateProfile } = useAuth();
-    const supabaseRef = useRef(createClientComponentClient());
+    const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
     const router = useRouter();
 
@@ -22,6 +24,7 @@ export default function SettingsPage() {
     const [budget, setBudget] = useState("");
     const [income, setIncome] = useState("");
     const [loading, setLoading] = useState(false);
+    const { appIdentity, setAppIdentity } = useAppStore();
 
     const [isLoaded, setIsLoaded] = useState(false);
 
@@ -161,6 +164,39 @@ export default function SettingsPage() {
                                 placeholder="20000"
                             />
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">₪</span>
+                        </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5 space-y-3">
+                        <Label className="text-slate-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                            <Smartphone className="w-3.5 h-3.5" />
+                            זהות משתמש במכשיר זה
+                        </Label>
+                        <p className="text-[11px] text-white/40 leading-tight">
+                            הגדר מי משתמש במכשיר הנוכחי כדי שהאפליקציה תדע למלא אוטומטית מי שילם על הוצאות חדשות. (הגדרה שרלוונטית רק למכשיר זה).
+                        </p>
+
+                        <div className="flex items-center gap-3 bg-slate-950/50 p-2 rounded-2xl border border-white/5">
+                            <button
+                                onClick={() => setAppIdentity('him')}
+                                className={`flex-1 flex flex-col items-center justify-center p-3 rounded-xl transition-all ${appIdentity === 'him'
+                                        ? 'bg-blue-500/20 border border-blue-500/30 text-white shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                                        : 'hover:bg-white/5 text-white/50 border border-transparent'
+                                    }`}
+                            >
+                                <span className="text-2xl mb-1">👨🏻</span>
+                                <span className="text-xs font-bold">גל</span>
+                            </button>
+                            <button
+                                onClick={() => setAppIdentity('her')}
+                                className={`flex-1 flex flex-col items-center justify-center p-3 rounded-xl transition-all ${appIdentity === 'her'
+                                        ? 'bg-pink-500/20 border border-pink-500/30 text-white shadow-[0_0_15px_rgba(236,72,153,0.2)]'
+                                        : 'hover:bg-white/5 text-white/50 border border-transparent'
+                                    }`}
+                            >
+                                <span className="text-2xl mb-1">👩🏻</span>
+                                <span className="text-xs font-bold">איריס</span>
+                            </button>
                         </div>
                     </div>
                 </div>

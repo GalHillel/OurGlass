@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/client";
 import { WishlistItem } from "@/types";
 import { Plus, Check, Clock, AlertTriangle, Sparkles, Trash2, Hourglass } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
@@ -44,7 +44,7 @@ export default function WishlistPage() {
     const [actionType, setActionType] = useState<'deposit' | 'withdraw'>('deposit');
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-    const supabaseRef = useRef(createClientComponentClient());
+    const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
     const { profile } = useAuth();
 
@@ -92,7 +92,8 @@ export default function WishlistPage() {
                 name: newItemName,
                 price: parseFloat(newItemPrice),
                 link: newItemLink,
-                status: 'pending'
+                status: 'pending',
+                couple_id: profile?.couple_id
             });
 
             if (error) throw error;
@@ -145,7 +146,8 @@ export default function WishlistPage() {
                         current_amount: 0,
                         target_amount: 100000,
                         type: 'cash',
-                        currency: 'ILS'
+                        currency: 'ILS',
+                        couple_id: profile?.couple_id
                     }).select().single();
                     if (error) throw error;
                     savings = newSavings;
@@ -220,7 +222,8 @@ export default function WishlistPage() {
                 description: description,
                 date: new Date().toISOString(),
                 category_id: null, // "Savings" category ideally
-                is_surprise: false
+                is_surprise: false,
+                couple_id: profile?.couple_id
             });
             if (txError) throw txError;
 

@@ -1,12 +1,45 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Bot, Sparkles, X, RefreshCw } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Sparkles, X, RefreshCw, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ChatInterface } from "./ChatInterface";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
+import { useAppStore } from "@/stores/appStore";
+import { useWealth } from "@/hooks/useWealth";
+import { PAYERS } from "@/lib/constants";
 import { motion, AnimatePresence } from "framer-motion";
+
+// Generates a dynamic one-liner insight from real financial data
+function generateDynamicInsight(context: any, firstName: string): string | null {
+    if (!context) return null;
+
+    const { recentTransactions, budget, income, subscriptions, fixedExpenses } = context;
+
+    const totalSpent = recentTransactions?.reduce((s: number, t: any) => s + Number(t.amount), 0) || 0;
+    const budgetUsedPct = budget > 0 ? Math.round((totalSpent / budget) * 100) : 0;
+    const remaining = Math.max(0, budget - totalSpent);
+
+    // Category breakdown
+    const cats: Record<string, number> = {};
+    recentTransactions?.forEach((t: any) => {
+        const cat = t.category || 'אחר';
+        cats[cat] = (cats[cat] || 0) + Number(t.amount);
+    });
+    const topCat = Object.entries(cats).sort(([, a], [, b]) => b - a)[0];
+
+    // Pick the most relevant insight
+    if (budgetUsedPct >= 90) return `${firstName}, ניצלת ${budgetUsedPct}% מהתקציב — בוא נראה איפה לחסוך`;
+    if (budgetUsedPct >= 70) return `${firstName}, נשארו לך ₪${remaining.toLocaleString()} — מעקב חכם?`;
+    if (budgetUsedPct <= 20 && totalSpent > 0) return `${firstName}, חיסכון מדהים! רק ${budgetUsedPct}% מהתקציב 🎯`;
+    if (topCat && topCat[1] > budget * 0.25) return `${firstName}, הוצאת ₪${topCat[1].toLocaleString()} על ${topCat[0]} — ננתח?`;
+    if (subscriptions?.length > 5) return `${firstName}, יש לך ${subscriptions.length} מנויים — אפשר לחסוך?`;
+    if (remaining > 2000) return `${firstName}, יש ₪${remaining.toLocaleString()} פנויים — מה עושים איתם?`;
+
+    return `${firstName}, רוצה סיכום חכם של החודש? ✨`;
+}
 
 export const AIChatButton = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -14,127 +47,173 @@ export const AIChatButton = () => {
     const [error, setError] = useState(false);
     const [loading, setLoading] = useState(false);
     const [bubbleMessage, setBubbleMessage] = useState<string | null>(null);
-    const supabaseRef = useRef(createClientComponentClient());
+    const [bubbleDismissed, setBubbleDismissed] = useState(false);
+    const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
+    const { profile } = useAuth();
+    const { appIdentity } = useAppStore();
+    const { netWorth: liveNetWorth } = useWealth();
 
-    useEffect(() => {
-        // Proactive Nudge Logic
-        const timer = setTimeout(() => {
-            const msgs = [
-                "זיהיתי חיסכון יפה החודש! רוצה שננתח אותו?",
-                "היי, איך הולך עם היעד לטסלה?",
-                "ראיתי הוצאה חריגה אתמול, נדבר על זה?",
-                "יש לך ₪400 פנויים, אולי נשקיע אותם?"
-            ];
-            setBubbleMessage(msgs[Math.floor(Math.random() * msgs.length)]);
-        }, 5000); // 5 seconds delay before showing
+    // Map device identity to display name
+    const identityName = appIdentity === 'him' ? PAYERS.HIM : appIdentity === 'her' ? PAYERS.HER : '';
+    const firstName = identityName || profile?.name?.split(' ')[0] || '';
 
-        return () => clearTimeout(timer);
-    }, []);
-
-    // Auto-hide bubble after 8 seconds of appearing
-    useEffect(() => {
-        if (!bubbleMessage) return;
-
-        const hideTimer = setTimeout(() => {
-            setBubbleMessage(null);
-        }, 8000);
-
-        return () => clearTimeout(hideTimer);
-    }, [bubbleMessage]);
-
-    const fetchContext = async () => {
+    const fetchContext = useCallback(async () => {
         setLoading(true);
         setError(false);
         try {
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
             const { data: txs, error: txError } = await supabase
                 .from('transactions')
                 .select('*')
-                .limit(5)
+                .gte('date', startOfMonth)
                 .order('date', { ascending: false });
 
             if (txError) throw txError;
 
-            const { data: subs, error: subError } = await supabase.from('subscriptions').select('amount');
-            if (subError) throw subError;
+            const [
+                { data: subs },
+                { data: liabs },
+                { data: profileData },
+                { data: wishlist },
+                { data: wealth }
+            ] = await Promise.all([
+                supabase.from('subscriptions').select('*'),
+                supabase.from('liabilities').select('*'),
+                supabase.from('profiles').select('*').single(),
+                supabase.from('wishlist').select('*'),
+                supabase.from('wealth_history').select('*').order('snapshot_date', { ascending: false }).limit(1)
+            ]);
 
-            const { data: profile } = await supabase.from('profiles').select('budget').single();
+            const subTotal = subs?.reduce((acc: number, curr: any) => acc + Number(curr.amount), 0) || 0;
+            const liabTotal = liabs?.reduce((acc: number, curr: any) => acc + Number(curr.monthly_payment), 0) || 0;
 
-            // Calculate quick balance for context
-            const totalFixed = subs?.reduce((acc: number, curr: any) => acc + Number(curr.amount), 0) || 0;
+            const ctx = {
+                recentTransactions: txs || [],
+                subscriptions: subs || [],
+                liabilities: liabs || [],
+                wishlist: wishlist || [],
+                wealthSnapshot: wealth?.[0] || null,
+                fixedExpenses: subTotal + liabTotal,
+                budget: profileData?.budget || 0,
+                income: profileData?.monthly_income || 0,
+                identityName,
+                liveNetWorth,
+            };
 
-            setContext({
-                recentTransactions: txs,
-                fixedExpenses: totalFixed,
-                budget: profile?.budget || 20000,
-                balance: "Dynamic" // This could be calculated if needed, but Context usually enough
-            });
+            setContext(ctx);
+            return ctx;
         } catch (err) {
-            console.error("Failed to fetch context", err);
+            console.error("Failed to fetch context for AI", err);
             setError(true);
+            return null;
         } finally {
             setLoading(false);
         }
-    };
+    }, [supabase]);
 
+    // Dynamic proactive bubble — fetch data, then generate insight
     useEffect(() => {
-        if (isOpen && !context) {
-            fetchContext();
-            setBubbleMessage(null); // Clear bubble when opened
-        }
-    }, [isOpen]);
+        if (bubbleDismissed || isOpen) return;
+
+        const timer = setTimeout(async () => {
+            const ctx = await fetchContext();
+            if (ctx) {
+                const msg = generateDynamicInsight(ctx, firstName);
+                if (msg) setBubbleMessage(msg);
+            }
+        }, 4000);
+
+        return () => clearTimeout(timer);
+    }, [bubbleDismissed, isOpen, firstName, fetchContext]);
+
+    // Auto-hide bubble after 10 seconds
+    useEffect(() => {
+        if (!bubbleMessage) return;
+        const t = setTimeout(() => setBubbleMessage(null), 10000);
+        return () => clearTimeout(t);
+    }, [bubbleMessage]);
+
+    // Open handler
+    const handleOpen = async () => {
+        setIsOpen(true);
+        setBubbleMessage(null);
+        if (!context) await fetchContext();
+    };
 
     return (
         <>
-            <div className="fixed bottom-24 right-4 z-50 flex flex-col items-end gap-2">
-
-                {/* Proactive Bubble */}
+            <div className="fixed bottom-20 left-4 z-50 flex flex-col items-start gap-2">
+                {/* Dynamic AI Insight Bubble */}
                 <AnimatePresence>
                     {bubbleMessage && !isOpen && (
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.8, x: 20 }}
-                            animate={{ opacity: 1, scale: 1, x: 0 }}
-                            exit={{ opacity: 0, scale: 0.8, x: 20 }}
-                            className="bg-white text-slate-900 px-4 py-3 rounded-2xl rounded-tr-none shadow-xl border border-white/20 max-w-[200px] relative text-sm font-medium mb-2 mx-1 cursor-pointer"
-                            onClick={() => setIsOpen(true)}
+                            initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                            className="relative max-w-[220px] cursor-pointer"
+                            onClick={handleOpen}
                         >
-                            {bubbleMessage}
+                            <div className="bg-white/95 backdrop-blur-xl text-slate-800 px-3.5 py-2.5 rounded-2xl rounded-bl-sm shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-white/50 text-[13px] leading-snug font-medium">
+                                {bubbleMessage}
+                            </div>
                             <button
-                                onClick={(e) => { e.stopPropagation(); setBubbleMessage(null); }}
-                                className="absolute -top-2 -left-2 bg-slate-200 rounded-full p-0.5 hover:bg-red-100 hover:text-red-500 transition-colors"
+                                onClick={(e) => { e.stopPropagation(); setBubbleMessage(null); setBubbleDismissed(true); }}
+                                className="absolute -top-1.5 -right-1.5 bg-slate-100 rounded-full p-0.5 shadow-sm hover:bg-red-50 hover:text-red-500 transition-colors"
                             >
-                                <X className="w-3 h-3" />
+                                <X className="w-2.5 h-2.5" />
                             </button>
-                            {/* Triangle */}
-                            <div className="absolute top-0 -right-2 w-0 h-0 border-t-[10px] border-t-white border-r-[10px] border-r-transparent" />
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                <Button
-                    onClick={() => setIsOpen(true)}
-                    className="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 shadow-[0_0_20px_rgba(59,130,246,0.5)] border border-white/20 hover:scale-110 active:scale-95 transition-all p-0 relative overflow-hidden group animate-bounce-slow"
+                {/* Sleek FAB */}
+                <motion.button
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
+                    onClick={handleOpen}
+                    className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 via-blue-500 to-cyan-400 shadow-[0_4px_20px_rgba(124,58,237,0.35)] flex items-center justify-center group transition-shadow hover:shadow-[0_4px_28px_rgba(124,58,237,0.5)] overflow-hidden"
                 >
-                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <Bot className="w-7 h-7 text-white relative z-10" />
-                    <Sparkles className="w-3 h-3 text-yellow-300 absolute top-3 right-3 animate-pulse" />
-                </Button>
+                    {/* Glassmorphism inner glow */}
+                    <div className="absolute inset-0.5 rounded-[14px] bg-gradient-to-br from-white/20 to-transparent pointer-events-none" />
+                    {/* Soft outer ring */}
+                    <div className="absolute -inset-[2px] rounded-[18px] bg-gradient-to-br from-violet-400/30 to-cyan-400/30 blur-sm pointer-events-none" />
+
+                    <Sparkles className="w-5 h-5 text-white relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)]" />
+
+                    {/* Subtle pulse ring */}
+                    <div className="absolute inset-0 rounded-2xl animate-ping bg-blue-400/20 pointer-events-none" style={{ animationDuration: '3s' }} />
+                </motion.button>
             </div>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="sm:max-w-md h-[80vh] p-0 gap-0 bg-slate-950/90 border-white/10 overflow-hidden" aria-describedby={undefined}>
+                <DialogContent
+                    showCloseButton={false}
+                    className="sm:max-w-md h-[85vh] max-h-[700px] p-0 gap-0 bg-[#0c0f1a]/95 backdrop-blur-2xl border-white/[0.06] rounded-[2rem] overflow-hidden shadow-[0_32px_100px_rgba(0,0,0,0.5)]"
+                    aria-describedby={undefined}
+                >
                     <DialogTitle className="sr-only">AI Chat Helper</DialogTitle>
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center h-full text-white gap-4">
-                            <Bot className="w-12 h-12 animate-bounce text-blue-400" />
-                            <p>מכין את ההקשר הפיננסי...</p>
+                        <div className="flex flex-col items-center justify-center h-full text-white gap-3">
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                            >
+                                <Sparkles className="w-8 h-8 text-violet-400" />
+                            </motion.div>
+                            <p className="text-sm text-white/60">מכין את ההקשר הפיננסי...</p>
                         </div>
                     ) : error ? (
                         <div className="flex flex-col items-center justify-center h-full text-white gap-4 p-6 text-center">
-                            <X className="w-12 h-12 text-red-400" />
-                            <p>אופס, לא הצלחתי לטעון את הנתונים.</p>
-                            <Button onClick={fetchContext} variant="outline" className="gap-2">
-                                <RefreshCw className="w-4 h-4" />
+                            <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
+                                <X className="w-6 h-6 text-red-400" />
+                            </div>
+                            <p className="text-sm text-white/70">לא הצלחתי לטעון את הנתונים</p>
+                            <Button onClick={fetchContext} variant="outline" size="sm" className="gap-2 border-white/10 text-white/70 hover:text-white">
+                                <RefreshCw className="w-3.5 h-3.5" />
                                 נסה שוב
                             </Button>
                         </div>

@@ -4,8 +4,14 @@ export interface Profile {
     avatar_url: string | null;
     hourly_wage: number | null;
     budget: number | null;
-    monthly_income: number | null; // New field
-    joint_account: boolean; // New field
+    monthly_income: number | null;
+    joint_account: boolean;
+    couple_id: string | null;
+    partner_id: string | null;
+    pocket_him: number | null;
+    pocket_her: number | null;
+    income_split_ratio: number | null;
+    onboarding_completed: boolean;
     role: 'admin' | 'user';
     created_at: string;
 }
@@ -16,6 +22,8 @@ export interface Category {
     icon: string | null;
     color: string | null;
     type: 'fixed' | 'variable';
+    couple_id: string | null;
+    budget_limit: number | null;
     created_at: string;
 }
 
@@ -26,15 +34,19 @@ export interface Transaction {
     category_id: string | null;   // DB column (uuid)
     category?: string;            // Mapped from categories.name for UI display only
     user_id: string | null;
+    couple_id: string | null;
     description: string | null;
     date: string;
+    payer?: 'him' | 'her' | 'joint';
     is_surprise: boolean | null;
     surprise_reveal_date: string | null;
     location_lat: number | null;
     location_lng: number | null;
     mood_rating: number | null;
+    receipt_url: string | null;
+    is_auto_generated: boolean;
+    tags: string[] | null;
     created_at: string;
-    payer?: 'him' | 'her' | 'joint';
 }
 
 export interface Subscription {
@@ -43,8 +55,12 @@ export interface Subscription {
     amount: number;
     billing_day: number | null;
     owner?: 'him' | 'her' | 'joint';
-    category_id?: string | null;  // Category for fixed expense
-    category?: string;            // Mapped category name for UI display
+    couple_id: string | null;
+    category_id?: string | null;
+    category?: string;
+    active: boolean;
+    usage_rating: number | null;
+    last_auto_transaction: string | null;
     created_at: string;
 }
 
@@ -54,16 +70,19 @@ export interface Goal {
     target_amount: number;
     current_amount: number;
     brick_color: string | null;
-    type: 'cash' | 'stock' | 'pocket_him' | 'pocket_her';
+    type: 'cash' | 'stock' | 'pocket_him' | 'pocket_her' | 'money_market' | 'usd_cash';
     growth_rate: number;
+    couple_id: string | null;
+    deep_freeze: boolean;
+    owner?: 'him' | 'her' | 'joint';
+    target_date: string | null;
     created_at: string;
-    // New fields for Wealth/Stocks
-    interest_rate?: number; // Annual interest rate (e.g., 0.05 for 5%)
-    last_interest_calc?: string; // ISO date
-    symbol?: string; // Stock symbol (e.g., TSLA)
-    currency?: string; // USD, ILS
-    quantity?: number; // Number of shares
-    owner?: string; // 'him', 'her', 'joint'
+    // Wealth/Stocks fields
+    interest_rate?: number;
+    last_interest_calc?: string;
+    symbol?: string;
+    currency?: string;
+    quantity?: number;
     investment_type?: string;
     last_updated?: string;
 }
@@ -76,6 +95,41 @@ export interface WishlistItem {
     price: number;
     link: string | null;
     status: 'pending' | 'approved' | 'purchased';
+    couple_id: string | null;
+    requested_by: string | null;
+    approved_by: string | null;
     saved_amount: number;
+    priority: number;
     created_at: string;
 }
+
+// ── New Phase 3 Types ──
+
+export type LiabilityType = 'mortgage' | 'car' | 'student' | 'personal' | 'credit_card' | 'other';
+
+export interface Liability {
+    id: string;
+    couple_id: string;
+    name: string;
+    type: LiabilityType;
+    principal: number;
+    current_balance: number;
+    interest_rate: number;
+    monthly_payment: number;
+    start_date: string | null;
+    end_date: string | null;
+    owner: 'him' | 'her' | 'joint';
+    created_at: string;
+}
+
+export interface WealthSnapshot {
+    id: string;
+    couple_id: string;
+    snapshot_date: string;
+    net_worth: number;
+    cash_value: number;
+    investments_value: number;
+    liabilities_value: number;
+    created_at: string;
+}
+
