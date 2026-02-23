@@ -112,13 +112,16 @@ export interface Liability {
     id: string;
     couple_id: string;
     name: string;
-    type: LiabilityType;
-    principal: number;
-    current_balance: number;
-    interest_rate: number;
+    category: string;
+    total_amount: number;
+    remaining_amount: number;
     monthly_payment: number;
-    start_date: string | null;
+    interest_rate: number;
     end_date: string | null;
+    type?: LiabilityType;
+    principal?: number;
+    current_balance?: number;
+    start_date?: string | null;
     owner: 'him' | 'her' | 'joint';
     created_at: string;
 }
@@ -138,6 +141,7 @@ export interface FinancialContext {
     recentTransactions: Transaction[];
     subscriptions: Subscription[];
     liabilities: Liability[];
+    debtObligations?: Liability[];
     wishlist: WishlistItem[];
     wealthSnapshot: WealthSnapshot | null;
     fixedExpenses: number;
@@ -146,4 +150,3 @@ export interface FinancialContext {
     identityName: string;
     liveNetWorth: number | null;
 }
-

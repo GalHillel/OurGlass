@@ -11,7 +11,8 @@ import { useAppStore } from "@/stores/appStore";
 import { useWealth } from "@/hooks/useWealth";
 import { PAYERS } from "@/lib/constants";
 import { motion, AnimatePresence } from "framer-motion";
-import { FinancialContext, Transaction, Subscription, WishlistItem, WealthSnapshot } from "@/types";
+import { FinancialContext, Liability, Transaction, Subscription, WishlistItem, WealthSnapshot } from "@/types";
+import { isLiabilityActive } from "@/hooks/useWealthData";
 
 // Generates a dynamic one-liner insight from real financial data
 function generateDynamicInsight(context: FinancialContext | null, firstName: string): string | null {
@@ -88,8 +89,9 @@ export const AIChatButton = () => {
                 supabase.from('wealth_history').select('*').order('snapshot_date', { ascending: false }).limit(1)
             ]);
 
-            const subTotal = (subs as Subscription[] | null)?.reduce((acc: number, curr) => acc + Number(curr.amount), 0) || 0;
-            const liabTotal = liabs?.reduce((acc: number, curr) => acc + Number(curr.monthly_payment), 0) || 0;
+            const subTotal = (subs as Subscription[] | null)?.filter((sub) => sub.active !== false).reduce((acc: number, curr) => acc + Number(curr.amount), 0) || 0;
+            const activeDebtObligations = ((liabs as Liability[] | null) || []).filter((liability) => isLiabilityActive(liability));
+            const liabTotal = activeDebtObligations.reduce((acc: number, curr) => acc + Number(curr.monthly_payment), 0);
             const monthlySpent = ((txs as Transaction[]) || []).reduce((acc: number, curr) => acc + Number(curr.amount), 0);
             const profileBudget = Number(profileData?.budget);
             const profileIncome = Number(profileData?.monthly_income);
@@ -105,7 +107,8 @@ export const AIChatButton = () => {
             const ctx: FinancialContext = {
                 recentTransactions: (txs as Transaction[]) || [],
                 subscriptions: (subs as Subscription[]) || [],
-                liabilities: liabs || [],
+                liabilities: (liabs as Liability[]) || [],
+                debtObligations: activeDebtObligations,
                 wishlist: (wishlist as WishlistItem[]) || [],
                 wealthSnapshot: (wealth?.[0] as WealthSnapshot) || null,
                 fixedExpenses: subTotal + liabTotal,

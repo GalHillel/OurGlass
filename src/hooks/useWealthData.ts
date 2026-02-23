@@ -7,6 +7,17 @@ import { Liability, WealthSnapshot } from "@/types";
 
 const supabase = createClient();
 
+export const isLiabilityActive = (liability: Liability, asOf = new Date()) => {
+    const remainingAmount = Number(liability.remaining_amount ?? liability.current_balance ?? 0);
+    if (remainingAmount <= 0) return false;
+
+    if (!liability.end_date) return true;
+    const payoffDate = new Date(liability.end_date);
+    if (Number.isNaN(payoffDate.getTime())) return true;
+
+    return payoffDate >= asOf;
+};
+
 // ── Wealth History (Read-only — populated by pg_cron) ──
 
 export function useWealthHistory(days = 90) {
@@ -51,7 +62,7 @@ export function useLiabilities() {
                 .from("liabilities")
                 .select("*")
                 .eq("couple_id", coupleId)
-                .order("current_balance", { ascending: false });
+                .order("remaining_amount", { ascending: false });
 
             if (error) throw error;
             return (data ?? []) as Liability[];
@@ -127,8 +138,10 @@ export function useDeleteLiability() {
 export function useTotalLiabilities() {
     const { data: liabilities = [] } = useLiabilities();
 
-    const total = liabilities.reduce((sum, l) => sum + l.current_balance, 0);
-    const monthlyPayments = liabilities.reduce((sum, l) => sum + l.monthly_payment, 0);
+    const activeLiabilities = liabilities.filter((liability) => isLiabilityActive(liability));
+
+    const total = liabilities.reduce((sum, l) => sum + Number(l.remaining_amount ?? l.current_balance ?? 0), 0);
+    const monthlyPayments = activeLiabilities.reduce((sum, l) => sum + Number(l.monthly_payment || 0), 0);
 
     return { total, monthlyPayments, count: liabilities.length };
 }
