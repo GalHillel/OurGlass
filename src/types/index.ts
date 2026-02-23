@@ -138,10 +138,28 @@ export interface WealthSnapshot {
 }
 
 export interface FinancialContext {
-    recentTransactions: Transaction[];
+    transactions: Transaction[];
+    recentTransactions?: Transaction[];
+    burnRate: {
+        daily: number;
+        weekly: number;
+        monthlySpend: number;
+        monthProgressPct: number;
+    };
     subscriptions: Subscription[];
     liabilities: Liability[];
     debtObligations?: Liability[];
+    assets: {
+        bankCash: number;
+        stocksInvestments: number;
+        moneyMarketKaspit: number;
+        usdCash: {
+            usdAmount: number;
+            ilsValue: number;
+        };
+        totalTrackedAssets: number;
+        raw: Goal[];
+    };
     wishlist: WishlistItem[];
     wealthSnapshot: WealthSnapshot | null;
     fixedExpenses: number;

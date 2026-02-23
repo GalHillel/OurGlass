@@ -16,14 +16,15 @@ interface ChatInterfaceProps {
 function generateSuggestedQuestions(context: FinancialContext): string[] {
     if (!context) return [];
 
-    const { recentTransactions, subscriptions, liabilities, budget, wishlist, wealthSnapshot } = context;
+    const transactions = context.transactions || context.recentTransactions || [];
+    const { subscriptions, liabilities, budget, wishlist, wealthSnapshot } = context;
 
-    const totalSpent = recentTransactions?.reduce((s: number, t: Transaction) => s + Number(t.amount), 0) || 0;
+    const totalSpent = transactions?.reduce((s: number, t: Transaction) => s + Number(t.amount), 0) || 0;
     const budgetPct = budget > 0 ? Math.round((totalSpent / budget) * 100) : 0;
 
     // Category breakdown for targeted questions
     const cats: Record<string, number> = {};
-    recentTransactions?.forEach((t: Transaction) => {
+    transactions?.forEach((t: Transaction) => {
         const cat = t.category || 'אחר';
         cats[cat] = (cats[cat] || 0) + Number(t.amount);
     });

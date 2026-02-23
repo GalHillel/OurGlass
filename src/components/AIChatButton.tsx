@@ -11,22 +11,28 @@ import { useAppStore } from "@/stores/appStore";
 import { useWealth } from "@/hooks/useWealth";
 import { PAYERS } from "@/lib/constants";
 import { motion, AnimatePresence } from "framer-motion";
-import { FinancialContext, Liability, Transaction, Subscription, WishlistItem, WealthSnapshot } from "@/types";
+import { FinancialContext, Goal, Liability, Transaction, Subscription, WishlistItem, WealthSnapshot } from "@/types";
 import { isLiabilityActive } from "@/hooks/useWealthData";
+
+const toSafeNumber = (value: unknown): number => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+};
 
 // Generates a dynamic one-liner insight from real financial data
 function generateDynamicInsight(context: FinancialContext | null, firstName: string): string | null {
     if (!context) return null;
 
-    const { recentTransactions, budget, subscriptions } = context;
+    const transactions = context.transactions || context.recentTransactions || [];
+    const { budget, subscriptions } = context;
 
-    const totalSpent = recentTransactions?.reduce((s: number, t: Transaction) => s + Number(t.amount), 0) || 0;
+    const totalSpent = transactions?.reduce((s: number, t: Transaction) => s + Number(t.amount), 0) || 0;
     const budgetUsedPct = budget > 0 ? Math.round((totalSpent / budget) * 100) : 0;
     const remaining = Math.max(0, budget - totalSpent);
 
     // Category breakdown
     const cats: Record<string, number> = {};
-    recentTransactions?.forEach((t: Transaction) => {
+    transactions?.forEach((t: Transaction) => {
         const cat = t.category || 'אחר';
         cats[cat] = (cats[cat] || 0) + Number(t.amount);
     });
@@ -54,7 +60,7 @@ export const AIChatButton = () => {
     const supabase = supabaseRef.current;
     const { profile } = useAuth();
     const { appIdentity } = useAppStore();
-    const { netWorth: liveNetWorth } = useWealth();
+    const { netWorth: liveNetWorth, assets: wealthAssets } = useWealth();
 
     // Mapping device identity to display name
     const identityName = appIdentity === 'him' ? PAYERS.HIM : appIdentity === 'her' ? PAYERS.HER : '';
@@ -79,22 +85,33 @@ export const AIChatButton = () => {
                 { data: subs },
                 { data: liabs },
                 { data: profileData },
+                { data: categories },
                 { data: wishlist },
                 { data: wealth }
             ] = await Promise.all([
                 supabase.from('subscriptions').select('*'),
                 supabase.from('liabilities').select('*'),
-                supabase.from('profiles').select('*').single(),
+                supabase.from('profiles').select('budget, monthly_income').eq('id', profile?.id || '').single(),
+                supabase.from('categories').select('id, name'),
                 supabase.from('wishlist').select('*'),
                 supabase.from('wealth_history').select('*').order('snapshot_date', { ascending: false }).limit(1)
             ]);
 
-            const subTotal = (subs as Subscription[] | null)?.filter((sub) => sub.active !== false).reduce((acc: number, curr) => acc + Number(curr.amount), 0) || 0;
+            const categoryMap = new Map<string, string>(
+                ((categories as Array<{ id: string; name: string }> | null) || []).map((category) => [category.id, category.name])
+            );
+            const enrichedTransactions = ((txs as Transaction[]) || []).map((transaction) => ({
+                ...transaction,
+                category: transaction.category || (transaction.category_id ? categoryMap.get(transaction.category_id) : undefined) || 'Other',
+            }));
+
+            const activeSubscriptions = ((subs as Subscription[] | null) || []).filter((sub) => sub.active !== false);
+            const subTotal = activeSubscriptions.reduce((acc: number, curr) => acc + Number(curr.amount), 0);
             const activeDebtObligations = ((liabs as Liability[] | null) || []).filter((liability) => isLiabilityActive(liability));
             const liabTotal = activeDebtObligations.reduce((acc: number, curr) => acc + Number(curr.monthly_payment), 0);
-            const monthlySpent = ((txs as Transaction[]) || []).reduce((acc: number, curr) => acc + Number(curr.amount), 0);
-            const profileBudget = Number(profileData?.budget);
-            const profileIncome = Number(profileData?.monthly_income);
+            const monthlySpent = enrichedTransactions.reduce((acc: number, curr) => acc + Number(curr.amount), 0);
+            const profileBudget = toSafeNumber(profileData?.budget ?? profile?.budget);
+            const profileIncome = toSafeNumber(profileData?.monthly_income ?? profile?.monthly_income);
             const resolvedBudget = Number.isFinite(profileBudget) && profileBudget > 0
                 ? profileBudget
                 : Number.isFinite(profileIncome) && profileIncome > 0
@@ -102,13 +119,58 @@ export const AIChatButton = () => {
                     : monthlySpent > 0
                         ? monthlySpent
                         : subTotal + liabTotal;
-            const resolvedIncome = Number.isFinite(profileIncome) ? profileIncome : 0;
+            const resolvedIncome = profileIncome;
+
+            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            const daysElapsed = Math.max(1, Math.ceil((now.getTime() - new Date(now.getFullYear(), now.getMonth(), 1).getTime()) / (1000 * 60 * 60 * 24)));
+            const burnRateDaily = monthlySpent / daysElapsed;
+
+            const assetsSummary = (wealthAssets || []).reduce((acc, asset: Goal) => {
+                const valueInIls = toSafeNumber(asset.calculatedValue ?? asset.current_amount);
+                if (asset.type === 'stock' || asset.investment_type === 'crypto' || asset.investment_type === 'real_estate') {
+                    acc.stocksInvestments += valueInIls;
+                } else if (asset.investment_type === 'usd_cash' || asset.type === 'usd_cash') {
+                    acc.usdCash.usdAmount += toSafeNumber(asset.current_amount);
+                    acc.usdCash.ilsValue += valueInIls;
+                } else if (asset.type === 'money_market') {
+                    acc.moneyMarketKaspit += valueInIls;
+                } else {
+                    acc.bankCash += valueInIls;
+                }
+
+                return acc;
+            }, {
+                bankCash: 0,
+                stocksInvestments: 0,
+                moneyMarketKaspit: 0,
+                usdCash: {
+                    usdAmount: 0,
+                    ilsValue: 0,
+                },
+            });
+            const totalTrackedAssets =
+                assetsSummary.bankCash +
+                assetsSummary.stocksInvestments +
+                assetsSummary.moneyMarketKaspit +
+                assetsSummary.usdCash.ilsValue;
 
             const ctx: FinancialContext = {
-                recentTransactions: (txs as Transaction[]) || [],
-                subscriptions: (subs as Subscription[]) || [],
+                transactions: enrichedTransactions,
+                recentTransactions: enrichedTransactions,
+                burnRate: {
+                    daily: burnRateDaily,
+                    weekly: burnRateDaily * 7,
+                    monthlySpend: monthlySpent,
+                    monthProgressPct: Math.min(100, Math.round((daysElapsed / daysInMonth) * 100)),
+                },
+                subscriptions: activeSubscriptions,
                 liabilities: (liabs as Liability[]) || [],
                 debtObligations: activeDebtObligations,
+                assets: {
+                    ...assetsSummary,
+                    totalTrackedAssets,
+                    raw: wealthAssets || [],
+                },
                 wishlist: (wishlist as WishlistItem[]) || [],
                 wealthSnapshot: (wealth?.[0] as WealthSnapshot) || null,
                 fixedExpenses: subTotal + liabTotal,
@@ -127,7 +189,7 @@ export const AIChatButton = () => {
         } finally {
             setLoading(false);
         }
-    }, [supabase, identityName, liveNetWorth]);
+    }, [supabase, profile, identityName, liveNetWorth, wealthAssets]);
 
     // Dynamic proactive bubble — fetch data, then generate insight
     useEffect(() => {
