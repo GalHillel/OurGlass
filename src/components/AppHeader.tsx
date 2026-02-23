@@ -49,7 +49,7 @@ export const AppHeader = memo(({ title, subtitle, icon: Icon, iconColor = "text-
     return (
         <header className={cn(
             "fixed top-0 left-0 right-0 z-40 flex justify-between items-center px-4 pt-[calc(env(safe-area-inset-top)+1rem)] pb-4",
-            "backdrop-blur-xl bg-slate-950/80 border-b border-white/5",
+            "backdrop-blur-2xl bg-slate-900/40 border-b border-white/5",
             className
         )}>
             {/* Right Side (RTL Start) - Title */}

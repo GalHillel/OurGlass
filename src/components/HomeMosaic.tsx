@@ -138,7 +138,7 @@ export const HomeMosaic = ({
             {/* Tile: Flow Forecast */}
             <Dialog>
                 <DialogTrigger asChild>
-                    <motion.div whileTap={{ scale: 0.95 }} className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer">
+                    <motion.div whileTap={{ scale: 0.95 }} className="aspect-[4/3] bg-slate-900/20 backdrop-blur-md border border-white/5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer">
                         <div className="absolute inset-0 bg-sky-400/5 group-hover:bg-sky-400/10 transition-colors" />
                         <div className="flex justify-between items-start relative z-10">
                             <div className="p-2 bg-sky-500/20 rounded-xl">
@@ -162,7 +162,7 @@ export const HomeMosaic = ({
             {/* Tile: Mood Data */}
             <Dialog>
                 <DialogTrigger asChild>
-                    <motion.div whileTap={{ scale: 0.95 }} className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer">
+                    <motion.div whileTap={{ scale: 0.95 }} className="aspect-[4/3] bg-slate-900/20 backdrop-blur-md border border-white/5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer">
                         <div className="absolute inset-0 bg-fuchsia-400/5 group-hover:bg-fuchsia-400/10 transition-colors" />
                         <div className="flex justify-between items-start relative z-10">
                             <div className="p-2 bg-fuchsia-500/20 rounded-xl">
@@ -186,7 +186,7 @@ export const HomeMosaic = ({
             {/* Tile: Quests & Savings Level */}
             <Dialog>
                 <DialogTrigger asChild>
-                    <motion.div whileTap={{ scale: 0.95 }} className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer">
+                    <motion.div whileTap={{ scale: 0.95 }} className="aspect-[4/3] bg-slate-900/20 backdrop-blur-md border border-white/5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer">
                         <div className="absolute inset-0 bg-amber-400/5 group-hover:bg-amber-400/10 transition-colors" />
                         <div className="flex justify-between items-start relative z-10">
                             <div className="p-2 bg-amber-500/20 rounded-xl">
@@ -210,7 +210,7 @@ export const HomeMosaic = ({
             {/* Tile: Account Arrangement */}
             <Dialog>
                 <DialogTrigger asChild>
-                    <motion.div whileTap={{ scale: 0.95 }} className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer">
+                    <motion.div whileTap={{ scale: 0.95 }} className="aspect-[4/3] bg-slate-900/20 backdrop-blur-md border border-white/5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer">
                         <div className="absolute inset-0 bg-slate-400/5 group-hover:bg-slate-400/10 transition-colors" />
                         <div className="flex justify-between items-start relative z-10">
                             <div className="p-2 bg-slate-500/20 rounded-xl">
@@ -237,7 +237,7 @@ export const HomeMosaic = ({
             <div className="col-span-2">
                 <Dialog>
                     <DialogTrigger asChild>
-                        <motion.div whileTap={{ scale: 0.95 }} className="w-full bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex items-center justify-between group cursor-pointer mb-1 shadow-lg">
+                        <motion.div whileTap={{ scale: 0.95 }} className="w-full bg-slate-900/20 backdrop-blur-md border border-white/5 rounded-3xl p-6 relative overflow-hidden flex items-center justify-between group cursor-pointer mb-1 shadow-lg">
                             <div className="absolute inset-0 bg-purple-400/5 group-hover:bg-purple-400/10 transition-colors" />
                             <div className="flex items-center gap-4 relative z-10">
                                 <div className="p-3 bg-purple-500/30 rounded-2xl shadow-inner border border-purple-400/20">
@@ -497,7 +497,7 @@ export const HomeMosaic = ({
                     <DialogTitle className="sr-only">חלוקת הוצאות</DialogTitle>
                     <div>
                         <h3 className="text-center text-white/60 text-sm mb-4">סיכום לפי משתמש</h3>
-                        <PartnerStats transactions={transactions} subscriptions={subscriptions} />
+                        <PartnerStats transactions={transactions} subscriptions={subscriptions} liabilities={liabilities} viewingDate={cycleStart} />
                     </div>
                 </DialogContent>
             </Dialog>
@@ -563,8 +563,10 @@ export const HomeMosaic = ({
                             <CategoryBreakdown
                                 transactions={transactions}
                                 subscriptions={subscriptions}
+                                liabilities={liabilities}
                                 selectedCategory={selectedFilterCategory}
                                 onCategorySelect={onCategorySelect}
+                                viewingDate={cycleStart}
                             />
                         </div>
                     </div>

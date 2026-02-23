@@ -114,20 +114,20 @@ export function SurpriseReveal({ transaction, isRecipient }: SurpriseRevealProps
             <motion.div
                 className={cn(
                     "neon-card p-4 rounded-2xl relative overflow-hidden transition-all",
-                    isHidden && "cursor-pointer hover:bg-white/5",
-                    isLocked && "opacity-60"
+                    isHidden && "cursor-pointer hover:bg-white/5 border-white/10",
+                    isLocked && "opacity-60 border-white/5"
                 )}
                 onClick={isHidden ? handleReveal : undefined}
                 whileTap={isHidden ? { scale: 0.97 } : undefined}
             >
                 {/* Blur overlay */}
                 {(isHidden || isLocked) && (
-                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-900/60 backdrop-blur-md rounded-2xl">
-                        <div className="text-center space-y-2">
+                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-900/40 backdrop-blur-md rounded-2xl">
+                        <div className="text-center space-y-2 px-4">
                             {isLocked ? (
                                 <>
                                     <EyeOff className="w-8 h-8 text-purple-400/50 mx-auto" />
-                                    <p className="text-xs text-purple-300/60">
+                                    <p className="text-xs text-purple-300/40">
                                         הפתעה! תתגלה ב-{new Date(transaction.surprise_reveal_date!).toLocaleDateString("he-IL")}
                                     </p>
                                 </>

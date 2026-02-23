@@ -3,10 +3,79 @@
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
-import { Transaction } from "@/types";
+import { Transaction, Subscription, Liability } from "@/types";
 import { getBillingPeriodForDate } from "@/lib/billing";
+import { useTotalLiabilities } from "@/hooks/useWealthData";
 
 const supabase = createClient();
+
+/**
+ * MANDATE 1: CENTRALIZED CASHFLOW ENGINE
+ * Unifies Transactions, Subscriptions, and Debt Payments into a single source of truth.
+ */
+export function useGlobalCashflow(viewingDate: Date = new Date()) {
+    const { profile } = useAuth();
+    const coupleId = profile?.couple_id;
+    const { monthlyPayments: debtMonthlyPayments } = useTotalLiabilities(viewingDate);
+
+    const { start, end } = getBillingPeriodForDate(viewingDate);
+
+    return useQuery({
+        queryKey: ["global-cashflow", coupleId, viewingDate.toISOString().slice(0, 7), debtMonthlyPayments],
+        queryFn: async () => {
+            if (!coupleId) return {
+                totalTransactions: 0,
+                totalFixed: 0,
+                totalSpent: 0,
+                balance: 0,
+                totalSubscriptions: 0,
+                debtMonthlyPayments: 0,
+                budget: profile?.budget || 20000
+            };
+
+            // Fetch everything in parallel for the billing period
+            const [txsResult, subsResult] = await Promise.all([
+                supabase
+                    .from("transactions")
+                    .select("amount")
+                    .eq("couple_id", coupleId)
+                    .gte("date", start.toISOString())
+                    .lt("date", end.toISOString()),
+                supabase
+                    .from("subscriptions")
+                    .select("amount, active")
+                    .eq("couple_id", coupleId)
+            ]);
+
+            if (txsResult.error) throw txsResult.error;
+            if (subsResult.error) throw subsResult.error;
+
+            const totalTransactions = (txsResult.data ?? []).reduce((sum: number, tx: any) => sum + Number(tx.amount), 0);
+
+            const activeSubscriptions = (subsResult.data ?? []).filter((s: any) => s.active !== false);
+            const totalSubscriptions = activeSubscriptions.reduce((sum: number, s: any) => sum + Number(s.amount), 0);
+
+            // THE HOLY GRAIL: Subscriptions + Debt
+            const totalFixed = totalSubscriptions + (debtMonthlyPayments || 0);
+            const totalSpent = totalTransactions + totalFixed;
+
+            const budget = profile?.budget || 20000;
+            const balance = Math.round((budget - totalSpent) * 100) / 100;
+
+            return {
+                totalTransactions,
+                totalFixed,
+                totalSpent,
+                balance,
+                totalSubscriptions,
+                debtMonthlyPayments,
+                budget
+            };
+        },
+        enabled: !!coupleId,
+        staleTime: 2 * 60 * 1000,
+    });
+}
 
 interface SettleUpData {
     himTotal: number;
@@ -19,12 +88,6 @@ interface SettleUpData {
 
 /**
  * Calculate the Settle Up for a given billing period.
- *
- * Logic:
- * 1. Sum all transactions by payer (him/her/joint)
- * 2. Joint expenses split by income_split_ratio
- * 3. Each partner's "fair share" = their own expenses + their ratio of joint
- * 4. Diff = who owes whom
  */
 export function useSettleUp(viewingDate: Date = new Date()) {
     const { profile } = useAuth();
@@ -64,13 +127,7 @@ export function useSettleUp(viewingDate: Date = new Date()) {
             const herTotal = her.reduce((s, t) => s + t.amount, 0);
             const jointTotal = joint.reduce((s, t) => s + t.amount, 0);
 
-            // Joint split: him pays `splitRatio` share, her pays `1 - splitRatio`
             const himShareOfJoint = jointTotal * splitRatio;
-            // const herShareOfJoint = jointTotal * (1 - splitRatio);
-
-            // If him paid himTotal but should have paid himShouldPay:
-            // himOwes positive = him underpaid (owes her), negative = him overpaid (she owes him)
-            // Since personal expenses are already "paid", the settlement is only about joint:
             const himPaidOfJoint = jointTotal / 2; // assumption: joint was split 50/50 in practice
             const himOwes = Math.round((himShareOfJoint - himPaidOfJoint) * 100) / 100;
 
@@ -97,8 +154,10 @@ export function useGuiltFreeWallets(viewingDate: Date = new Date()) {
     const pocketHim = profile?.pocket_him ?? 0;
     const pocketHer = profile?.pocket_her ?? 0;
 
+    const { activeLiabilities = [] } = useTotalLiabilities(viewingDate);
+
     return useQuery({
-        queryKey: ["guilt-free", coupleId, viewingDate.toISOString().slice(0, 7)],
+        queryKey: ["guilt-free", coupleId, viewingDate.toISOString().slice(0, 7), activeLiabilities.length],
         queryFn: async () => {
             if (!coupleId) {
                 return { himRemaining: pocketHim, herRemaining: pocketHer, himSpent: 0, herSpent: 0 };
@@ -117,16 +176,30 @@ export function useGuiltFreeWallets(viewingDate: Date = new Date()) {
             if (error) throw error;
 
             const txs = (data ?? []) as unknown as Transaction[];
-            const himSpent = txs.filter((t) => t.payer === "him").reduce((s, t) => s + Number(t.amount), 0);
-            const herSpent = txs.filter((t) => t.payer === "her").reduce((s, t) => s + Number(t.amount), 0);
+            const himSpentTransactions = txs.filter((t) => t.payer === "him").reduce((s, t) => s + Number(t.amount), 0);
+            const herSpentTransactions = txs.filter((t) => t.payer === "her").reduce((s, t) => s + Number(t.amount), 0);
+
+            // Deduct personal debt payments
+            const himDebtPayments = activeLiabilities
+                .filter((l: Liability) => l.owner === 'him')
+                .reduce((sum: number, l: Liability) => sum + Number(l.monthly_payment || 0), 0);
+
+            const herDebtPayments = activeLiabilities
+                .filter((l: Liability) => l.owner === 'her')
+                .reduce((sum: number, l: Liability) => sum + Number(l.monthly_payment || 0), 0);
+
+            const totalHimSpent = himSpentTransactions + himDebtPayments;
+            const totalHerSpent = herSpentTransactions + herDebtPayments;
 
             return {
-                himRemaining: Math.max(0, pocketHim - himSpent),
-                herRemaining: Math.max(0, pocketHer - herSpent),
-                himSpent,
-                herSpent,
+                himRemaining: Math.max(0, pocketHim - totalHimSpent),
+                herRemaining: Math.max(0, pocketHer - totalHerSpent),
+                himSpent: totalHimSpent,
+                herSpent: totalHerSpent,
                 pocketHim,
                 pocketHer,
+                himDebtPayments,
+                herDebtPayments
             };
         },
         enabled: !!coupleId,

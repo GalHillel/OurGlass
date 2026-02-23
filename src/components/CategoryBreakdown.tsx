@@ -20,9 +20,11 @@ import {
   GraduationCap,
   Sparkles,
   Shield,
+  CreditCard,
 } from "lucide-react";
-import { Transaction, Subscription } from "@/types";
+import { Transaction, Subscription, Liability } from "@/types";
 import { cn } from "@/lib/utils";
+import { isLiabilityActive } from "@/hooks/useWealthData";
 
 // Single unified category icons (same for both transactions and subscriptions)
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -38,6 +40,7 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>
   'חשבונות': Home,
   'בריאות': Heart,
   'ביטוח': Shield,
+  'תשלומי חובות': CreditCard,
   'לימודים': GraduationCap,
   'קוסמטיקה': Sparkles,
   'עבודה': Briefcase,
@@ -89,11 +92,20 @@ function getIconForCategory(categoryName: string) {
 interface CategoryBreakdownProps {
   transactions: Transaction[];
   subscriptions?: Subscription[];
+  liabilities?: Liability[];
   selectedCategory?: string | null;
   onCategorySelect?: (category: string | null) => void;
+  viewingDate?: Date;
 }
 
-export const CategoryBreakdown = ({ transactions, subscriptions = [], selectedCategory, onCategorySelect }: CategoryBreakdownProps) => {
+export const CategoryBreakdown = ({
+  transactions,
+  subscriptions = [],
+  liabilities = [],
+  selectedCategory,
+  onCategorySelect,
+  viewingDate = new Date()
+}: CategoryBreakdownProps) => {
   const { total, rows } = useMemo(() => {
     // Track amount and whether category has transactions
     const byCategory = new Map<string, { sum: number; hasTransactions: boolean }>();
@@ -124,12 +136,26 @@ export const CategoryBreakdown = ({ transactions, subscriptions = [], selectedCa
       });
     });
 
+    // Process liabilities - Mandate 2: Include Debt Payments
+    const activeDebtPaymentsTotal = liabilities
+      .filter(l => isLiabilityActive(l, viewingDate))
+      .reduce((sum, l) => sum + Number(l.monthly_payment ?? 0), 0);
+
+    if (activeDebtPaymentsTotal > 0) {
+      const cat = "תשלומי חובות";
+      const existing = byCategory.get(cat) || { sum: 0, hasTransactions: false };
+      byCategory.set(cat, {
+        sum: existing.sum + activeDebtPaymentsTotal,
+        hasTransactions: existing.hasTransactions
+      });
+    }
+
     const total = Array.from(byCategory.values()).reduce((a, b) => a + b.sum, 0);
     const rows = Array.from(byCategory.entries())
       .map(([name, data]) => ({ name, sum: data.sum, hasTransactions: data.hasTransactions }))
       .sort((a, b) => b.sum - a.sum);
     return { total, rows };
-  }, [transactions, subscriptions]);
+  }, [transactions, subscriptions, liabilities]);
 
   if (rows.length === 0) {
     return (
@@ -203,7 +229,7 @@ export const CategoryBreakdown = ({ transactions, subscriptions = [], selectedCa
                     <span className={cn("text-sm font-medium truncate", isSelected ? "text-blue-200" : "text-white")}>
                       {name}
                     </span>
-                    {!hasTransactions && (
+                    {(!hasTransactions || name === "תשלומי חובות") && (
                       <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded-full">
                         קבוע
                       </span>

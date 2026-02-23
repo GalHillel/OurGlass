@@ -16,6 +16,7 @@ interface TransactionListProps {
     onEdit?: (tx: Transaction) => void;
     activeFilter?: string | null; // Category filter active
     activeDateFilter?: Date | null; // Date filter active
+    currentPayer?: 'him' | 'her' | 'joint'; // For Surprise recipient logic
 }
 
 const getIcon = (description: string | null) => {
@@ -36,10 +37,11 @@ import React, { memo, useRef, useMemo } from 'react';
 
 import { motion } from "framer-motion";
 import { ActivePress } from "@/components/ui/ActivePress";
+import { SurpriseReveal } from "./SurpriseReveal";
 
 // ... imports ...
 
-export const TransactionList = memo(({ transactions, subscriptions = [], onRefresh, onEdit, activeFilter, activeDateFilter }: TransactionListProps) => {
+export const TransactionList = memo(({ transactions, subscriptions = [], onRefresh, onEdit, activeFilter, activeDateFilter, currentPayer = 'him' }: TransactionListProps) => {
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
     const [detectedSub, setDetectedSub] = React.useState<{ name: string, amount: number } | null>(null);
@@ -241,6 +243,29 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
 
             <h3 className="text-white/80 text-lg font-medium mb-2">פירוט עסקאות</h3>
             {visibleTransactions.map((tx) => {
+                if (tx.is_surprise) {
+                    return (
+                        <motion.div
+                            key={tx.id}
+                            initial={{ opacity: 0.1, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            layoutId={tx.id}
+                        >
+                            <SwipeableRow
+                                className="mb-3 rounded-2xl overflow-hidden"
+                                onEdit={() => onEdit && onEdit(tx)}
+                                onDelete={() => handleDelete(tx.id)}
+                                deleteMessage="פעולה זו תמחק את העסקה לצמיתות."
+                            >
+                                <SurpriseReveal
+                                    transaction={tx}
+                                    isRecipient={tx.payer !== currentPayer}
+                                />
+                            </SwipeableRow>
+                        </motion.div>
+                    );
+                }
+
                 const installmentMatch = (tx.description || "").match(/\(תשלום (\d+\/\d+)\)/);
                 const installmentLabel = installmentMatch ? installmentMatch[1] : null;
                 const cleanDescription = (tx.description || "").replace(/\s*\(תשלום \d+\/\d+\)/, "");
@@ -248,7 +273,12 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
                 const [title, note] = cleanDescription.split('\n');
                 const Icon = getIcon(title || cleanDescription || "");
                 return (
-                    <motion.div key={tx.id} variants={item} layoutId={tx.id}>
+                    <motion.div
+                        key={tx.id}
+                        initial={{ opacity: 0.1, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        layoutId={tx.id}
+                    >
                         <SwipeableRow
                             className="mb-3 rounded-2xl overflow-hidden"
                             onEdit={() => onEdit && onEdit(tx)}
@@ -257,7 +287,7 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
                         >
                             <ActivePress className="neon-card p-4 flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/70 shrink-0">
+                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/90 shrink-0">
                                         <Icon className="w-5 h-5" />
                                     </div>
                                     <div className="min-w-0">
@@ -265,7 +295,7 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
                                         {note && (
                                             <p className="text-sm text-white/70 break-words line-clamp-2 text-right">{note}</p>
                                         )}
-                                        <p className="text-xs text-white/50 mt-0.5 text-right">
+                                        <p className="text-xs text-white/60 mt-0.5 text-right">
                                             {format(new Date(tx.date), "d בMMMM, HH:mm", { locale: he })}
                                         </p>
                                     </div>
@@ -273,7 +303,7 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
 
                                 <div className="flex items-center gap-3">
                                     {installmentLabel && (
-                                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-white/10 text-white/50 border border-white/5">
+                                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-white/10 text-white/60 border border-white/5">
                                             {installmentLabel}
                                         </span>
                                     )}

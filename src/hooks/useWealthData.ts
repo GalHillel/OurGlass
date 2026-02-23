@@ -142,14 +142,38 @@ export function useDeleteLiability() {
 }
 
 // ── Derived: Total Liabilities ──
-
-export function useTotalLiabilities() {
+export function useTotalLiabilities(asOf?: Date) {
     const { data: liabilities = [] } = useLiabilities();
 
-    const activeLiabilities = liabilities.filter((liability) => isLiabilityActive(liability));
+    const activeLiabilities = liabilities.filter((liability) => isLiabilityActive(liability, asOf));
 
     const total = liabilities.reduce((sum, l) => sum + Number(l.remaining_amount ?? l.amount ?? l.current_balance ?? 0), 0);
     const monthlyPayments = activeLiabilities.reduce((sum, l) => sum + Number(l.monthly_payment || 0), 0);
 
-    return { total, monthlyPayments, count: liabilities.length };
+    // Enhanced Debt Spread Logic
+    const liabilitiesWithEstimation = activeLiabilities.map(l => {
+        const remaining = Number(l.remaining_amount ?? l.amount ?? 0);
+        const payment = Number(l.monthly_payment ?? 0);
+        let estimatedMonths = 0;
+
+        if (l.end_date) {
+            const end = new Date(l.end_date);
+            const now = new Date();
+            estimatedMonths = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.44));
+        } else if (payment > 0) {
+            estimatedMonths = Math.ceil(remaining / payment);
+        }
+
+        return {
+            ...l,
+            estimated_months_to_payoff: Math.max(0, estimatedMonths)
+        };
+    });
+
+    return {
+        total,
+        monthlyPayments,
+        count: liabilities.length,
+        activeLiabilities: liabilitiesWithEstimation
+    };
 }

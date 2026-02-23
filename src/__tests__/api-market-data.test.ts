@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
-import { POST } from '@/app/api/stocks/route';
+import { POST } from '@/app/api/market-data/route';
 
 global.fetch = vi.fn();
 
-describe('Stocks API', () => {
+describe('Market Data API', () => {
     let originalEnv: NodeJS.ProcessEnv;
 
     beforeEach(() => {
@@ -17,7 +17,7 @@ describe('Stocks API', () => {
     });
 
     it('returns 400 if symbols are missing', async () => {
-        const req = new Request('http://localhost/api/stocks', { method: 'POST', body: JSON.stringify({}) });
+        const req = new Request('http://localhost/api/market-data', { method: 'POST', body: JSON.stringify({}) });
         const res = await POST(req);
         expect(res.status).toBe(400);
     });
@@ -40,7 +40,7 @@ describe('Stocks API', () => {
             return Promise.reject(new Error('Unknown URL'));
         });
 
-        const req = new Request('http://localhost/api/stocks', { method: 'POST', body: JSON.stringify({ symbols: ['AAPL'] }) });
+        const req = new Request('http://localhost/api/market-data', { method: 'POST', body: JSON.stringify({ symbols: ['AAPL'] }) });
         const res = await POST(req);
         expect(res.status).toBe(200);
 

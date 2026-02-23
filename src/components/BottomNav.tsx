@@ -24,7 +24,7 @@ export const BottomNav = () => {
     return (
         <div className="fixed bottom-0 left-0 right-0 px-4 pb-[env(safe-area-inset-bottom)] pt-3 z-50 pointer-events-none">
             {/* Floating Rounded Nav Container */}
-            <nav className="neon-card rounded-3xl flex justify-around items-center p-2 backdrop-blur-2xl bg-slate-950/60 border-white/10 pointer-events-auto shadow-[0_0_40px_rgba(0,0,0,0.6)] max-w-md mx-auto ring-1 ring-white/5">
+            <nav className="neon-card rounded-3xl flex justify-around items-center p-2 backdrop-blur-2xl bg-transparent border-white/5 pointer-events-auto shadow-[0_0_40px_rgba(0,0,0,0.5)] max-w-md mx-auto">
                 {navItems.map((item) => {
                     const isActive = pathname === item.path;
                     return (

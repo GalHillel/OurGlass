@@ -23,7 +23,6 @@ export async function POST(req: Request) {
   const transactions = context?.transactions || context?.recentTransactions || [];
   const monthlyIncome = toSafeNumber(context?.income);
   const rawBudget = toSafeNumber(context?.budget);
-  const totalSpentThisMonth = transactions.reduce((sum, tx) => sum + toSafeNumber(tx.amount), 0);
   const subscriptions = (context?.subscriptions || []).filter(subscription => subscription.active !== false);
   const liabilities = context?.liabilities || [];
   const debtObligations = (context?.debtObligations && context.debtObligations.length > 0)
@@ -42,6 +41,9 @@ export async function POST(req: Request) {
   );
 
   const activeSubscriptionsTotal = subscriptions.reduce((sum, subscription) => sum + toSafeNumber(subscription.amount), 0);
+
+  // MANDATE 3: UNIFY SPENDING MATH FOR AI
+  const totalSpentThisMonth = transactions.reduce((sum, tx) => sum + toSafeNumber(tx.amount), 0) + activeDebtPaymentsTotal + activeSubscriptionsTotal;
 
   const fallbackBudget = monthlyIncome > 0
     ? Math.max(monthlyIncome, totalSpentThisMonth)

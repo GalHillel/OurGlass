@@ -49,8 +49,8 @@ export default function WealthPage() {
         refetch
     } = useWealth();
 
-    const { total: totalLiabilities } = useTotalLiabilities();
-    const trueNetWorth = netWorth - totalLiabilities;
+    const { total: totalLiabilities, monthlyPayments } = useTotalLiabilities();
+    const trueNetWorth = netWorth; // Gross Assets view per user request
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingAsset, setEditingAsset] = useState<Goal | null>(null);
@@ -179,9 +179,6 @@ export default function WealthPage() {
                             <div className="text-5xl font-black text-white neon-text relative z-10">
                                 ₪<CountUp end={trueNetWorth} separator="," decimals={0} duration={1} />
                             </div>
-                        )}
-                        {totalLiabilities > 0 && (
-                            <p className="text-[10px] text-red-400/60 mt-1 relative z-10">אחרי התחייבויות: -₪{totalLiabilities.toLocaleString()}</p>
                         )}
                         <div className="mt-4 flex gap-3 relative z-10">
                             < RankBadge rank={currentRank} />

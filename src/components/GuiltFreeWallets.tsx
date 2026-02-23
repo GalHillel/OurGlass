@@ -6,8 +6,8 @@ import { useGuiltFreeWallets } from "@/hooks/useJointFinance";
 import { Skeleton } from "@/components/ui/skeleton";
 import CountUp from "react-countup";
 
-export function GuiltFreeWallets() {
-    const { data, isLoading } = useGuiltFreeWallets();
+export function GuiltFreeWallets({ viewingDate = new Date() }: { viewingDate?: Date }) {
+    const { data, isLoading } = useGuiltFreeWallets(viewingDate);
 
     if (isLoading) {
         return <Skeleton className="h-28 w-full rounded-2xl bg-white/5" />;

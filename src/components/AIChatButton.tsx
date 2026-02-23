@@ -13,6 +13,7 @@ import { PAYERS } from "@/lib/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import { FinancialContext, Goal, Liability, Transaction, Subscription, WishlistItem, WealthSnapshot } from "@/types";
 import { isLiabilityActive } from "@/hooks/useWealthData";
+import { getBillingPeriodForDate } from "@/lib/billing";
 
 const toSafeNumber = (value: unknown): number => {
     const parsed = Number(value);
@@ -49,7 +50,7 @@ function generateDynamicInsight(context: FinancialContext | null, firstName: str
     return `${firstName}, רוצה סיכום חכם של החודש? ✨`;
 }
 
-export const AIChatButton = () => {
+export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [context, setContext] = useState<FinancialContext | null>(null);
     const [error, setError] = useState(false);
@@ -70,13 +71,16 @@ export const AIChatButton = () => {
         setLoading(true);
         setError(false);
         try {
-            const now = new Date();
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            const now = viewingDate;
+            const { start, end } = getBillingPeriodForDate(now);
+            const startOfMonth = start.toISOString();
+            const endOfMonth = end.toISOString();
 
             const { data: txs, error: txError } = await supabase
                 .from('transactions')
                 .select('*')
                 .gte('date', startOfMonth)
+                .lt('date', endOfMonth)
                 .order('date', { ascending: false });
 
             if (txError) throw txError;
@@ -107,7 +111,7 @@ export const AIChatButton = () => {
 
             const activeSubscriptions = ((subs as Subscription[] | null) || []).filter((sub) => sub.active !== false);
             const subTotal = activeSubscriptions.reduce((acc: number, curr) => acc + Number(curr.amount), 0);
-            const activeDebtObligations = ((liabs as Liability[] | null) || []).filter((liability) => isLiabilityActive(liability));
+            const activeDebtObligations = ((liabs as Liability[] | null) || []).filter((liability) => isLiabilityActive(liability, now));
             const liabTotal = activeDebtObligations.reduce((acc: number, curr) => acc + Number(curr.monthly_payment), 0);
             const monthlySpent = enrichedTransactions.reduce((acc: number, curr) => acc + Number(curr.amount), 0);
             const profileBudget = toSafeNumber(profileData?.budget ?? profile?.budget);
@@ -121,9 +125,10 @@ export const AIChatButton = () => {
                         : subTotal + liabTotal;
             const resolvedIncome = profileIncome;
 
-            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-            const daysElapsed = Math.max(1, Math.ceil((now.getTime() - new Date(now.getFullYear(), now.getMonth(), 1).getTime()) / (1000 * 60 * 60 * 24)));
-            const burnRateDaily = monthlySpent / daysElapsed;
+            const daysElapsed = Math.max(1, Math.ceil((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+            const daysInMonth = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+            const totalFixed = subTotal + liabTotal;
+            const burnRateDaily = (monthlySpent + totalFixed) / daysElapsed;
 
             const assetsSummary = (wealthAssets || []).reduce((acc, asset: Goal) => {
                 const valueInIls = toSafeNumber(asset.calculatedValue ?? asset.current_amount);

@@ -22,7 +22,7 @@ interface PredictiveCashflowProps {
  * Projects remaining balance through the end of the billing cycle
  * based on average daily spending rate.
  */
-export function PredictiveCashflow({ balance, budget, transactions, subscriptions }: PredictiveCashflowProps) {
+export function PredictiveCashflow({ balance, budget, transactions, subscriptions, liabilities }: PredictiveCashflowProps) {
     const chartData = useMemo(() => {
         const { start, end } = getBillingPeriodForDate(new Date());
         const today = new Date();
@@ -30,10 +30,13 @@ export function PredictiveCashflow({ balance, budget, transactions, subscription
         const remaining = differenceInDays(end, today);
 
         // 1 & 2. Clean Daily Burn Rate (Variable only)
-        const fixedAmounts = new Set(subscriptions.map((s) => Number(s.amount)));
+        const fixedAmounts = new Set([
+            ...subscriptions.map((s) => Number(s.amount)),
+            ...liabilities.map((l) => Number(l.monthly_payment))
+        ]);
         const variableTransactions = transactions.filter((tx) => {
             const amount = Number(tx.amount);
-            // Exclude if it perfectly matches a subscription and > 100 (same heuristic as page.tsx)
+            // Exclude if it perfectly matches a subscription/debt and > 100
             if (fixedAmounts.has(amount) && amount > 100) return false;
             return true;
         });
@@ -42,21 +45,32 @@ export function PredictiveCashflow({ balance, budget, transactions, subscription
         const cleanDailyBurnRate = totalVariableSpent / daysIntoCycle;
 
         // Calculate total spent so far (all transactions)
-        const totalSpentSoFar = transactions.reduce((sum, tx) => sum + tx.amount, 0);
+        const totalSpentSoFar = transactions.reduce((sum: number, tx: Transaction) => sum + tx.amount, 0);
 
-        // 3. Pending Subscriptions
+        // 3. Pending Subscriptions & Debt Payments
         const upcomingFixed = subscriptions
             .filter((s) => {
                 if (!s.billing_day || !s.active) return false;
                 const day = s.billing_day;
                 return day > today.getDate() && day <= end.getDate();
             })
-            .reduce((sum, s) => sum + Number(s.amount), 0);
+            .reduce((sum: number, s: Subscription) => sum + Number(s.amount), 0);
+
+        // MANDATE 2: Include Debt Payments in projection
+        const activeDebtPaymentsTotal = liabilities
+            .filter((l: Liability) => {
+                const remaining = Number(l.remaining_amount ?? l.amount ?? 0);
+                if (remaining <= 0) return false;
+                // For projection, we assume monthly payment happens if not paid yet this cycle.
+                // Simplified: if end_date hasn't passed, it's an obligation.
+                return !l.end_date || new Date(l.end_date) >= today;
+            })
+            .reduce((sum: number, l: Liability) => sum + Number(l.monthly_payment ?? 0), 0);
 
         // 4. Predicted End Balance computation base
         const monthlyIncome = budget; // Using budget as monthly income
         let projectedBalanceForChart = balance;
-        const finalProjectedBalance = monthlyIncome - totalSpentSoFar - upcomingFixed - (cleanDailyBurnRate * remaining);
+        const finalProjectedBalance = monthlyIncome - totalSpentSoFar - upcomingFixed - activeDebtPaymentsTotal - (cleanDailyBurnRate * remaining);
 
         // Build projection data
         const data = [];

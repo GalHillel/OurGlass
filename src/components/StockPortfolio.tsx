@@ -60,7 +60,7 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
 
         try {
             const symbols = stockAssets.map(a => a.symbol);
-            const res = await fetch('/api/stocks', {
+            const res = await fetch('/api/market-data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ symbols })
@@ -152,7 +152,7 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
             // However, the prompt is focused on "Add Stock" crash mostly. Let's assume for Edit we keep existing if not changing?
             // Actually, for simplicity and following the "Auto-Price" instruction strictly:
 
-            const res = await fetch('/api/stocks', {
+            const res = await fetch('/api/market-data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ symbols: [symbolInput.toUpperCase()] })

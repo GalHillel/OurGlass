@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Transaction } from "@/types";
+import { Transaction, Subscription, Liability } from "@/types";
 import { motion } from "framer-motion";
 import {
     Utensils,
@@ -15,9 +15,12 @@ import {
     Coffee,
     Fuel,
     Film,
-    ShoppingCart
+    ShoppingCart,
+    CreditCard,
+    RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isLiabilityActive } from "@/hooks/useWealthData";
 
 // Combined icon map from various sources for consistency
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -34,6 +37,8 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>
     "עבודה": Briefcase,
     "קפה": Coffee,
     "אחר": Zap,
+    "החזרי חובות": CreditCard,
+    "מנויים": RefreshCw,
 };
 
 function getIconForCategory(categoryName: string) {
@@ -42,14 +47,17 @@ function getIconForCategory(categoryName: string) {
 
 interface SpendingBreakdownProps {
     transactions: Transaction[];
+    subscriptions: Subscription[];
+    liabilities: Liability[];
+    viewingDate?: Date;
 }
 
-export const SpendingBreakdown = ({ transactions }: SpendingBreakdownProps) => {
+export const SpendingBreakdown = ({ transactions, subscriptions, liabilities, viewingDate = new Date() }: SpendingBreakdownProps) => {
     const { total, items } = useMemo(() => {
         const grouped = new Map<string, number>();
 
+        // 1. Transactions
         transactions.forEach(tx => {
-            // Use the category name directly
             const catName = tx.category || "אחר";
             const amount = Number(tx.amount);
             if (!isNaN(amount)) {
@@ -57,7 +65,25 @@ export const SpendingBreakdown = ({ transactions }: SpendingBreakdownProps) => {
             }
         });
 
-        const totalSpend = Array.from(grouped.values()).reduce((sum, val) => sum + val, 0);
+        // 2. Add Active Subscriptions as a category
+        const activeSubscriptionsTotal = (subscriptions || [])
+            .filter((s: Subscription) => s.active !== false)
+            .reduce((sum: number, s: Subscription) => sum + Number(s.amount), 0);
+
+        if (activeSubscriptionsTotal > 0) {
+            grouped.set("מנויים", (grouped.get("מנויים") || 0) + activeSubscriptionsTotal);
+        }
+
+        // 3. Add Active Liabilities (Debt Payments) as a category
+        const activeDebtPaymentsTotal = (liabilities || [])
+            .filter((l: Liability) => isLiabilityActive(l, viewingDate))
+            .reduce((sum: number, l: Liability) => sum + Number(l.monthly_payment ?? 0), 0);
+
+        if (activeDebtPaymentsTotal > 0) {
+            grouped.set("תשלומי חובות", (grouped.get("תשלומי חובות") || 0) + activeDebtPaymentsTotal);
+        }
+
+        const totalSpend = Array.from(grouped.values()).reduce((sum: number, val: number) => sum + val, 0);
 
         // Convert to array and sort Descending by value
         const sortedItems = Array.from(grouped.entries())
@@ -65,7 +91,7 @@ export const SpendingBreakdown = ({ transactions }: SpendingBreakdownProps) => {
             .sort((a, b) => b.value - a.value);
 
         return { total: totalSpend, items: sortedItems };
-    }, [transactions]);
+    }, [transactions, subscriptions, liabilities]);
 
     if (items.length === 0) {
         return (

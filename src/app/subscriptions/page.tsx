@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { Subscription } from "@/types";
+import { Subscription, Liability } from "@/types";
+import { useTotalLiabilities } from "@/hooks/useWealthData";
 import { Plus, Calendar, Utensils, Bus, ShoppingBag, Beer, Home, Heart, Briefcase, Zap, Coffee, Fuel, Car, GraduationCap, Sparkles, Shield } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -154,7 +155,9 @@ export default function SubscriptionsPage() {
         }
     };
 
-    const totalMonthly = subscriptions.reduce((sum, sub) => sum + Number(sub.amount), 0);
+    const { activeLiabilities = [], monthlyPayments: totalDebtMonthly } = useTotalLiabilities();
+
+    const totalMonthly = subscriptions.reduce((sum, sub) => sum + Number(sub.amount), 0) + totalDebtMonthly;
 
     return (
         <div className="flex flex-col gap-6 w-full mx-auto pt-8 pb-24 px-4">
@@ -270,6 +273,38 @@ export default function SubscriptionsPage() {
                                 );
                             })
                         )}
+
+                        {/* Liabilities (Debt) as Fixed Expenses */}
+                        {activeLiabilities.length > 0 && (
+                            <div className="pt-4 space-y-4">
+                                <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest px-1">תשלומי חובות (הוצאה קבועה)</h2>
+                                {activeLiabilities.map((liab: any) => (
+                                    <div key={liab.id} className="neon-card p-4 flex items-center justify-between group relative overflow-hidden opacity-90 border-red-500/10">
+                                        <div className="flex items-center gap-4 relative z-10">
+                                            <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg bg-red-500/10 border border-red-500/20">
+                                                <Shield className="w-6 h-6 text-red-400" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-white text-lg">{liab.name}</h3>
+                                                <div className="flex items-center text-xs text-slate-400 gap-2">
+                                                    <span className="flex items-center gap-1 font-mono">
+                                                        <Calendar className="w-3 h-3" />
+                                                        מסתיים בעוד {liab.estimated_months_to_payoff} חודשים
+                                                    </span>
+                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                                        חוב (קבוע)
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 relative z-10">
+                                            <span className="font-black text-white text-xl tracking-tight">₪{liab.monthly_payment}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
                     </div>
                 )}
             </div>

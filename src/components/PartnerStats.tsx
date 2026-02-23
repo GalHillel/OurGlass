@@ -1,18 +1,21 @@
 "use client";
 
 import { useMemo } from "react";
-import { Transaction, Subscription } from "@/types";
+import { Transaction, Subscription, Liability } from "@/types";
 import { motion } from "framer-motion";
 import { User, Users, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isLiabilityActive } from "@/hooks/useWealthData";
 
 interface PartnerStatsProps {
     transactions: Transaction[];
     subscriptions?: Subscription[];
+    liabilities?: Liability[];
     monthlyBudget?: number;
+    viewingDate?: Date;
 }
 
-export const PartnerStats = ({ transactions, subscriptions = [] }: PartnerStatsProps) => {
+export const PartnerStats = ({ transactions, subscriptions = [], liabilities = [], viewingDate = new Date() }: PartnerStatsProps) => {
     const stats = useMemo(() => {
         // Logic: My Spend (Him), Her Spend, Joint Spend
         // Assuming 'him' is the current user for "My Spend" label, or use generic names
@@ -26,22 +29,24 @@ export const PartnerStats = ({ transactions, subscriptions = [] }: PartnerStatsP
                 .filter(s => s.owner === payer)
                 .reduce((sum, s) => sum + Number(s.amount), 0);
 
-            return txSum + subSum;
+            const debtSum = liabilities
+                .filter(l => (l.owner || 'joint') === payer)
+                .filter(l => isLiabilityActive(l, viewingDate))
+                .reduce((sum, l) => sum + Number(l.monthly_payment || 0), 0);
+
+            return txSum + subSum + debtSum;
         };
 
         const himTotal = calculateTotal('him');
         const herTotal = calculateTotal('her');
         const jointTotal = calculateTotal('joint');
 
-        // For 'joint', we might also want to include subscriptions without explicit owner if that was the old logic, 
-        // but the prompt says "Sum of transactions where payer === 'joint'". keeping it strict for now.
-
         return [
             { id: 'him', label: 'גל', amount: himTotal, icon: User, color: 'text-blue-400' },
             { id: 'joint', label: 'משותף', amount: jointTotal, icon: Users, color: 'text-purple-400' },
             { id: 'her', label: 'איריס', amount: herTotal, icon: Heart, color: 'text-pink-400' },
         ];
-    }, [transactions, subscriptions]);
+    }, [transactions, subscriptions, liabilities]);
 
     const total = stats.reduce((acc, curr) => acc + curr.amount, 0);
 

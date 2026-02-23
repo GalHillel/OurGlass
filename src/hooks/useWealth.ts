@@ -62,7 +62,9 @@ export const useWealth = () => {
 
             if (stockSymbols.length > 0) {
                 try {
-                    const res = await fetch('/api/stocks', {
+                    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                    const apiUrl = `${origin}/api/market-data`;
+                    const res = await fetch(apiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ symbols: stockSymbols })
@@ -73,14 +75,8 @@ export const useWealth = () => {
                         livePrices = data.stocks || {};
                         usdToIls = data.usdToIls || data.exchangeRate || 3.65;
                     }
-                } catch (apiError: unknown) {
-                    const errorDetails = {
-                        message: apiError instanceof Error ? apiError.message : String(apiError),
-                        stack: apiError instanceof Error ? apiError.stack : undefined,
-                        fullError: JSON.stringify(apiError, Object.getOwnPropertyNames(apiError || {}), 2)
-                    };
-                    console.error("Failed to fetch stock prices:", errorDetails);
-                    console.error("Failed to fetch stock prices Raw JSON:", JSON.stringify(apiError, Object.getOwnPropertyNames(apiError), 2));
+                } catch {
+                    console.warn("Market data fetch failed, using fallback prices.");
                 }
             }
 
@@ -129,7 +125,10 @@ export const useWealth = () => {
                     }
                 }
 
-                totalNetWorth += calculatedValue;
+                // Sanitize: Only include positive values in asset totals to avoid double-counting debts
+                // which should be tracked in the 'liabilities' table.
+                const assetValue = Math.max(0, calculatedValue);
+                totalNetWorth += assetValue;
 
                 const isInvestment =
                     asset.type === 'stock' ||
@@ -137,9 +136,9 @@ export const useWealth = () => {
                     asset.investment_type === 'real_estate';
 
                 if (isInvestment) {
-                    totalInvestments += calculatedValue;
+                    totalInvestments += assetValue;
                 } else {
-                    totalCash += calculatedValue;
+                    totalCash += assetValue;
                 }
 
                 return { ...asset, calculatedValue };

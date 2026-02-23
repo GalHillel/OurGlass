@@ -13,6 +13,7 @@ import { createClient } from "@/utils/supabase/client";
 import { Transaction, Subscription, Liability } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { useWealth } from "@/hooks/useWealth";
+import { useGlobalCashflow } from "@/hooks/useJointFinance";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isSameDay, addMonths, subMonths, format, differenceInDays, addDays } from "date-fns";
 import { he } from "date-fns/locale";
@@ -21,6 +22,7 @@ import { toast } from "sonner";
 
 import { motion, LayoutGroup } from "framer-motion";
 import { Loader2 } from "lucide-react";
+import { useAppStore } from "@/stores/appStore";
 
 // Phase 4-6 components
 import { GuiltFreeWallets } from "@/components/GuiltFreeWallets";
@@ -46,7 +48,8 @@ const PullToRefresh = ({ children }: { children: React.ReactNode, onRefresh: () 
 };
 
 export default function Home() {
-  const [balance, setBalance] = useState<number | null>(null);
+  // MANDATE: USE GLOBAL CASHFLOW BALANCE
+  // Removed local balance state to avoid sync issues. Use cashflow.balance directly in UI.
   // comparisonDiff removed as it was unused
 
   // const [goals, setGoals] = useState<Goal[]>([]); // Removed: Using assets from useWealth
@@ -66,8 +69,11 @@ export default function Home() {
   const supabase = supabaseRef.current;
   const { user, profile, loading: authLoading } = useAuth();
   const { assets } = useWealth();
+  const { appIdentity } = useAppStore();
 
   const [burnRateData, setBurnRateData] = useState<{ status: 'safe' | 'warning' | 'critical', projectedDate: Date | null }>({ status: 'safe', projectedDate: null });
+
+  const { data: cashflow, isLoading: cashflowLoading, refetch: refetchCashflow } = useGlobalCashflow(viewingDate);
 
   const fetchData = useCallback(async () => {
     if (authLoading) return;
@@ -77,7 +83,7 @@ export default function Home() {
     }
 
     try {
-      if (balance === null) setLoading(true);
+      if (cashflow?.balance === undefined && !cashflowLoading) setLoading(true);
 
       // Validate viewingDate
       if (isNaN(viewingDate.getTime())) {
@@ -123,18 +129,9 @@ export default function Home() {
       setSubscriptions(subsData || []);
       setLiabilities(liabData || []);
 
-      const totalSubscriptions = subsData?.reduce((sum: number, sub: Subscription) => sum + Number(sub.amount), 0) || 0;
-      const activeLiabilityPayments = (liabData || []).reduce((sum: number, liab: { remaining_amount?: number; amount?: number; monthly_payment?: number }) => {
-        const remaining = Number(liab.remaining_amount ?? liab.amount ?? 0);
-        if (remaining <= 0) return sum;
-        return sum + Number(liab.monthly_payment ?? 0);
-      }, 0);
-      const totalFixed = totalSubscriptions + activeLiabilityPayments;
-
-      const MONTHLY_BUDGET = profile?.budget || 20000;
-      const totalExpenses = transactionsData.reduce((sum: number, tx: Transaction) => sum + Number(tx.amount), 0) || 0;
-      const currentBalance = Math.round((MONTHLY_BUDGET - totalFixed - totalExpenses) * 100) / 100;
-      setBalance(currentBalance);
+      // MANDATE 1: UNIFY GLOBAL MONTHLY SPEND MATH
+      // We consume the live value from our centralized hook
+      const currentBalance = cashflow?.balance ?? 0;
 
       // Burn Rate Logic: "Variable Only"
       // User request: "without the fixed ones"
@@ -144,8 +141,11 @@ export default function Home() {
       if (isCurrentMonth) {
         const daysIntoPeriod = differenceInDays(new Date(), start) + 1;
 
-        // 1. Identify Fixed Amounts from Subscriptions
-        const fixedAmounts = new Set(subsData?.map((s: Subscription) => Number(s.amount)) || []);
+        // 1. Identify Fixed Amounts from Subscriptions & Liabilities (Debt)
+        const fixedAmounts = new Set([
+          ...(subsData?.map((s: Subscription) => Number(s.amount)) || []),
+          ...(liabData?.map((l: Liability) => Number(l.monthly_payment)) || [])
+        ]);
 
         // 2. Filter Transactions: Exclude matches (Fixed)
         // We use a small tolerance or exact match. Exact is safer to avoid excluding common prices like 50.
@@ -197,7 +197,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [user, supabase, profile, balance, authLoading, viewingDate]);
+  }, [user, supabase, profile, authLoading, viewingDate, cashflow?.balance]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -217,9 +217,8 @@ export default function Home() {
 
 
   const handleTransactionAdded = (amount: number, newTx?: Transaction) => {
-    if (balance !== null) {
-      setBalance(prev => (prev !== null ? prev - amount : null));
-    }
+    // We let the centralized hook handle the balance math.
+    // We just need to trigger a refetch of all data.
     if (newTx) {
       setTransactions(prev => {
         const exists = prev.some(t => t.id === newTx.id);
@@ -230,6 +229,7 @@ export default function Home() {
       });
     }
     setIsDrawerOpen(false);
+    refetchCashflow();
     fetchData();
   };
 
@@ -261,7 +261,7 @@ export default function Home() {
       >
         {/* Pull to Refresh Wrapper */}
         <PullToRefresh onRefresh={fetchData}>
-          {loading || balance === null ? (
+          {loading || cashflow?.balance === undefined ? (
             // SKELETONS ...
             <div className="flex flex-col items-center justify-center py-10 gap-8 animate-in fade-in duration-700">
               {/* ... */}
@@ -295,10 +295,10 @@ export default function Home() {
               {/* Widgets Container - Mosaic Layout */}
               <div className="w-full flex justify-center mb-2">
                 <HomeMosaic
-                  balance={balance || 0}
-                  budget={profile?.budget || 20000}
-                  monthlyIncome={profile?.monthly_income || profile?.budget || 20000}
-                  totalExpenses={(profile?.budget || 20000) - balance}
+                  balance={cashflow?.balance ?? 0}
+                  budget={cashflow?.budget ?? 20000}
+                  monthlyIncome={profile?.monthly_income || cashflow?.budget || 20000}
+                  totalExpenses={(cashflow?.budget || 20000) - (cashflow?.balance ?? 0)}
                   daysInMonth={differenceInDays(getBillingPeriodForDate(viewingDate).end, getBillingPeriodForDate(viewingDate).start)}
                   daysPassed={Math.max(1, differenceInDays(new Date(), getBillingPeriodForDate(viewingDate).start))}
                   assets={assets}
@@ -362,6 +362,7 @@ export default function Home() {
             onRefresh={fetchData}
             activeFilter={selectedFilterCategory}
             activeDateFilter={selectedDate} // Pass date filter
+            currentPayer={appIdentity ?? undefined}
             onEdit={(tx) => {
               setEditingTransaction(tx);
               setIsDrawerOpen(true);
@@ -370,7 +371,7 @@ export default function Home() {
         </LayoutGroup>
 
         {/* Phase 4-6: Insights & Bento Box Gamification Layout */}
-        {!loading && balance !== null && (
+        {!loading && cashflow?.balance !== undefined && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -379,14 +380,14 @@ export default function Home() {
           >
             {/* Guilt-Free Wallets - Full Width (since SettleUp was moved) */}
             <div className="col-span-2 flex flex-col h-full">
-              <GuiltFreeWallets />
+              <GuiltFreeWallets viewingDate={viewingDate} />
             </div>
           </motion.div>
         )}
       </motion.main>
 
       {/* AI Psychologist Nudge Button */}
-      <AIChatButton />
+      <AIChatButton viewingDate={viewingDate} />
 
       <AddTransactionDrawer
         isOpen={isDrawerOpen}

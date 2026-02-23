@@ -25,7 +25,7 @@ vi.mock('@/components/AuthProvider', () => ({
     })
 }));
 
-// Mock fetch for /api/stocks
+// Mock fetch for /api/market-data
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
@@ -73,7 +73,7 @@ describe('useWealth', () => {
         expect(result.current.assets).toHaveLength(2);
     });
 
-    it('calculates stocks correctly via /api/stocks live prices', async () => {
+    it('calculates stocks correctly via /api/market-data live prices', async () => {
         mockUser = { id: '123' };
 
         const goals = [
@@ -101,7 +101,7 @@ describe('useWealth', () => {
         // BTC: 0.5 * 60000 * 3.7 = 111000
         // Total = 116550
 
-        expect(mockFetch).toHaveBeenCalledWith('/api/stocks', expect.any(Object));
+        expect(mockFetch).toHaveBeenCalledWith('/api/market-data', expect.any(Object));
         expect(result.current.netWorth).toBe(116550);
         expect(result.current.investmentsValue).toBe(116550);
         expect(result.current.cashValue).toBe(0);
@@ -151,5 +151,27 @@ describe('useWealth', () => {
         // 10000 * (1 + 0.00027397)^3 = ~10008.22
         expect(result.current.netWorth).toBeGreaterThan(10008);
         expect(result.current.netWorth).toBeLessThan(10009);
+    });
+
+    it('sanitizes wealth totals by excluding negative goal amounts (assets only)', async () => {
+        mockUser = { id: '123' };
+
+        const goals = [
+            { id: '1', type: 'cash', current_amount: 10000 },
+            { id: '2', type: 'cash', current_amount: -2000 } // This should be ignored in the total
+        ];
+
+        mockOrder.mockResolvedValue({ data: goals, error: null });
+
+        const { result } = renderReactQueryHook(() => useWealth());
+
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        // Total should be 10000, not 8000
+        expect(result.current.netWorth).toBe(10000);
+        expect(result.current.cashValue).toBe(10000);
+        expect(result.current.assets).toHaveLength(2);
+        // Individual asset should still keep its negative value for display
+        expect(result.current.assets.find(a => a.id === '2')?.calculatedValue).toBe(-2000);
     });
 });

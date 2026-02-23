@@ -27,7 +27,7 @@ export const StockTicker = ({ userSymbols = [] }: StockTickerProps) => {
 
                 if (allSymbols.length === 0) return;
 
-                const res = await fetch('/api/stocks', {
+                const res = await fetch('/api/market-data', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ symbols: allSymbols })
