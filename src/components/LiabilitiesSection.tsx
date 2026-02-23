@@ -24,6 +24,7 @@ import { useLiabilities, useAddLiability, useDeleteLiability, isLiabilityActive 
 import { Liability, LiabilityType } from "@/types";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/EmptyState";
+import { useAuth } from "@/components/AuthProvider";
 import { Skeleton } from "@/components/ui/skeleton";
 import CountUp from "react-countup";
 
@@ -56,8 +57,9 @@ const CATEGORY_TO_TYPE: Record<string, LiabilityType> = {
 const LIABILITY_CATEGORIES = ["Mortgage", "Car Loan", "Student Loan", "Credit Card", "Personal Loan", "Other"];
 
 const resolveAmounts = (liability: Liability) => {
-    const total = Number(liability.total_amount ?? liability.principal ?? 0);
-    const remaining = Number(liability.remaining_amount ?? liability.current_balance ?? 0);
+    const currentDebt = Number(liability.remaining_amount ?? liability.total_amount ?? liability.amount ?? liability.current_balance ?? 0);
+    const total = Number(liability.total_amount ?? liability.amount ?? liability.principal ?? currentDebt);
+    const remaining = currentDebt;
     return { total, remaining };
 };
 
@@ -77,7 +79,7 @@ export function LiabilitiesSection() {
 
     const totalMonthly = sortedLiabilities
         .filter((liability) => isLiabilityActive(liability))
-        .reduce((sum, liability) => sum + Number(liability.monthly_payment || 0), 0);
+        .reduce((sum, liability) => sum + Number(liability.monthly_payment ?? 0), 0);
 
     return (
         <section className="space-y-4">
@@ -141,6 +143,7 @@ function LiabilityCard({ liability, index }: { liability: Liability; index: numb
     const derivedType = liability.type ?? CATEGORY_TO_TYPE[liability.category] ?? "other";
     const Icon = LIABILITY_ICONS[derivedType] || Landmark;
     const { total, remaining } = resolveAmounts(liability);
+    const payment = Number(liability.monthly_payment ?? 0);
     const paid = Math.max(total - remaining, 0);
     const progress = total > 0 ? Math.min(100, Math.max(0, (paid / total) * 100)) : 0;
     const isActive = isLiabilityActive(liability);
@@ -161,7 +164,7 @@ function LiabilityCard({ liability, index }: { liability: Liability; index: numb
                 <div className="flex-1 min-w-0">
                     <div className="flex justify-between gap-2">
                         <div>
-                            <h3 className="font-bold text-white text-sm truncate">{liability.name}</h3>
+                            <h3 className="font-bold text-white text-sm truncate">{liability.name || "ללא שם"}</h3>
                             <p className="text-[11px] text-white/55">{liability.category || LIABILITY_LABELS[derivedType]}</p>
                         </div>
                         <div className="text-left">
@@ -179,7 +182,7 @@ function LiabilityCard({ liability, index }: { liability: Liability; index: numb
                     </div>
 
                     <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-                        <span className="rounded-xl bg-white/10 px-2.5 py-1 text-white/80">₪{Number(liability.monthly_payment || 0).toLocaleString()} / חודש</span>
+                        <span className="rounded-xl bg-white/10 px-2.5 py-1 text-white/80">₪{payment.toLocaleString()} / חודש</span>
                         <span className="rounded-xl bg-red-500/15 px-2.5 py-1 text-red-200">{Number(liability.interest_rate || 0).toFixed(2)}% APR</span>
                         <span className="rounded-xl bg-white/10 px-2.5 py-1 text-white/70 inline-flex items-center gap-1">
                             <CalendarClock className="w-3 h-3" />
@@ -223,6 +226,7 @@ function LiabilityCard({ liability, index }: { liability: Liability; index: numb
 
 function AddLiabilityDialog({ onClose }: { onClose: () => void }) {
     const addMutation = useAddLiability();
+    const { profile } = useAuth();
     const [name, setName] = useState("");
     const [category, setCategory] = useState("Personal Loan");
     const [totalAmount, setTotalAmount] = useState("");
@@ -235,6 +239,12 @@ function AddLiabilityDialog({ onClose }: { onClose: () => void }) {
     const handleSubmit = () => {
         if (!name || !remainingAmount || !monthlyPayment) {
             toast.error("נא למלא שם, יתרה ותשלום חודשי");
+            return;
+        }
+
+        const coupleId = profile?.couple_id;
+        if (!coupleId) {
+            toast.error("לא נמצא מזהה זוגי לשמירה");
             return;
         }
 
@@ -256,6 +266,7 @@ function AddLiabilityDialog({ onClose }: { onClose: () => void }) {
                 current_balance: remaining,
                 start_date: null,
                 owner,
+                couple_id: coupleId,
             },
             {
                 onSuccess: () => {

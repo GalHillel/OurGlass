@@ -8,7 +8,7 @@ import { Liability, WealthSnapshot } from "@/types";
 const supabase = createClient();
 
 export const isLiabilityActive = (liability: Liability, asOf = new Date()) => {
-    const remainingAmount = Number(liability.remaining_amount ?? liability.current_balance ?? 0);
+    const remainingAmount = Number(liability.remaining_amount ?? liability.amount ?? liability.current_balance ?? 0);
     if (remainingAmount <= 0) return false;
 
     if (!liability.end_date) return true;
@@ -76,12 +76,20 @@ export function useAddLiability() {
     const { profile } = useAuth();
 
     return useMutation({
-        mutationFn: async (liability: Omit<Liability, "id" | "couple_id" | "created_at">) => {
+        mutationFn: async (liability: Omit<Liability, "id" | "created_at"> & { couple_id?: string }) => {
             if (!profile?.couple_id) throw new Error("No couple_id");
+
+            const normalizedPayload = {
+                ...liability,
+                total_amount: Number(liability.total_amount ?? liability.amount ?? 0),
+                remaining_amount: Number(liability.remaining_amount ?? liability.amount ?? 0),
+                monthly_payment: Number(liability.monthly_payment ?? 0),
+                interest_rate: Number(liability.interest_rate ?? 0),
+            };
 
             const { data, error } = await supabase
                 .from("liabilities")
-                .insert({ ...liability, couple_id: profile.couple_id })
+                .insert({ ...normalizedPayload, couple_id: liability.couple_id ?? profile.couple_id })
                 .select()
                 .single();
 
@@ -140,7 +148,7 @@ export function useTotalLiabilities() {
 
     const activeLiabilities = liabilities.filter((liability) => isLiabilityActive(liability));
 
-    const total = liabilities.reduce((sum, l) => sum + Number(l.remaining_amount ?? l.current_balance ?? 0), 0);
+    const total = liabilities.reduce((sum, l) => sum + Number(l.remaining_amount ?? l.amount ?? l.current_balance ?? 0), 0);
     const monthlyPayments = activeLiabilities.reduce((sum, l) => sum + Number(l.monthly_payment || 0), 0);
 
     return { total, monthlyPayments, count: liabilities.length };
