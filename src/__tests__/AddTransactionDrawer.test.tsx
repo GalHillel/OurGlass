@@ -1,9 +1,10 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { AddTransactionDrawer } from '@/components/AddTransactionDrawer';
 import { useAuth } from '@/components/AuthProvider';
 import { useAppStore } from '@/stores/appStore';
 import { useDeepFreeze } from '@/hooks/useDeepFreeze';
+import { Transaction } from '@/types';
 
 vi.mock('@/components/AuthProvider', () => ({
     useAuth: vi.fn()
@@ -40,10 +41,10 @@ global.ResizeObserver = class {
     disconnect() { }
 };
 global.PointerEvent = class PointerEvent extends Event {
-    constructor(type: string, props: any) {
+    constructor(type: string, props: PointerEventInit) {
         super(type, props);
     }
-} as any;
+} as unknown as typeof PointerEvent;
 
 describe('AddTransactionDrawer', () => {
     const mockOnClose = vi.fn();
@@ -52,14 +53,14 @@ describe('AddTransactionDrawer', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        (useAuth as any).mockReturnValue({
+        (useAuth as unknown as Mock).mockReturnValue({
             user: { id: '123' },
             profile: { couple_id: '456' }
         });
-        (useAppStore as any).mockReturnValue({
+        (useAppStore as unknown as Mock).mockReturnValue({
             appIdentity: 'him'
         });
-        (useDeepFreeze as any).mockReturnValue({
+        (useDeepFreeze as unknown as Mock).mockReturnValue({
             isFreezeDialogOpen: false,
             checkTransaction: mockCheckTransaction,
             handleFreeze: vi.fn(),
@@ -92,7 +93,7 @@ describe('AddTransactionDrawer', () => {
     });
 
     it('loads initial data correctly for editing', () => {
-        const initialData = {
+        const initialData: Partial<Transaction> = {
             id: '1',
             amount: 250,
             description: 'Lunch',
@@ -102,7 +103,7 @@ describe('AddTransactionDrawer', () => {
             mood_rating: 4
         };
 
-        render(<AddTransactionDrawer isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} initialData={initialData as any} />);
+        render(<AddTransactionDrawer isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} initialData={initialData as Transaction} />);
 
         expect(screen.getByText('עריכת הוצאה')).toBeInTheDocument();
         // Displays amount

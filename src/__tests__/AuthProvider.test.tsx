@@ -15,7 +15,7 @@ vi.mock('@/utils/supabase/client', () => ({
             getSession: mockGetSession,
             onAuthStateChange: mockOnAuthStateChange
         },
-        from: (table: string) => ({
+        from: (_table: string) => ({
             select: mockSelect,
         })
     })
@@ -40,7 +40,7 @@ const TestConsumer = () => {
     return (
         <div>
             <div>User: {user.id}</div>
-            <div>Profile: {profile?.first_name || 'No Profile'}</div>
+            <div>Profile: {profile?.name || 'No Profile'}</div>
         </div>
     );
 };
@@ -65,7 +65,7 @@ describe('AuthProvider', () => {
 
     it('fetches profile if session exists', async () => {
         const mockUser = { id: 'user123' };
-        const mockProfileData = { first_name: 'Gal' };
+        const mockProfileData = { name: 'Gal' };
 
         mockGetSession.mockResolvedValue({ data: { session: { user: mockUser } } });
         mockSingle.mockResolvedValue({ data: mockProfileData });

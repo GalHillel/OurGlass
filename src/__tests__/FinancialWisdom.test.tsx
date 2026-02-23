@@ -13,7 +13,7 @@ describe('FinancialWisdom', () => {
     });
 
     it('shows a tip if not seen today', async () => {
-        const { container } = render(<FinancialWisdom />);
+        render(<FinancialWisdom />);
 
         // Initially empty because of a 1.5s delay
         expect(screen.queryByText('טיפ יומי')).not.toBeInTheDocument();

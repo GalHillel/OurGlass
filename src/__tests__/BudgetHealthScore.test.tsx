@@ -1,12 +1,12 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import { BudgetHealthScore } from '@/components/BudgetHealthScore';
 
 // Mock framer-motion to simplify testing
 vi.mock('framer-motion', () => ({
     motion: {
-        div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-        circle: ({ children, ...props }: any) => <circle {...props}>{children}</circle>,
+        div: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <div {...props}>{children}</div>,
+        circle: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <circle {...props}>{children}</circle>,
     },
     useAnimation: () => ({ start: vi.fn() }),
 }));

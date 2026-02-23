@@ -1,5 +1,7 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { UseQueryResult, UseMutationResult } from '@tanstack/react-query';
+import { Liability } from '@/types';
 import { LiabilitiesSection } from '@/components/LiabilitiesSection';
 import * as hooks from '@/hooks/useWealthData';
 
@@ -16,9 +18,9 @@ describe('LiabilitiesSection', () => {
     });
 
     it('renders empty state when no liabilities', () => {
-        vi.spyOn(hooks, 'useLiabilities').mockReturnValue({ data: [], isLoading: false } as any);
-        vi.spyOn(hooks, 'useAddLiability').mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
-        vi.spyOn(hooks, 'useDeleteLiability').mockReturnValue({ mutate: vi.fn() } as any);
+        vi.spyOn(hooks, 'useLiabilities').mockReturnValue({ data: [], isLoading: false } as unknown as UseQueryResult<Liability[], Error>);
+        vi.spyOn(hooks, 'useAddLiability').mockReturnValue({ mutate: vi.fn(), isPending: false } as unknown as UseMutationResult<Liability, Error, Omit<Liability, "id" | "couple_id" | "created_at">, unknown>);
+        vi.spyOn(hooks, 'useDeleteLiability').mockReturnValue({ mutate: vi.fn() } as unknown as UseMutationResult<void, Error, string, unknown>);
 
         render(<LiabilitiesSection />);
 
@@ -30,18 +32,18 @@ describe('LiabilitiesSection', () => {
             {
                 id: '1',
                 name: 'Car Loan',
-                type: 'car',
+                type: 'car' as const,
                 principal: 100000,
                 current_balance: 80000,
                 interest_rate: 3,
                 monthly_payment: 2000,
-                owner: 'joint'
+                owner: 'joint' as const
             }
         ];
 
-        vi.spyOn(hooks, 'useLiabilities').mockReturnValue({ data: mockLiabilities, isLoading: false } as any);
-        vi.spyOn(hooks, 'useAddLiability').mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
-        vi.spyOn(hooks, 'useDeleteLiability').mockReturnValue({ mutate: vi.fn() } as any);
+        vi.spyOn(hooks, 'useLiabilities').mockReturnValue({ data: mockLiabilities, isLoading: false } as unknown as UseQueryResult<Liability[], Error>);
+        vi.spyOn(hooks, 'useAddLiability').mockReturnValue({ mutate: vi.fn(), isPending: false } as unknown as UseMutationResult<Liability, Error, Omit<Liability, "id" | "couple_id" | "created_at">, unknown>);
+        vi.spyOn(hooks, 'useDeleteLiability').mockReturnValue({ mutate: vi.fn() } as unknown as UseMutationResult<void, Error, string, unknown>);
 
         render(<LiabilitiesSection />);
 

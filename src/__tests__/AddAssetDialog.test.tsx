@@ -1,7 +1,8 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { AddAssetDialog } from '@/components/AddAssetDialog';
 import { useAuth } from '@/components/AuthProvider';
+import { Asset } from '@/types';
 
 vi.mock('@/components/AuthProvider', () => ({
     useAuth: vi.fn()
@@ -26,7 +27,7 @@ describe('AddAssetDialog', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        (useAuth as any).mockReturnValue({
+        (useAuth as unknown as Mock).mockReturnValue({
             profile: { couple_id: '123' }
         });
     });
@@ -60,7 +61,7 @@ describe('AddAssetDialog', () => {
     });
 
     it('populates initial data for editing', () => {
-        const initialData = {
+        const initialData: Partial<Asset> = {
             id: '1',
             name: 'Existing Asset',
             current_amount: 5000,
@@ -68,7 +69,7 @@ describe('AddAssetDialog', () => {
             investment_type: 'cash',
         };
 
-        render(<AddAssetDialog isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} initialData={initialData as any} />);
+        render(<AddAssetDialog isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} initialData={initialData as Asset} />);
 
         expect(screen.getByText('עריכת נכס')).toBeInTheDocument();
         expect(screen.getByDisplayValue('Existing Asset')).toBeInTheDocument();

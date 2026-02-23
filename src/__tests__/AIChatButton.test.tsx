@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { AIChatButton } from '@/components/AIChatButton';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -22,7 +22,7 @@ vi.mock('@/utils/supabase/client', () => {
         order: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: { budget: 20000, monthly_income: 15000 } }),
-        then: function (resolve: any) {
+        then: function (resolve: (value: unknown) => void) {
             resolve({ data: [] });
             return this;
         }
@@ -41,20 +41,20 @@ vi.mock('@/components/ChatInterface', () => ({
 }));
 vi.mock('framer-motion', () => ({
     motion: {
-        div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-        button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
-        span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+        div: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <div {...props}>{children}</div>,
+        button: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <button {...props}>{children}</button>,
+        span: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <span {...props}>{children}</span>,
     },
-    AnimatePresence: ({ children }: any) => <>{children}</>,
+    AnimatePresence: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
 }));
 
 describe('AIChatButton', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         vi.useFakeTimers();
-        (useAuth as any).mockReturnValue({
+        (useAuth as unknown as Mock).mockReturnValue({
             user: { id: '123' },
-            profile: { first_name: 'Test' }
+            profile: { name: 'Test' }
         });
     });
 
