@@ -2,6 +2,18 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ChatInterface } from '@/components/ChatInterface';
 
+vi.mock('@/utils/supabase/client', () => ({
+    createClient: () => ({
+        from: () => ({
+            select: () => ({
+                eq: () => ({
+                    single: () => Promise.resolve({ data: null, error: null }),
+                }),
+            }),
+        }),
+    }),
+}));
+
 // Mock framer-motion since ChatInterface uses motion.div, motion.button, motion.span
 vi.mock('framer-motion', () => ({
     motion: {
@@ -35,19 +47,19 @@ describe('ChatInterface', () => {
         vi.spyOn(Storage.prototype, 'removeItem').mockImplementation((key) => { delete store[key]; });
     });
 
-    it('renders initial loaded messages', () => {
+    it('renders initial loaded messages', async () => {
         render(<ChatInterface context={{} as never} onClose={vi.fn()} />);
-        // should render the mocked message
-        expect(screen.getByText('Hello')).toBeInTheDocument();
+        // should render the mocked message (wait for load)
+        expect(await screen.findByText('Hello')).toBeInTheDocument();
         // Header shows the AI name
         expect(screen.getByText('רועי')).toBeInTheDocument();
     });
 
-    it('sends message and passes context when submitting form', () => {
+    it('sends message and passes context when submitting form', async () => {
         render(<ChatInterface context={{ budget: 5000 } as never} onClose={vi.fn()} />);
 
-        // The actual placeholder in the source is "שאל את רועי..."
-        const input = screen.getByPlaceholderText('שאל את רועי...');
+        // Wait for load
+        const input = await screen.findByPlaceholderText('שאל את רועי...');
         fireEvent.change(input, { target: { value: 'How is my budget?' } });
 
         // The send button is a motion.button (mocked as <button>), find by its SVG child or role
@@ -62,11 +74,11 @@ describe('ChatInterface', () => {
         );
     });
 
-    it('calls onClose when close button clicked', () => {
+    it('calls onClose when close button clicked', async () => {
         const onClose = vi.fn();
         render(<ChatInterface context={{} as never} onClose={onClose} />);
 
-        const button = screen.getByRole('button', { name: 'Close' });
+        const button = await screen.findByRole('button', { name: 'Close' });
         fireEvent.click(button);
 
         expect(onClose).toHaveBeenCalledTimes(1);

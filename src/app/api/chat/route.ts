@@ -134,11 +134,26 @@ The 'Total Spent This Month' already includes paid subscriptions/recurring bills
 
   const modelMessages = await convertToModelMessages(messages);
 
-  const result = streamText({
-    model: google('gemini-2.5-flash'),
-    system: systemMessage,
-    messages: modelMessages,
-  });
+  try {
+    const result = streamText({
+      model: google('gemini-2.5-flash'), // Primary
+      system: systemMessage,
+      messages: modelMessages,
+    });
+    return result.toUIMessageStreamResponse();
+  } catch (error: unknown) {
+    const { isQuotaError, backupModel } = await import('@/lib/ai-router');
 
-  return result.toUIMessageStreamResponse();
+    if (isQuotaError(error)) {
+      console.warn("Chat API: Gemini Quota Exceeded, falling back to OpenAI...");
+      const result = streamText({
+        model: backupModel,
+        system: systemMessage,
+        messages: modelMessages,
+      });
+      return result.toUIMessageStreamResponse();
+    }
+    console.error("Chat API Error:", error);
+    throw error;
+  }
 }

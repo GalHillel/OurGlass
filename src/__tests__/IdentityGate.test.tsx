@@ -32,39 +32,39 @@ describe('IdentityGate', () => {
         mockIdentity = null;
     });
 
-    it('renders children directly if NOT logged in', () => {
+    it('renders children directly if NOT logged in', async () => {
         render(<IdentityGate><div data-testid="child">Safe</div></IdentityGate>);
-        expect(screen.getByTestId('child')).toBeInTheDocument();
+        expect(await screen.findByTestId('child')).toBeInTheDocument();
         expect(screen.queryByText('מי משתמש באפליקציה?')).not.toBeInTheDocument();
     });
 
-    it('renders identity selector if logged in but NO identity chosen', () => {
+    it('renders identity selector if logged in but NO identity chosen', async () => {
         mockUser = { id: '123' };
 
         render(<IdentityGate><div data-testid="child">Safe</div></IdentityGate>);
 
-        expect(screen.getByText('מי משתמש באפליקציה?')).toBeInTheDocument();
+        expect(await screen.findByText('מי משתמש באפליקציה?')).toBeInTheDocument();
         expect(screen.getByText('גל')).toBeInTheDocument();
         expect(screen.getByText('איריס')).toBeInTheDocument();
         expect(screen.queryByTestId('child')).not.toBeInTheDocument();
     });
 
-    it('renders children if logged in AND identity chosen', () => {
+    it('renders children if logged in AND identity chosen', async () => {
         mockUser = { id: '123' };
         mockIdentity = 'him';
 
         render(<IdentityGate><div data-testid="child">Safe</div></IdentityGate>);
 
-        expect(screen.getByTestId('child')).toBeInTheDocument();
+        expect(await screen.findByTestId('child')).toBeInTheDocument();
         expect(screen.queryByText('מי משתמש באפליקציה?')).not.toBeInTheDocument();
     });
 
-    it('sets identity when clicked', () => {
+    it('sets identity when clicked', async () => {
         mockUser = { id: '123' };
 
         render(<IdentityGate><div data-testid="child">Safe</div></IdentityGate>);
 
-        fireEvent.click(screen.getByText('גל'));
+        fireEvent.click(await screen.findByText('גל'));
         expect(mockSetIdentity).toHaveBeenCalledWith('him');
     });
 });

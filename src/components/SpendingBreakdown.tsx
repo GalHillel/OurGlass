@@ -91,7 +91,7 @@ export const SpendingBreakdown = ({ transactions, subscriptions, liabilities, vi
             .sort((a, b) => b.value - a.value);
 
         return { total: totalSpend, items: sortedItems };
-    }, [transactions, subscriptions, liabilities]);
+    }, [transactions, subscriptions, liabilities, viewingDate]);
 
     if (items.length === 0) {
         return (

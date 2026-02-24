@@ -5,6 +5,7 @@ import { memo, useState, useMemo } from "react";
 import { LucideIcon, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useGlobalCashflow } from "@/hooks/useJointFinance";
 
 interface AppHeaderProps {
     title: string;
@@ -46,50 +47,75 @@ export const AppHeader = memo(({ title, subtitle, icon: Icon, iconColor = "text-
         }
     };
 
+    const { data: cashflow } = useGlobalCashflow();
+
+    const burnRatePercent = useMemo(() => {
+        if (!cashflow?.budget || !cashflow?.totalSpent) return 0;
+        return Math.min(100, (cashflow.totalSpent / cashflow.budget) * 100);
+    }, [cashflow]);
+
+    const burnColor = useMemo(() => {
+        if (burnRatePercent > 90) return "bg-red-500";
+        if (burnRatePercent > 75) return "bg-orange-500";
+        if (burnRatePercent > 50) return "bg-yellow-500";
+        return "bg-emerald-500";
+    }, [burnRatePercent]);
+
     return (
-        <header className={cn(
-            "fixed top-0 left-0 right-0 z-40 flex justify-between items-center px-4 pt-[calc(env(safe-area-inset-top)+1rem)] pb-4",
-            "backdrop-blur-2xl bg-slate-900/40 border-b border-white/5",
-            className
-        )}>
-            {/* Right Side (RTL Start) - Title */}
-            <h1 className="text-xl font-black tracking-tight neon-text flex items-center gap-2">
-                <button onClick={onIconClick} className="active:scale-90 transition-transform">
-                    <Icon className={cn("w-6 h-6", iconColor)} />
-                </button>
-                {title} {subtitle && <span className={titleColor}>{subtitle}</span>}
-            </h1>
-
-            {/* Left Side (RTL End) - Smart Greeting & Zen Mode */}
-            <div className="flex items-center gap-3">
-                <motion.span
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.7, ease: "easeOut", delay: 0.3 }}
-                    className="text-xs font-medium text-white/60 hidden sm:inline-block"
-                >
-                    {greeting}
-                </motion.span>
-
-                {/* Level Badge (Gamification) */}
-                <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-orange-500/10 border border-orange-500/20 mr-2">
-                    <span className="text-[10px] text-orange-400 font-bold uppercase tracking-wide">SAVER</span>
-                    <span className="text-xs font-black text-orange-200">LV.5</span>
-                </div>
-
-                <button
-                    onClick={toggleZenMode}
-                    className="p-2 -m-2 text-white/40 hover:text-blue-400 transition-colors active:scale-95"
-                    aria-label="Zen Mode"
-                >
-                    {isZen ? (
-                        <EyeOff className="w-5 h-5 text-blue-400" />
-                    ) : (
-                        <Eye className="w-5 h-5" />
-                    )}
-                </button>
+        <>
+            {/* MANDATE 4: GLOBAL BURN RATE INDICATOR */}
+            <div className="fixed top-0 left-0 right-0 h-[3px] z-[60] bg-white/5 overflow-hidden">
+                <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${burnRatePercent}%` }}
+                    className={cn("h-full transition-colors duration-500 mb-0", burnColor)}
+                />
             </div>
-        </header >
+
+            <header className={cn(
+                "fixed top-0 left-0 right-0 z-40 flex justify-between items-center px-4 pt-[calc(env(safe-area-inset-top)+1rem)] pb-4",
+                "backdrop-blur-2xl bg-slate-900/40 border-b border-white/5",
+                className
+            )}>
+                {/* Right Side (RTL Start) - Title */}
+                <h1 className="text-xl font-black tracking-tight neon-text flex items-center gap-2">
+                    <button onClick={onIconClick} className="active:scale-90 transition-transform">
+                        <Icon className={cn("w-6 h-6", iconColor)} />
+                    </button>
+                    {title} {subtitle && <span className={titleColor}>{subtitle}</span>}
+                </h1>
+
+                {/* Left Side (RTL End) - Smart Greeting & Zen Mode */}
+                <div className="flex items-center gap-3">
+                    <motion.span
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.7, ease: "easeOut", delay: 0.3 }}
+                        className="text-xs font-medium text-white/60 hidden sm:inline-block"
+                    >
+                        {greeting}
+                    </motion.span>
+
+                    {/* Level Badge (Gamification) */}
+                    <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-orange-500/10 border border-orange-500/20 mr-2">
+                        <span className="text-[10px] text-orange-400 font-bold uppercase tracking-wide">SAVER</span>
+                        <span className="text-xs font-black text-orange-200">LV.5</span>
+                    </div>
+
+                    <button
+                        onClick={toggleZenMode}
+                        className="p-2 -m-2 text-white/40 hover:text-blue-400 transition-colors active:scale-95"
+                        aria-label="Zen Mode"
+                    >
+                        {isZen ? (
+                            <EyeOff className="w-5 h-5 text-blue-400" />
+                        ) : (
+                            <Eye className="w-5 h-5" />
+                        )}
+                    </button>
+                </div>
+            </header >
+        </>
     );
 });
 

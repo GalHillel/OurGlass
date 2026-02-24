@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Flame, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AnimatedCounter } from "@/components/AnimatedCounter";
 
 interface BudgetGaugesProps {
     balance: number;
@@ -32,7 +33,7 @@ export const BudgetGauges = ({ balance, budget, daysRemaining }: BudgetGaugesPro
                 <span className="text-[10px] text-white/40 uppercase tracking-wider mb-1">מותר להיום</span>
                 <div className="text-2xl font-black text-white flex items-baseline gap-1">
                     <span className="text-sm text-white/30">₪</span>
-                    {Math.round(safeDaily).toLocaleString()}
+                    <AnimatedCounter value={safeDaily} />
                 </div>
                 <div className="w-full h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
                     <motion.div

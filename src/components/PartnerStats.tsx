@@ -46,7 +46,7 @@ export const PartnerStats = ({ transactions, subscriptions = [], liabilities = [
             { id: 'joint', label: 'משותף', amount: jointTotal, icon: Users, color: 'text-purple-400' },
             { id: 'her', label: 'איריס', amount: herTotal, icon: Heart, color: 'text-pink-400' },
         ];
-    }, [transactions, subscriptions, liabilities]);
+    }, [transactions, subscriptions, liabilities, viewingDate]);
 
     const total = stats.reduce((acc, curr) => acc + curr.amount, 0);
 

@@ -155,7 +155,7 @@ export const CategoryBreakdown = ({
       .map(([name, data]) => ({ name, sum: data.sum, hasTransactions: data.hasTransactions }))
       .sort((a, b) => b.sum - a.sum);
     return { total, rows };
-  }, [transactions, subscriptions, liabilities]);
+  }, [transactions, subscriptions, liabilities, viewingDate]);
 
   if (rows.length === 0) {
     return (

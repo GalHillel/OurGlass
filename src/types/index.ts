@@ -70,7 +70,7 @@ export interface Goal {
     target_amount: number;
     current_amount: number;
     brick_color: string | null;
-    type: 'cash' | 'stock' | 'pocket_him' | 'pocket_her' | 'money_market' | 'usd_cash';
+    type: 'cash' | 'stock' | 'pocket_him' | 'pocket_her' | 'money_market' | 'usd_cash' | 'crypto';
     growth_rate: number;
     couple_id: string | null;
     deep_freeze: boolean;

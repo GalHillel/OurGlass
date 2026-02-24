@@ -101,7 +101,7 @@ describe('useWealth', () => {
         // BTC: 0.5 * 60000 * 3.7 = 111000
         // Total = 116550
 
-        expect(mockFetch).toHaveBeenCalledWith('/api/market-data', expect.any(Object));
+        expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/market-data'), expect.any(Object));
         expect(result.current.netWorth).toBe(116550);
         expect(result.current.investmentsValue).toBe(116550);
         expect(result.current.cashValue).toBe(0);

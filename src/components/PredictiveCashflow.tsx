@@ -122,7 +122,7 @@ export function PredictiveCashflow({ balance, budget, transactions, subscription
             willRunOut: finalProjectedBalance < 0,
             daysUntilZero,
         };
-    }, [balance, budget, transactions, subscriptions]);
+    }, [balance, budget, transactions, subscriptions, liabilities]);
 
     const status = chartData.willRunOut ? "danger" : chartData.projectedEndBalance < budget * 0.1 ? "warning" : "safe";
 

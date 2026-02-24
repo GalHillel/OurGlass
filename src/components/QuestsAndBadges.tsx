@@ -58,9 +58,9 @@ export function QuestsAndBadges({ transactions, subscriptions, liabilities, bala
         };
     }, [transactions, budget, streak]);
 
-    // 2. Fetch AI Quests (Dynamic challenges based on spending)
+    // 2. Fetch AI Challenges (Dynamic challenges based on spending)
     const { data: quests = [], isLoading: isLoadingQuests } = useQuery<Quest[]>({
-        queryKey: ['ai-quests', transactions.length, balance, subscriptions.length, liabilities.length, xpData],
+        queryKey: ['ai-challenges', transactions.length, balance, subscriptions.length, liabilities.length, xpData],
         queryFn: async () => {
             const res = await fetch('/api/quests', {
                 method: 'POST',
@@ -120,13 +120,13 @@ export function QuestsAndBadges({ transactions, subscriptions, liabilities, bala
                 )}
             </div>
 
-            {/* Quests list */}
+            {/* Challenges list */}
             <div className="space-y-2">
                 {isLoadingQuests && (
-                    <div className="text-center text-white/50 text-sm p-4">טוען משימות...</div>
+                    <div className="text-center text-white/50 text-sm p-4">טוען אתגרים...</div>
                 )}
                 {!isLoadingQuests && quests.length === 0 && (
-                    <div className="text-center text-white/50 text-sm p-4">אין משימות זמינות כרגע.</div>
+                    <div className="text-center text-white/50 text-sm p-4">אין אתגרים זמינים כרגע.</div>
                 )}
                 <AnimatePresence>
                     {quests.map((quest, i) => {

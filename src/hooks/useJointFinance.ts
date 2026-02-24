@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
-import { Transaction, Subscription, Liability } from "@/types";
+import { Transaction, Liability } from "@/types";
 import { getBillingPeriodForDate } from "@/lib/billing";
 import { useTotalLiabilities } from "@/hooks/useWealthData";
 
@@ -50,10 +50,10 @@ export function useGlobalCashflow(viewingDate: Date = new Date()) {
             if (txsResult.error) throw txsResult.error;
             if (subsResult.error) throw subsResult.error;
 
-            const totalTransactions = (txsResult.data ?? []).reduce((sum: number, tx: any) => sum + Number(tx.amount), 0);
+            const totalTransactions = (txsResult.data ?? []).reduce((sum: number, tx) => sum + Number(tx.amount), 0);
 
-            const activeSubscriptions = (subsResult.data ?? []).filter((s: any) => s.active !== false);
-            const totalSubscriptions = activeSubscriptions.reduce((sum: number, s: any) => sum + Number(s.amount), 0);
+            const activeSubscriptions = (subsResult.data ?? []).filter((s) => s.active !== false);
+            const totalSubscriptions = activeSubscriptions.reduce((sum: number, s) => sum + Number(s.amount), 0);
 
             // THE HOLY GRAIL: Subscriptions + Debt
             const totalFixed = totalSubscriptions + (debtMonthlyPayments || 0);

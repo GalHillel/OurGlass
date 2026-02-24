@@ -47,6 +47,18 @@ export function useWealthHistory(days = 90) {
     });
 }
 
+export function useSP500History(days = 365) {
+    return useQuery<Array<{ date: string; price: number }>>({
+        queryKey: ["sp500-history", days],
+        queryFn: async () => {
+            const res = await fetch("/api/market-data/history");
+            if (!res.ok) throw new Error("Failed to fetch SP500 history");
+            return res.json();
+        },
+        staleTime: 24 * 60 * 60 * 1000, // 24 hours
+    });
+}
+
 // ── Liabilities CRUD ──
 
 export function useLiabilities() {

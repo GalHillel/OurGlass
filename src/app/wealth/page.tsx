@@ -7,9 +7,8 @@ import { useWealth } from "@/hooks/useWealth";
 import { TrendingUp, PieChart, Shield, Rocket, Plus, Edit2, Coins, Building, Trash2, DollarSign } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
-import CountUp from "react-countup";
+import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { AddAssetDialog } from "@/components/AddAssetDialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,17 +25,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { TABS } from "@/lib/constants";
 import { StockPortfolio } from "@/components/StockPortfolio";
-import { RiskAnalysisCard } from "@/components/RiskAnalysisCard";
 
 import { getRank } from "@/lib/ranks";
-import { RankBadge } from "@/components/RankBadge";
 
 // Phase 3: Wealth & Investment components
 import { NetWorthHistory } from "@/components/NetWorthHistory";
-import { LiabilitiesSection } from "@/components/LiabilitiesSection";
+import { MonthlyStoryWrap } from "@/components/MonthlyStoryWrap";
 import { RebalancingCoach } from "@/components/RebalancingCoach";
 import { SP500Benchmark } from "@/components/SP500Benchmark";
-import { useTotalLiabilities } from "@/hooks/useWealthData";
+import { useLiabilities } from "@/hooks/useWealthData";
 
 export default function WealthPage() {
     // Use the centralized wealth hook
@@ -49,7 +46,7 @@ export default function WealthPage() {
         refetch
     } = useWealth();
 
-    const { total: totalLiabilities, monthlyPayments } = useTotalLiabilities();
+    useLiabilities();
     const trueNetWorth = netWorth; // Gross Assets view per user request
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -57,6 +54,7 @@ export default function WealthPage() {
     const [activeTab, setActiveTab] = useState<string>(TABS.ALL);
     const [chartFilter] = useState<string | null>(null);
 
+    const [showStory, setShowStory] = useState(false);
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
@@ -108,123 +106,66 @@ export default function WealthPage() {
     };
 
     // Calculate Rank using hook's netWorth
-    const { currentRank } = getRank(trueNetWorth);
+    getRank(trueNetWorth);
 
     return (
         <div className="min-h-screen bg-slate-950 text-white pb-24 px-4 space-y-6 pt-6">
 
-            {/* Milestone Tracker (Next 100k) */}
-            <div className="mx-2 p-4 neon-card rounded-2xl flex items-center gap-4 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-blue-900/10 z-0" />
-
-                {/* Icon */}
-                <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 border border-blue-500/30 relative z-10">
-                    <Rocket className="w-6 h-6 text-blue-400" />
+            <div className="mx-2 p-4 neon-card rounded-2xl flex flex-col items-center justify-center relative overflow-hidden group min-h-[160px]">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <TrendingUp className="w-32 h-32 text-blue-500" />
                 </div>
-
-                <div className="flex-1 relative z-10">
-                    <div className="flex justify-between items-end mb-2">
-                        <span className="text-[10px] text-blue-300 font-bold tracking-widest uppercase">היעד הבא</span>
-                        <span className="text-xs font-mono text-white/60">
-                            {format(new Date(), "MMM yyyy")}
-                        </span>
+                <span className="text-blue-300 text-xs font-bold tracking-widest uppercase mb-2 block relative z-10">שווי נקי כולל</span>
+                {loading ? (
+                    <Skeleton className="h-12 w-48 bg-white/10" />
+                ) : (
+                    <div className="text-5xl font-black text-white neon-text relative z-10 flex items-center gap-1">
+                        <span>₪</span>
+                        <AnimatedCounter value={trueNetWorth} />
                     </div>
+                )}
 
-                    {/* Progress Bar */}
-                    <div className="h-4 bg-slate-900/50 rounded-full overflow-hidden mb-2 border border-white/5 relative">
-                        {/* Grid lines */}
-                        <div className="absolute inset-0 flex justify-between px-2">
-                            <div className="w-px h-full bg-white/5" />
-                            <div className="w-px h-full bg-white/5" />
-                            <div className="w-px h-full bg-white/5" />
+                <AnimatePresence>
+                    {showStory && <MonthlyStoryWrap onClose={() => setShowStory(false)} />}
+                </AnimatePresence>
+            </div>
+
+            {/* Row 2: SIDE BY SIDE Cards */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="neon-card p-4 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
+                    <div className="absolute -right-4 -top-4 w-20 h-20 bg-purple-500/20 rounded-full blur-xl group-hover:bg-purple-500/30 transition-all" />
+                    <span className="text-purple-300 text-[10px] font-bold tracking-widest uppercase mb-1">השקעות וחסכונות</span>
+                    {loading ? (
+                        <Skeleton className="h-7 w-24 bg-white/10" />
+                    ) : (
+                        <div className="text-2xl font-bold text-white flex items-center gap-1">
+                            <span>₪</span>
+                            <AnimatedCounter value={investmentsValue} />
                         </div>
-                        <motion.div
-                            className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 relative"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${Math.max(5, (trueNetWorth % 100000) / 1000)}%` }}
-                            transition={{ duration: 1.5, ease: "circOut" }}
-                        >
-                            <div className="absolute top-0 right-0 bottom-0 w-1 bg-white/50 blur-[2px]" />
-                        </motion.div>
-                    </div>
-
-                    <div className="flex justify-between text-xs font-mono">
-                        <span className="text-white font-bold">₪{trueNetWorth.toLocaleString()}</span>
-                        <span className="text-white/40">₪{(Math.floor(trueNetWorth / 100000) + 1) * 100000}</span>
-                    </div>
-                    <p className="text-[10px] text-blue-300/80 mt-1 text-right">
-                        נותרו ₪{(100000 - (trueNetWorth % 100000)).toLocaleString()} ל-100k הבאים
-                    </p>
+                    )}
+                </div>
+                <div className="neon-card p-4 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
+                    <div className="absolute -right-4 -top-4 w-20 h-20 bg-emerald-500/20 rounded-full blur-xl group-hover:bg-emerald-500/30 transition-all" />
+                    <span className="text-emerald-300 text-[10px] font-bold tracking-widest uppercase mb-1">פקדונות ומזומן</span>
+                    {loading ? (
+                        <Skeleton className="h-7 w-24 bg-white/10" />
+                    ) : (
+                        <div className="text-2xl font-bold text-white flex items-center gap-1">
+                            <span>₪</span>
+                            <AnimatedCounter value={cashValue} />
+                        </div>
+                    )}
                 </div>
             </div>
 
-
-
-            {/* Risk Analysis (Wide) */}
-            <RiskAnalysisCard investments={assets.filter(a => a.type === 'stock' || a.investment_type === 'crypto')} totalWealth={trueNetWorth} cash={cashValue} />
-
-            {/* Main Stats Grid - Full Width */}
+            {/* Row 3: History & Coach */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Left Col: Rankings / Status (To be expanded or used for more stats) */}
-                <div className="flex flex-col gap-4">
-                    {/* Net Worth Big Card */}
-                    <div className="neon-card p-6 rounded-2xl flex flex-col justify-center flex-1 relative overflow-hidden min-h-[160px]">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <TrendingUp className="w-32 h-32 text-blue-500" />
-                        </div>
-                        <span className="text-blue-300 text-xs font-bold tracking-widest uppercase mb-2 block relative z-10">שווי נקי כולל</span>
-                        {loading ? (
-                            <Skeleton className="h-12 w-48 bg-white/10" />
-                        ) : (
-                            <div className="text-5xl font-black text-white neon-text relative z-10">
-                                ₪<CountUp end={trueNetWorth} separator="," decimals={0} duration={1} />
-                            </div>
-                        )}
-                        <div className="mt-4 flex gap-3 relative z-10">
-                            < RankBadge rank={currentRank} />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right Col: Liquid vs Invested */}
-                <div className="flex flex-col gap-4">
-                    <div className="grid grid-cols-2 gap-4 h-full">
-                        <div className="neon-card p-4 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
-                            <div className="absolute -right-4 -top-4 w-20 h-20 bg-purple-500/20 rounded-full blur-xl group-hover:bg-purple-500/30 transition-all" />
-                            <span className="text-purple-300 text-[10px] font-bold tracking-widest uppercase mb-1">השקעות (חי)</span>
-                            {loading ? (
-                                <Skeleton className="h-7 w-24 bg-white/10" />
-                            ) : (
-                                <div className="text-2xl font-bold text-white">
-                                    ₪<CountUp end={investmentsValue} separator="," prefix="" duration={1} />
-                                </div>
-                            )}
-                        </div>
-                        <div className="neon-card p-4 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
-                            <div className="absolute -right-4 -top-4 w-20 h-20 bg-emerald-500/20 rounded-full blur-xl group-hover:bg-emerald-500/30 transition-all" />
-                            <span className="text-emerald-300 text-[10px] font-bold tracking-widest uppercase mb-1">נזיל / חסכונות</span>
-                            {loading ? (
-                                <Skeleton className="h-7 w-24 bg-white/10" />
-                            ) : (
-                                <div className="text-2xl font-bold text-white">
-                                    ₪<CountUp end={cashValue} separator="," prefix="" duration={1} />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    <div className="neon-card p-4 rounded-2xl flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-500/20 rounded-lg">
-                                <Shield className="w-5 h-5 text-blue-400" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-slate-400">ניהול סיכונים</p>
-                                <p className="text-sm font-bold text-white">תיק המניות שלך מגוון</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <NetWorthHistory liveNetWorth={trueNetWorth} />
+                <RebalancingCoach assets={assets} totalWealth={trueNetWorth} />
             </div>
+
+            {/* Row 4: SP500 & Assets */}
+            <SP500Benchmark initialWealth={trueNetWorth} />
 
             {/* Live Portfolio */}
             {(!chartFilter || chartFilter === 'stock') && (
@@ -232,18 +173,6 @@ export default function WealthPage() {
                     <StockPortfolio assets={assets} />
                 </div>
             )}
-
-            {/* Net Worth History Chart */}
-            <NetWorthHistory liveNetWorth={trueNetWorth} />
-
-            {/* Liabilities */}
-            <LiabilitiesSection />
-
-            {/* Portfolio Rebalancing Coach */}
-            <RebalancingCoach assets={assets} totalWealth={trueNetWorth} />
-
-            {/* S&P 500 Benchmark */}
-            <SP500Benchmark initialWealth={trueNetWorth} />
 
             {/* Filter Tabs */}
             <div className="flex gap-2 p-1 bg-white/5 rounded-2xl mx-2">

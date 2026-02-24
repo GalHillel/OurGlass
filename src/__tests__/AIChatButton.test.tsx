@@ -19,13 +19,14 @@ vi.mock('@/lib/constants', () => ({
 vi.mock('@/utils/supabase/client', () => {
     const createMockQuery = () => ({
         gte: vi.fn().mockReturnThis(),
+        lt: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: { budget: 20000, monthly_income: 15000 } }),
-        then: function (resolve: (value: unknown) => void) {
-            resolve({ data: [] });
-            return this;
-        }
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockReturnThis(),
+        then: vi.fn().mockImplementation((resolve) => {
+            return Promise.resolve(resolve({ data: [] }));
+        })
     });
 
     return {

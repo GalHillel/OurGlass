@@ -5,12 +5,13 @@ import { Sparkles, X, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ChatInterface } from "./ChatInterface";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useAppStore } from "@/stores/appStore";
 import { useWealth } from "@/hooks/useWealth";
 import { PAYERS } from "@/lib/constants";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { FinancialContext, Goal, Liability, Transaction, Subscription, WishlistItem, WealthSnapshot } from "@/types";
 import { isLiabilityActive } from "@/hooks/useWealthData";
 import { getBillingPeriodForDate } from "@/lib/billing";
@@ -56,7 +57,8 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
     const [error, setError] = useState(false);
     const [loading, setLoading] = useState(false);
     const [bubbleMessage, setBubbleMessage] = useState<string | null>(null);
-    const [bubbleDismissed, setBubbleDismissed] = useState(false);
+    const [bubbleDismissed] = useState(false);
+    const pathname = usePathname();
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
     const { profile } = useAuth();
@@ -194,7 +196,7 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
         } finally {
             setLoading(false);
         }
-    }, [supabase, profile, identityName, liveNetWorth, wealthAssets]);
+    }, [supabase, profile, identityName, liveNetWorth, wealthAssets, viewingDate]);
 
     // Dynamic proactive bubble — fetch data, then generate insight
     useEffect(() => {
@@ -225,57 +227,62 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
         if (!context) await fetchContext();
     };
 
+    if (pathname === '/settings') return null;
+
     return (
         <>
-            <div className="fixed bottom-20 left-4 z-50 flex flex-col items-start gap-2">
-                {/* Dynamic AI Insight Bubble */}
-                <AnimatePresence>
-                    {bubbleMessage && !isOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                            className="relative max-w-[220px] cursor-pointer"
-                            onClick={handleOpen}
-                        >
-                            <div className="bg-white/95 backdrop-blur-xl text-slate-800 px-3.5 py-2.5 rounded-2xl rounded-bl-sm shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-white/50 text-[13px] leading-snug font-medium">
-                                {bubbleMessage}
-                            </div>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); setBubbleMessage(null); setBubbleDismissed(true); }}
-                                className="absolute -top-1.5 -right-1.5 bg-slate-100 rounded-full p-0.5 shadow-sm hover:bg-red-50 hover:text-red-500 transition-colors"
-                            >
-                                <X className="w-2.5 h-2.5" />
-                            </button>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="sticky top-[70px] z-40 mx-4 mt-4 mb-6"
+                dir="rtl"
+            >
+                <div className="absolute -inset-1.5 bg-gradient-to-r from-violet-600/20 via-blue-500/20 to-cyan-400/20 rounded-[2.2rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-                {/* Sleek FAB */}
                 <motion.button
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.92 }}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={handleOpen}
-                    className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 via-blue-500 to-cyan-400 shadow-[0_4px_20px_rgba(124,58,237,0.35)] flex items-center justify-center group transition-shadow hover:shadow-[0_4px_28px_rgba(124,58,237,0.5)] overflow-hidden"
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#0c0f1a]/80 backdrop-blur-2xl border border-white/[0.12] shadow-[0_8px_32px_rgba(0,0,0,0.5)] relative overflow-hidden group transition-all duration-300 ring-1 ring-white/5 active:ring-violet-500/30"
                 >
-                    {/* Glassmorphism inner glow */}
-                    <div className="absolute inset-0.5 rounded-[14px] bg-gradient-to-br from-white/20 to-transparent pointer-events-none" />
-                    {/* Soft outer ring */}
-                    <div className="absolute -inset-[2px] rounded-[18px] bg-gradient-to-br from-violet-400/30 to-cyan-400/30 blur-sm pointer-events-none" />
+                    {/* Siri-style Animated Multi-Gradient Glow */}
+                    <motion.div
+                        animate={{
+                            opacity: [0.15, 0.35, 0.15],
+                            scale: [1, 1.05, 1],
+                        }}
+                        transition={{
+                            duration: 5,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                        className="absolute inset-0 bg-gradient-to-r from-violet-600/20 via-blue-500/20 to-cyan-400/20 pointer-events-none filter blur-2xl"
+                    />
 
-                    <Sparkles className="w-5 h-5 text-white relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)]" />
+                    {/* Sophisticated inner border light */}
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50" />
 
-                    {/* Subtle pulse ring */}
-                    <div className="absolute inset-0 rounded-2xl animate-ping bg-blue-400/20 pointer-events-none" style={{ animationDuration: '3s' }} />
+                    <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 via-blue-600 to-cyan-500 flex items-center justify-center shrink-0 shadow-[0_2px_12px_rgba(124,58,237,0.4)] ring-1 ring-white/20">
+                        <Sparkles className="w-4 h-4 text-white drop-shadow-[0_1px_4px_rgba(255,255,255,0.4)]" />
+                    </div>
+
+                    <span className="text-white/60 text-[13px] font-semibold flex-1 text-right tracking-tight">
+                        שאל את רועי, היועץ הפיננסי שלך...
+                    </span>
+
+                    <div className="hidden sm:flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
+                        <kbd className="px-2 py-0.5 rounded-md border border-white/10 bg-white/5 text-[10px] text-white/40 font-mono shadow-inner">⌘</kbd>
+                        <kbd className="px-2 py-0.5 rounded-md border border-white/10 bg-white/5 text-[10px] text-white/40 font-mono shadow-inner">K</kbd>
+                    </div>
                 </motion.button>
-            </div>
+            </motion.div>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogContent
                     showCloseButton={false}
                     className="sm:max-w-md h-[85vh] max-h-[700px] p-0 gap-0 bg-[#0c0f1a]/95 backdrop-blur-2xl border-white/[0.06] rounded-[2rem] overflow-hidden shadow-[0_32px_100px_rgba(0,0,0,0.5)]"
                     aria-describedby={undefined}
+                    dir="rtl"
                 >
                     <DialogTitle className="sr-only">AI Chat Helper</DialogTitle>
                     {loading ? (

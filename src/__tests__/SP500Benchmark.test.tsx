@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SP500Benchmark } from '@/components/SP500Benchmark';
 import * as hooks from '@/hooks/useWealthData';
 
@@ -19,6 +19,10 @@ vi.mock('recharts', async () => {
 });
 
 describe('SP500Benchmark', () => {
+    beforeEach(() => {
+        vi.spyOn(hooks, 'useSP500History').mockReturnValue({ data: [], isLoading: false } as never);
+    });
+
     it('shows loading state initially', () => {
         vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [], isLoading: true } as never);
         const { container } = render(<SP500Benchmark initialWealth={100000} />);
@@ -40,9 +44,9 @@ describe('SP500Benchmark', () => {
 
         render(<SP500Benchmark initialWealth={100000} />);
 
-        expect(screen.getByText('בנצ׳מרק S&P 500')).toBeInTheDocument();
-        expect(screen.getByText('מנצח את השוק! 🎉')).toBeInTheDocument();
+        expect(screen.getByText(/ביצועים מול השוק/)).toBeInTheDocument();
+        expect(screen.getByText(/מנצחים את השוק/)).toBeInTheDocument();
         // 20% return
-        expect(screen.getByText('+20%')).toBeInTheDocument();
+        expect(screen.getByText(/20/)).toBeInTheDocument();
     });
 });

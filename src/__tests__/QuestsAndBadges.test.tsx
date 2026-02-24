@@ -15,13 +15,13 @@ describe('QuestsAndBadges', () => {
     it('renders loading state', () => {
         vi.spyOn(query, 'useQuery').mockReturnValue({ data: undefined, isLoading: true } as never);
         render(<QuestsAndBadges transactions={[]} subscriptions={[]} liabilities={[]} balance={100} budget={1000} />);
-        expect(screen.getByText('טוען משימות...')).toBeInTheDocument();
+        expect(screen.getByText('טוען אתגרים...')).toBeInTheDocument();
     });
 
     it('renders empty quests state', () => {
         vi.spyOn(query, 'useQuery').mockReturnValue({ data: [], isLoading: false } as never);
         render(<QuestsAndBadges transactions={[]} subscriptions={[]} liabilities={[]} balance={100} budget={1000} />);
-        expect(screen.getByText('אין משימות זמינות כרגע.')).toBeInTheDocument();
+        expect(screen.getByText('אין אתגרים זמינים כרגע.')).toBeInTheDocument();
     });
 
     it.skip('renders quests and badge progress correctly', () => {

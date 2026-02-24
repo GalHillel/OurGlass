@@ -9,32 +9,13 @@ import {
     ChevronRight,
     TrendingUp,
     Wallet,
-    Trophy,
     Zap,
     Users,
     CalendarDays,
     PieChart
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
-import dynamic from 'next/dynamic';
-import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkles } from "lucide-react"; // Make sure to use Sparkles
 
-const MonthlyRoastPraise = dynamic(() => import('@/components/MonthlyRoastPraise').then(mod => mod.MonthlyRoastPraise), {
-    ssr: false,
-    loading: () => <Skeleton className="h-48 w-full rounded-3xl bg-white/5" />
-});
-
-const PredictiveCashflow = dynamic(() => import('@/components/PredictiveCashflow').then(mod => mod.PredictiveCashflow), {
-    ssr: false,
-    loading: () => <Skeleton className="h-64 w-full rounded-3xl bg-white/5" />
-});
-const MoodSpendingInsight = dynamic(() => import('@/components/MoodSpendingInsight').then(mod => mod.MoodSpendingInsight), {
-    ssr: false,
-    loading: () => <Skeleton className="h-48 w-full rounded-3xl bg-white/5" />
-});
-import { SettleUpCard } from "@/components/SettleUpCard";
-import { QuestsAndBadges } from "@/components/QuestsAndBadges";
 import { BudgetHealthScore } from "@/components/BudgetHealthScore";
 import { SavingsTracker } from "@/components/SavingsTracker";
 import { StockPortfolio } from "@/components/StockPortfolio";
@@ -45,7 +26,7 @@ import { PartnerStats } from "@/components/PartnerStats";
 import { QuickActions } from "@/components/QuickActions";
 import { MonthlyCalendar } from "@/components/MonthlyCalendar";
 import { CategoryBreakdown } from "@/components/CategoryBreakdown";
-import { MonthlySummary } from "@/components/MonthlySummary";
+import { AIHubBanner } from "@/components/AIHubBanner";
 
 export interface HomeMosaicProps {
     balance: number;
@@ -58,7 +39,6 @@ export interface HomeMosaicProps {
     transactions: Transaction[];
     subscriptions: Subscription[];
     liabilities: Liability[];
-    onRefresh: () => void;
     // Reactor Props
     burnRateStatus: 'safe' | 'warning' | 'critical';
     cycleStart: Date;
@@ -83,7 +63,6 @@ export const HomeMosaic = ({
     transactions,
     subscriptions,
     liabilities,
-    onRefresh,
     burnRateStatus,
     cycleStart,
     cycleEnd,
@@ -133,134 +112,18 @@ export const HomeMosaic = ({
                 </div>
             </div>
 
-            {/* --- NEW GAMIFICATION & AI TILES --- */}
-
-            {/* Tile: Flow Forecast */}
-            <Dialog>
-                <DialogTrigger asChild>
-                    <motion.div whileTap={{ scale: 0.95 }} className="aspect-[4/3] bg-slate-900/20 backdrop-blur-md border border-white/5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer">
-                        <div className="absolute inset-0 bg-sky-400/5 group-hover:bg-sky-400/10 transition-colors" />
-                        <div className="flex justify-between items-start relative z-10">
-                            <div className="p-2 bg-sky-500/20 rounded-xl">
-                                <TrendingUp className="w-5 h-5 text-sky-300" />
-                            </div>
-                        </div>
-                        <div className="relative z-10">
-                            <h3 className="text-sm font-medium text-sky-100/80">תחזית AI</h3>
-                            <div className="text-xl font-bold text-white mt-0.5">תזרים</div>
-                        </div>
-                    </motion.div>
-                </DialogTrigger>
-                <DialogContent showCloseButton={false} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm w-[90vw] rounded-[2rem] border-white/10 bg-slate-900/90 backdrop-blur-xl shadow-2xl p-0 overflow-hidden data-[state=open]:slide-in-from-bottom-1/2 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:zoom-in-95">
-                    <DialogTitle className="sr-only">Predictive Cashflow</DialogTitle>
-                    <div className="max-h-[85vh] overflow-y-auto w-full">
-                        <PredictiveCashflow balance={balance} budget={budget} transactions={transactions} subscriptions={subscriptions} liabilities={liabilities} />
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            {/* Tile: Mood Data */}
-            <Dialog>
-                <DialogTrigger asChild>
-                    <motion.div whileTap={{ scale: 0.95 }} className="aspect-[4/3] bg-slate-900/20 backdrop-blur-md border border-white/5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer">
-                        <div className="absolute inset-0 bg-fuchsia-400/5 group-hover:bg-fuchsia-400/10 transition-colors" />
-                        <div className="flex justify-between items-start relative z-10">
-                            <div className="p-2 bg-fuchsia-500/20 rounded-xl">
-                                <HeartPulse className="w-5 h-5 text-fuchsia-300" />
-                            </div>
-                        </div>
-                        <div className="relative z-10">
-                            <h3 className="text-sm font-medium text-fuchsia-100/80">מצב רוח</h3>
-                            <div className="text-xl font-bold text-white mt-0.5">ניתוח AI</div>
-                        </div>
-                    </motion.div>
-                </DialogTrigger>
-                <DialogContent showCloseButton={false} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm w-[90vw] rounded-[2rem] border-white/10 bg-slate-900/90 backdrop-blur-xl shadow-2xl p-0 overflow-hidden data-[state=open]:slide-in-from-bottom-1/2 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:zoom-in-95">
-                    <DialogTitle className="sr-only">Mood Spending</DialogTitle>
-                    <div className="max-h-[85vh] overflow-y-auto w-full">
-                        <MoodSpendingInsight transactions={transactions} liabilities={liabilities} subscriptions={subscriptions} />
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            {/* Tile: Quests & Savings Level */}
-            <Dialog>
-                <DialogTrigger asChild>
-                    <motion.div whileTap={{ scale: 0.95 }} className="aspect-[4/3] bg-slate-900/20 backdrop-blur-md border border-white/5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer">
-                        <div className="absolute inset-0 bg-amber-400/5 group-hover:bg-amber-400/10 transition-colors" />
-                        <div className="flex justify-between items-start relative z-10">
-                            <div className="p-2 bg-amber-500/20 rounded-xl">
-                                <Trophy className="w-5 h-5 text-amber-300" />
-                            </div>
-                        </div>
-                        <div className="relative z-10">
-                            <h3 className="text-sm font-medium text-amber-100/80">רמת חיסכון</h3>
-                            <div className="text-xl font-bold text-white mt-0.5">קווסטים</div>
-                        </div>
-                    </motion.div>
-                </DialogTrigger>
-                <DialogContent showCloseButton={false} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm w-[90vw] rounded-[2rem] border-white/10 bg-slate-900/90 backdrop-blur-xl shadow-2xl p-0 overflow-hidden data-[state=open]:slide-in-from-bottom-1/2 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:zoom-in-95">
-                    <DialogTitle className="sr-only">Quests and Badges</DialogTitle>
-                    <div className="max-h-[85vh] overflow-y-auto w-full">
-                        <QuestsAndBadges transactions={transactions} subscriptions={subscriptions} liabilities={liabilities} balance={balance} budget={budget} />
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            {/* Tile: Account Arrangement */}
-            <Dialog>
-                <DialogTrigger asChild>
-                    <motion.div whileTap={{ scale: 0.95 }} className="aspect-[4/3] bg-slate-900/20 backdrop-blur-md border border-white/5 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer">
-                        <div className="absolute inset-0 bg-slate-400/5 group-hover:bg-slate-400/10 transition-colors" />
-                        <div className="flex justify-between items-start relative z-10">
-                            <div className="p-2 bg-slate-500/20 rounded-xl">
-                                <Users className="w-5 h-5 text-slate-300" />
-                            </div>
-                        </div>
-                        <div className="relative z-10">
-                            <h3 className="text-sm font-medium text-slate-100/80">התחשבנות</h3>
-                            <div className="text-xl font-bold text-white mt-0.5">סיכום</div>
-                        </div>
-                    </motion.div>
-                </DialogTrigger>
-                <DialogContent showCloseButton={false} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm w-[90vw] rounded-[2rem] border-white/10 bg-slate-900/90 backdrop-blur-xl shadow-2xl p-0 overflow-hidden data-[state=open]:slide-in-from-bottom-1/2 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:zoom-in-95">
-                    <DialogTitle className="sr-only">Account Arrangement</DialogTitle>
-                    <div className="max-h-[85vh] p-4 overflow-y-auto w-full flex flex-col justify-center items-center">
-                        <div className="w-full h-full pb-10">
-                            <SettleUpCard />
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            {/* Tile: AI Monthly Summary (Full Width) */}
+            {/* --- NEW AI HUB (Consolidated) --- */}
             <div className="col-span-2">
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <motion.div whileTap={{ scale: 0.95 }} className="w-full bg-slate-900/20 backdrop-blur-md border border-white/5 rounded-3xl p-6 relative overflow-hidden flex items-center justify-between group cursor-pointer mb-1 shadow-lg">
-                            <div className="absolute inset-0 bg-purple-400/5 group-hover:bg-purple-400/10 transition-colors" />
-                            <div className="flex items-center gap-4 relative z-10">
-                                <div className="p-3 bg-purple-500/30 rounded-2xl shadow-inner border border-purple-400/20">
-                                    <Sparkles className="w-6 h-6 text-purple-300 drop-shadow-md" />
-                                </div>
-                                <div className="text-right">
-                                    <h3 className="text-base font-black text-white tracking-wide drop-shadow-sm">סיכום AI חודשי</h3>
-                                    <div className="text-xs text-purple-200/80 font-medium">ניתוח חכם של ההוצאות שלך</div>
-                                </div>
-                            </div>
-                            <div className="relative z-10 p-2 bg-white/10 rounded-full border border-white/20 backdrop-blur-sm shadow-sm group-hover:bg-white/20 transition-all">
-                                <ChevronRight className="w-5 h-5 text-white" />
-                            </div>
-                        </motion.div>
-                    </DialogTrigger>
-                    <DialogContent showCloseButton={false} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm w-[90vw] rounded-[2rem] border-white/10 bg-slate-900/90 backdrop-blur-xl shadow-2xl p-0 overflow-hidden data-[state=open]:slide-in-from-bottom-1/2 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:zoom-in-95">
-                        <DialogTitle className="sr-only">Monthly Summary</DialogTitle>
-                        <div className="max-h-[85vh] overflow-y-auto w-full p-4">
-                            <MonthlyRoastPraise transactions={transactions} subscriptions={subscriptions} liabilities={liabilities} balance={balance} budget={budget} monthlyIncome={monthlyIncome} />
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                <AIHubBanner
+                    transactions={transactions}
+                    subscriptions={subscriptions}
+                    liabilities={liabilities}
+                    balance={balance}
+                    budget={budget}
+                    monthlyIncome={monthlyIncome}
+                />
             </div>
+
 
             {/* --- END NEW TILES --- */}
 
@@ -573,10 +436,6 @@ export const HomeMosaic = ({
                 </DialogContent>
             </Dialog>
 
-            {/* Row 7: Monthly Summary (Old Settle Month Tile) */}
-            <div className="col-span-2 pt-2">
-                <MonthlySummary currentBalance={balance} onRefresh={onRefresh} />
-            </div>
         </div>
     );
 };

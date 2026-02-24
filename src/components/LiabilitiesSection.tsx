@@ -2,64 +2,48 @@
 
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Home, Car, GraduationCap, CreditCard, Landmark, Wallet, Trash2, CalendarClock, TrendingUp } from "lucide-react";
+import { Plus, Home, Car, GraduationCap, CreditCard, Landmark, Wallet, CalendarClock, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { useLiabilities, useAddLiability, useDeleteLiability, isLiabilityActive } from "@/hooks/useWealthData";
 import { Liability, LiabilityType } from "@/types";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/EmptyState";
 import { useAuth } from "@/components/AuthProvider";
 import { Skeleton } from "@/components/ui/skeleton";
-import CountUp from "react-countup";
+import { AnimatedCounter } from "@/components/AnimatedCounter";
+import { SwipeableRow } from "@/components/SwipeableRow";
 
-const LIABILITY_ICONS: Record<LiabilityType, typeof Home> = {
-    mortgage: Home,
-    car: Car,
-    student: GraduationCap,
-    personal: Wallet,
-    credit_card: CreditCard,
-    other: Landmark,
+const LIABILITY_ICONS: Record<string, typeof Home> = {
+    "משכנתא": Home,
+    "רכב": Car,
+    "לימודים": GraduationCap,
+    "כרטיס אשראי": CreditCard,
+    "הלוואה אישית": Wallet,
+    "אחר": Landmark,
+    "חשבונות": Home,
 };
 
-const LIABILITY_LABELS: Record<LiabilityType, string> = {
-    mortgage: "משכנתא",
-    car: "רכב",
-    student: "לימודים",
-    personal: "הלוואה אישית",
-    credit_card: "כרטיס אשראי",
-    other: "אחר",
+const LIABILITY_LABELS: Record<string, string> = {
+    "משכנתא": "משכנתא",
+    "רכב": "רכב",
+    "לימודים": "לימודים",
+    "כרטיס אשראי": "כרטיס אשראי",
+    "הלוואה אישית": "הלוואה אישית",
+    "אחר": "אחר",
+    "חשבונות": "חשבונות",
 };
 
-const CATEGORY_TO_TYPE: Record<string, LiabilityType> = {
-    "Mortgage": "mortgage",
-    "Car Loan": "car",
-    "Student Loan": "student",
-    "Credit Card": "credit_card",
-    "Personal Loan": "personal",
-};
-
-const LIABILITY_CATEGORIES = ["Mortgage", "Car Loan", "Student Loan", "Credit Card", "Personal Loan", "Other"];
+const LIABILITY_CATEGORIES = ["משכנתא", "רכב", "לימודים", "כרטיס אשראי", "הלוואה אישית", "אחר"];
 
 const resolveAmounts = (liability: Liability) => {
-    const currentDebt = Number(liability.remaining_amount ?? liability.total_amount ?? liability.amount ?? liability.current_balance ?? 0);
-    const total = Number(liability.total_amount ?? liability.amount ?? liability.principal ?? currentDebt);
-    const remaining = currentDebt;
+    const total = Number(liability.total_amount || liability.principal || liability.amount || 0);
+    const remaining = Number(liability.remaining_amount ?? liability.current_balance ?? liability.amount ?? 0);
     return { total, remaining };
 };
 
@@ -87,7 +71,7 @@ export function LiabilitiesSection() {
                 <div className="flex items-end justify-between gap-3">
                     <div>
                         <h2 className="text-sm font-bold text-red-300/90 uppercase tracking-widest flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4" /> Debt Payoff Manager
+                            <TrendingUp className="w-4 h-4" /> ניהול החזר חובות
                         </h2>
                         <p className="text-[11px] text-white/60 mt-1">ממויין לפי ריבית (Avalanche) כדי לסגור קודם את היקר ביותר</p>
                     </div>
@@ -104,11 +88,11 @@ export function LiabilitiesSection() {
                 <div className="mt-4 grid grid-cols-2 gap-3">
                     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                         <p className="text-[10px] text-white/50">סה״כ יתרת חוב</p>
-                        <p className="text-lg font-black text-red-300">₪<CountUp end={totalDebt} separator="," duration={1} /></p>
+                        <p className="text-lg font-black text-red-300">₪<AnimatedCounter value={totalDebt} /></p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                         <p className="text-[10px] text-white/50">תשלומי חוב פעילים / חודש</p>
-                        <p className="text-lg font-black text-orange-300">₪{totalMonthly.toLocaleString()}</p>
+                        <p className="text-lg font-black text-orange-300">₪<AnimatedCounter value={totalMonthly} /></p>
                     </div>
                 </div>
             </div>
@@ -129,8 +113,8 @@ export function LiabilitiesSection() {
                 />
             ) : (
                 <AnimatePresence mode="popLayout">
-                    {sortedLiabilities.map((liability, index) => (
-                        <LiabilityCard key={liability.id} liability={liability} index={index} />
+                    {sortedLiabilities.map((liability) => (
+                        <LiabilityCard key={liability.id} liability={liability} />
                     ))}
                 </AnimatePresence>
             )}
@@ -138,10 +122,9 @@ export function LiabilitiesSection() {
     );
 }
 
-function LiabilityCard({ liability, index }: { liability: Liability; index: number }) {
+function LiabilityCard({ liability }: { liability: Liability }) {
     const deleteMutation = useDeleteLiability();
-    const derivedType = liability.type ?? CATEGORY_TO_TYPE[liability.category] ?? "other";
-    const Icon = LIABILITY_ICONS[derivedType] || Landmark;
+    const Icon = LIABILITY_ICONS[liability.category] || Landmark;
     const { total, remaining } = resolveAmounts(liability);
     const payment = Number(liability.monthly_payment ?? 0);
     const paid = Math.max(total - remaining, 0);
@@ -149,78 +132,65 @@ function LiabilityCard({ liability, index }: { liability: Liability; index: numb
     const isActive = isLiabilityActive(liability);
 
     return (
-        <motion.article
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -14 }}
-            transition={{ delay: index * 0.04 }}
-            className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-800/70 p-4"
+        <SwipeableRow
+            onDelete={() => {
+                deleteMutation.mutate(liability.id, {
+                    onSuccess: () => toast.success("ההתחייבות הוסרה"),
+                    onError: () => toast.error("שגיאה במחיקה"),
+                });
+            }}
+            deleteMessage="האם אתה בטוח שברצונך למחוק התחייבות זו?"
+            className="mb-3"
         >
-            <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-white">
-                    <Icon className="w-5 h-5" />
+            <motion.article
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={cn(
+                    "relative overflow-hidden p-5 rounded-2xl border transition-all duration-300",
+                    isActive
+                        ? "bg-white/[0.03] border-white/10 hover:border-white/20 hover:bg-white/[0.05]"
+                        : "bg-emerald-500/5 border-emerald-500/10 grayscale-[0.5]"
+                )}
+            >
+                <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-white">
+                        <Icon className="w-5 h-5" />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                        <div className="flex justify-between gap-2">
+                            <div>
+                                <h3 className="font-bold text-white text-sm truncate">{liability.name || "ללא שם"}</h3>
+                                <p className="text-[11px] text-white/55">{liability.category}</p>
+                            </div>
+                            <div className="text-left">
+                                <p className="font-black text-lg text-red-300">₪{remaining.toLocaleString()}</p>
+                                <p className="text-[10px] text-white/45">יתרה לתשלום</p>
+                            </div>
+                        </div>
+
+                        <div className="mt-3 space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px] text-white/60">
+                                <span>₪{paid.toLocaleString()} שולם מתוך ₪{total.toLocaleString()}</span>
+                                <span>{progress.toFixed(0)}%</span>
+                            </div>
+                            <Progress value={progress} className="h-2 bg-white/10 [&>div]:bg-red-400" />
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                            <span className="rounded-xl bg-white/10 px-2.5 py-1 text-white/80">₪{payment.toLocaleString()} / חודש</span>
+                            <span className="rounded-xl bg-red-500/15 px-2.5 py-1 text-red-200">{Number(liability.interest_rate || 0).toFixed(2)}% ריבית</span>
+                            <span className="rounded-xl bg-white/10 px-2.5 py-1 text-white/70 inline-flex items-center gap-1">
+                                <CalendarClock className="w-3 h-3" />
+                                {liability.end_date ? new Date(liability.end_date).toLocaleDateString("he-IL") : "ללא תאריך סיום"}
+                            </span>
+                            {!isActive && <span className="rounded-xl bg-emerald-500/15 px-2.5 py-1 text-emerald-200">שולם / הסתיים</span>}
+                        </div>
+                    </div>
                 </div>
-
-                <div className="flex-1 min-w-0">
-                    <div className="flex justify-between gap-2">
-                        <div>
-                            <h3 className="font-bold text-white text-sm truncate">{liability.name || "ללא שם"}</h3>
-                            <p className="text-[11px] text-white/55">{liability.category || LIABILITY_LABELS[derivedType]}</p>
-                        </div>
-                        <div className="text-left">
-                            <p className="font-black text-lg text-red-300">₪{remaining.toLocaleString()}</p>
-                            <p className="text-[10px] text-white/45">יתרה לתשלום</p>
-                        </div>
-                    </div>
-
-                    <div className="mt-3 space-y-1.5">
-                        <div className="flex items-center justify-between text-[11px] text-white/60">
-                            <span>₪{paid.toLocaleString()} שולם מתוך ₪{total.toLocaleString()}</span>
-                            <span>{progress.toFixed(0)}%</span>
-                        </div>
-                        <Progress value={progress} className="h-2 bg-white/10" />
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-                        <span className="rounded-xl bg-white/10 px-2.5 py-1 text-white/80">₪{payment.toLocaleString()} / חודש</span>
-                        <span className="rounded-xl bg-red-500/15 px-2.5 py-1 text-red-200">{Number(liability.interest_rate || 0).toFixed(2)}% APR</span>
-                        <span className="rounded-xl bg-white/10 px-2.5 py-1 text-white/70 inline-flex items-center gap-1">
-                            <CalendarClock className="w-3 h-3" />
-                            {liability.end_date ? new Date(liability.end_date).toLocaleDateString("he-IL") : "ללא תאריך סיום"}
-                        </span>
-                        {!isActive && <span className="rounded-xl bg-emerald-500/15 px-2.5 py-1 text-emerald-200">שולם / הסתיים</span>}
-                    </div>
-                </div>
-
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <button className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-white/30 hover:text-red-400 transition-colors shrink-0">
-                            <Trash2 className="w-4 h-4" />
-                        </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-slate-900 border-white/10 text-white">
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>למחוק התחייבות זו?</AlertDialogTitle>
-                            <AlertDialogDescription>פעולה זו אינה הפיכה.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel className="bg-white/5 border-white/10 text-white">ביטול</AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={() => {
-                                    deleteMutation.mutate(liability.id, {
-                                        onSuccess: () => toast.success("ההתחייבות הוסרה"),
-                                        onError: () => toast.error("שגיאה במחיקה"),
-                                    });
-                                }}
-                                className="bg-red-600"
-                            >
-                                מחק
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </div>
-        </motion.article>
+            </motion.article>
+        </SwipeableRow>
     );
 }
 
@@ -228,7 +198,7 @@ function AddLiabilityDialog({ onClose }: { onClose: () => void }) {
     const addMutation = useAddLiability();
     const { profile } = useAuth();
     const [name, setName] = useState("");
-    const [category, setCategory] = useState("Personal Loan");
+    const [category, setCategory] = useState("הלוואה אישית");
     const [totalAmount, setTotalAmount] = useState("");
     const [remainingAmount, setRemainingAmount] = useState("");
     const [interestRate, setInterestRate] = useState("");
@@ -248,7 +218,7 @@ function AddLiabilityDialog({ onClose }: { onClose: () => void }) {
             return;
         }
 
-        const selectedType = CATEGORY_TO_TYPE[category] ?? "other";
+        const selectedType = (Object.keys(LIABILITY_LABELS).find(key => LIABILITY_LABELS[key] === category) || "other") as LiabilityType;
         const remaining = Number(remainingAmount) || 0;
         const total = Number(totalAmount) || remaining;
 

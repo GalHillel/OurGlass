@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import CountUp from "react-countup";
+import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/utils/haptics";
 
@@ -108,12 +108,7 @@ export const ReactorCore = ({ income, budget, expenses, balance, burnRateStatus,
                                     "text-6xl sm:text-7xl font-sans font-black tracking-tighter tabular-nums",
                                     projectedBalance >= 0 ? "text-emerald-400 drop-shadow-[0_0_25px_rgba(52,211,153,0.5)]" : "text-red-500 drop-shadow-[0_0_25px_rgba(239,68,68,0.5)]"
                                 )}>
-                                    <CountUp
-                                        end={Math.abs(projectedBalance)}
-                                        duration={0.4}
-                                        separator=","
-                                        decimals={0}
-                                    />
+                                    <AnimatedCounter value={Math.abs(projectedBalance)} />
                                 </span>
                                 <span className="text-3xl text-emerald-400/40 font-light ml-2">₪</span>
                             </div>
@@ -142,12 +137,7 @@ export const ReactorCore = ({ income, budget, expenses, balance, burnRateStatus,
                                         ? "text-white drop-shadow-[0_0_35px_rgba(255,255,255,0.2)]"
                                         : "text-red-500 drop-shadow-[0_0_35px_rgba(239,68,68,0.4)]"
                                 )}>
-                                    <CountUp
-                                        end={Math.abs(balance)}
-                                        duration={1.5}
-                                        separator=","
-                                        decimals={0}
-                                    />
+                                    <AnimatedCounter value={Math.abs(balance)} />
                                 </span>
                                 <span className="text-3xl text-white/30 font-light ml-2">₪</span>
                             </div>

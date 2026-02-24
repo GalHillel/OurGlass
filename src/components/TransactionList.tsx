@@ -193,25 +193,12 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
         );
     }
 
-    const container = {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: { staggerChildren: 0.05 }
-        }
-    };
-
-    const item = {
-        hidden: { opacity: 0, y: 15 },
-        show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
-    };
 
     return (
         <motion.div
             className="w-full max-w-md space-y-3 px-4"
-            variants={container}
-            initial="hidden"
-            animate="show"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
         >
             {detectedSub && (
                 <motion.div

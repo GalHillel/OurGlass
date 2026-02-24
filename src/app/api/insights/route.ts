@@ -62,15 +62,35 @@ Example Output format:
 ]
 `;
 
-        const result = await model.generateContent({
+        const payload = {
             contents: [{ role: "user", parts: [{ text: prompt }] }],
             generationConfig: {
                 temperature: 0.8,
                 responseMimeType: "application/json",
             }
-        });
+        };
 
-        const content = result.response.text() || "[]";
+        let content = "";
+
+        try {
+            const result = await model.generateContent(payload);
+            content = result.response.text() || "[]";
+        } catch (error: unknown) {
+            const { isQuotaError } = await import('@/lib/ai-router');
+            if (isQuotaError(error) && process.env.OPENAI_API_KEY) {
+                console.warn("Insights: Gemini Quota Exceeded, falling back to OpenAI...");
+                const { generateText } = await import('ai');
+                const { openai } = await import('@ai-sdk/openai');
+
+                const { text } = await generateText({
+                    model: openai('gpt-4o-mini'),
+                    prompt: prompt,
+                });
+                content = text || "[]";
+            } else {
+                throw error;
+            }
+        }
 
         // Sometimes GPT wraps in JSON object if response_format is json_object
         // We asked for an array. Let's parse safely.

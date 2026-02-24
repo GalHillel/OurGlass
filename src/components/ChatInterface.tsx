@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useChat, UIMessage } from '@ai-sdk/react';
+import { useChat } from '@ai-sdk/react';
+import { type UIMessage } from 'ai';
 import { Button } from "@/components/ui/button";
-import { Send, Sparkles, X, ArrowDown, Trash2 } from "lucide-react";
+import { Send, Sparkles, X, ArrowDown, Trash2, PieChart, AlertCircle, Wallet } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FinancialContext, Transaction } from "@/types";
 
@@ -59,6 +60,10 @@ function generateSuggestedQuestions(context: FinancialContext): string[] {
 }
 
 export const ChatInterface = ({ context, onClose }: ChatInterfaceProps) => {
+    // 1. Unified state for chatId to force fresh AI sessions
+    const [chatId, setChatId] = useState(() => Date.now().toString());
+
+    // 2. Load history ONCE on initialization
     const [initialMessages] = useState<UIMessage[]>(() => {
         if (typeof window === 'undefined') return [];
         const saved = localStorage.getItem('ai_chat_history');
@@ -67,39 +72,46 @@ export const ChatInterface = ({ context, onClose }: ChatInterfaceProps) => {
         }
         return [];
     });
-    const [isLoaded, setIsLoaded] = useState(false);
 
-    useEffect(() => {
-        const timer = setTimeout(() => setIsLoaded(true), 0);
-        return () => clearTimeout(timer);
-    }, []);
+    const { messages, setMessages, sendMessage, status } = useChat({
+        id: chatId,
+    });
 
-    if (!isLoaded) return null;
-    return <ChatInterfaceInner initialMessages={initialMessages} context={context} onClose={onClose} />;
-};
-
-const ChatInterfaceInner = ({ initialMessages, context, onClose }: { initialMessages: UIMessage[], context: FinancialContext, onClose: () => void }) => {
-    // Context is used globally by the AI prompt
-    const { messages, setMessages, sendMessage, status } = useChat();
     const [input, setInput] = useState('');
     const [showScrollBtn, setShowScrollBtn] = useState(false);
+    const [isLoaded, setIsLoaded] = useState(false);
+    const hasHydrated = useRef(false);
+
     const isLoading = status === 'streaming' || status === 'submitted';
     const scrollRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const suggestedQuestions = useMemo(() => generateSuggestedQuestions(context), [context]);
 
+    // Track hydration
     useEffect(() => {
-        if (initialMessages.length > 0 && messages.length === 0) {
-            setMessages(initialMessages);
-        }
-    }, [initialMessages, messages.length, setMessages]);
+        const timer = setTimeout(() => setIsLoaded(true), 0);
+        return () => clearTimeout(timer);
+    }, []);
 
+    // Initial history load
     useEffect(() => {
-        if (messages.length > 0) {
-            localStorage.setItem('ai_chat_history', JSON.stringify(messages));
+        if (!hasHydrated.current && initialMessages.length > 0) {
+            setMessages(initialMessages);
+            hasHydrated.current = true;
         }
-    }, [messages]);
+    }, [initialMessages, setMessages]);
+
+    // Save history to localStorage whenever messages change
+    useEffect(() => {
+        if (isLoaded) {
+            if (messages.length > 0) {
+                localStorage.setItem('ai_chat_history', JSON.stringify(messages));
+            } else {
+                localStorage.removeItem('ai_chat_history');
+            }
+        }
+    }, [messages, isLoaded]);
 
     // Auto-scroll to bottom
     const scrollToBottom = () => {
@@ -110,14 +122,12 @@ const ChatInterfaceInner = ({ initialMessages, context, onClose }: { initialMess
 
     useEffect(() => { scrollToBottom(); }, [messages]);
 
-    // Track scroll position for "scroll to bottom" button
     const handleScroll = () => {
         if (!scrollRef.current) return;
         const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
         setShowScrollBtn(scrollHeight - scrollTop - clientHeight > 100);
     };
 
-    // Auto-grow textarea
     useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
@@ -143,10 +153,19 @@ const ChatInterfaceInner = ({ initialMessages, context, onClose }: { initialMess
     const clearHistory = () => {
         setMessages([]);
         localStorage.removeItem('ai_chat_history');
+        setChatId(Date.now().toString()); // Force new session ID
     };
 
+    if (!isLoaded) return null;
+
     return (
-        <div className="flex flex-col h-full bg-[#0c0f1a] relative overflow-hidden">
+        <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            className="flex flex-col h-full bg-[#0c0f1a] relative overflow-hidden"
+            dir="rtl"
+        >
             {/* Premium Header */}
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06] bg-[#0c0f1a]/80 backdrop-blur-xl">
                 <div className="flex items-center gap-3">
@@ -189,11 +208,35 @@ const ChatInterfaceInner = ({ initialMessages, context, onClose }: { initialMess
                             <Sparkles className="w-7 h-7 text-violet-400/80" />
                         </div>
                         <h4 className="text-white/90 font-semibold text-base mb-1">היי, אני רועי 👋</h4>
-                        <p className="text-white/40 text-[13px] leading-relaxed mb-6 max-w-[260px]">
+                        <p className="text-white/40 text-[13px] leading-relaxed mb-6 max-w-[260px] text-center">
                             הפסיכולוג הפיננסי שלך. שאל אותי כל שאלה על ההוצאות, החיסכון, או התקציב שלך.
                         </p>
 
-                        {/* Dynamic Suggested Questions */}
+                        {/* Quick Action Chips (Suggestion Pills) */}
+                        <div className="w-full relative overflow-hidden mt-2 mb-4">
+                            <div className="flex gap-2.5 overflow-x-auto pb-4 scrollbar-hide px-2 -mx-2 snap-x">
+                                {[
+                                    { text: "סכם לי את ההוצאות החודש", icon: PieChart },
+                                    { text: "האם יש לי חריגות בתקציב?", icon: AlertCircle },
+                                    { text: "תמצא לי מנויים שאפשר לבטל", icon: Trash2 },
+                                    { text: "האם אני יכול להרשות לעצמי מסעדה ב-500 ש״ח?", icon: Wallet }
+                                ].map((chip, i) => (
+                                    <motion.button
+                                        key={i}
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: 0.1 + i * 0.05 }}
+                                        onClick={() => handleSubmit(chip.text)}
+                                        className="snap-center shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12] transition-all group"
+                                    >
+                                        <chip.icon className="w-3 h-3 text-violet-400 group-hover:text-violet-300" />
+                                        <span className="text-[12px] font-medium text-white/60 group-hover:text-white/90 whitespace-nowrap">{chip.text}</span>
+                                    </motion.button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Dynamic Suggested Questions (The existing list beneath) */}
                         <div className="w-full space-y-2">
                             {suggestedQuestions.map((q, i) => (
                                 <motion.button
@@ -238,7 +281,7 @@ const ChatInterfaceInner = ({ initialMessages, context, onClose }: { initialMess
 
                             {/* Bubble */}
                             <div
-                                className={`max-w-[80%] rounded-2xl px-4 py-3 text-[14px] leading-relaxed ${m.role === 'user'
+                                className={`max-w-[80%] rounded-2xl px-4 py-3 text-[14px] leading-relaxed text-right ${m.role === 'user'
                                     ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-md shadow-[0_2px_12px_rgba(37,99,235,0.25)]'
                                     : 'bg-white/[0.06] text-white/90 rounded-tl-md border border-white/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.15)]'
                                     }`}
@@ -320,6 +363,6 @@ const ChatInterfaceInner = ({ initialMessages, context, onClose }: { initialMess
                 </div>
                 <p className="text-[10px] text-white/15 text-center mt-1.5">Powered by Gemini AI</p>
             </div>
-        </div>
+        </motion.div>
     );
 };

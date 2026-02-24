@@ -26,7 +26,6 @@ import { useAppStore } from "@/stores/appStore";
 
 // Phase 4-6 components
 import { GuiltFreeWallets } from "@/components/GuiltFreeWallets";
-import { AIChatButton } from "@/components/AIChatButton";
 
 // Simplified PullToRefresh Component that doesn't block scroll
 const PullToRefresh = ({ children }: { children: React.ReactNode, onRefresh: () => Promise<void> }) => {
@@ -191,13 +190,13 @@ export default function Home() {
       if (prevError) console.error("Prev Data Error:", prevError);
 
       // setComparisonDiff(currentExpensesSoFar - prevExpenses); // Removed as comparisonDiff is unused
-    } catch (_error: unknown) {
-      console.error("API Error Detailed:", _error);
-      toast.error(`שגיאה בטעינת הנתונים: ${_error instanceof Error ? _error.message : "Unknown error"}`);
+    } catch (error: unknown) {
+      console.error("API Error Detailed:", error);
+      toast.error(`שגיאה בטעינת הנתונים: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setLoading(false);
     }
-  }, [user, supabase, profile, authLoading, viewingDate, cashflow?.balance]);
+  }, [user, supabase, authLoading, viewingDate, cashflow?.balance, cashflowLoading]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -386,8 +385,7 @@ export default function Home() {
         )}
       </motion.main>
 
-      {/* AI Psychologist Nudge Button */}
-      <AIChatButton viewingDate={viewingDate} />
+      {/* AI Psychologist Nudge Button removed as it is now global */}
 
       <AddTransactionDrawer
         isOpen={isDrawerOpen}

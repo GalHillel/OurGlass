@@ -9,6 +9,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { LiquidBackground } from "@/components/LiquidBackground";
 import { IdentityGate } from "@/components/IdentityGate";
+import { AIChatButton } from "@/components/AIChatButton";
 
 const heebo = Heebo({
   subsets: ["hebrew", "latin"],
@@ -52,6 +53,7 @@ export default function RootLayout({
             <ErrorBoundary>
               <IdentityGate>
                 <main className="native-scroll touch-scroll relative z-10 w-full p-4 pt-[env(safe-area-inset-top)] pb-[calc(6rem+env(safe-area-inset-bottom))]">
+                  <AIChatButton />
                   {children}
                 </main>
               </IdentityGate>

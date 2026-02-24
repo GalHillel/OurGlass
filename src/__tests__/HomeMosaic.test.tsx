@@ -2,6 +2,20 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { HomeMosaic, type HomeMosaicProps } from '@/components/HomeMosaic';
 
+vi.mock('@/utils/supabase/client', () => ({
+    createClient: () => ({
+        from: () => ({
+            select: () => ({
+                eq: () => ({
+                    single: () => Promise.resolve({ data: null, error: null }),
+                    order: () => Promise.resolve({ data: [], error: null }),
+                }),
+                order: () => Promise.resolve({ data: [], error: null }),
+            }),
+        }),
+    }),
+}));
+
 vi.mock('framer-motion', () => ({
     motion: {
         div: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => <div {...props}>{children}</div>,
@@ -13,8 +27,7 @@ vi.mock('@/components/ReactorCore', () => ({ ReactorCore: () => <div data-testid
 vi.mock('@/components/QuestsAndBadges', () => ({ QuestsAndBadges: () => <div data-testid="mock-quests">Quests</div> }));
 vi.mock('@/components/BudgetHealthScore', () => ({ BudgetHealthScore: () => <div data-testid="mock-health">Health</div> }));
 vi.mock('@/components/StockPortfolio', () => ({ StockPortfolio: () => <div data-testid="mock-stocks">Stocks</div> }));
-vi.mock('@/components/SettleUpCard', () => ({ SettleUpCard: () => <div data-testid="mock-settle">Settle</div> }));
-vi.mock('@/components/MonthlySummary', () => ({ MonthlySummary: () => <div data-testid="mock-summary">Summary</div> }));
+vi.mock('@/components/AIHubBanner', () => ({ AIHubBanner: () => <div data-testid="mock-aihub">AI Hub</div> }));
 
 describe('HomeMosaic', () => {
     const defaultProps = {
@@ -43,10 +56,9 @@ describe('HomeMosaic', () => {
         render(<HomeMosaic {...(defaultProps as unknown as HomeMosaicProps)} />);
 
         expect(screen.getByTestId('mock-reactor')).toBeInTheDocument();
-        expect(screen.getByText('תחזית AI')).toBeInTheDocument();
-        expect(screen.getByText('מצב רוח')).toBeInTheDocument();
-        expect(screen.getByText('רמת חיסכון')).toBeInTheDocument();
-        expect(screen.getByText('התחשבנות')).toBeInTheDocument();
+        expect(screen.getByTestId('mock-aihub')).toBeInTheDocument();
+        expect(screen.getByText('בריאות')).toBeInTheDocument();
+        expect(screen.getByText('חיסכון חודשי')).toBeInTheDocument();
 
         // Ensure calculations are rendered on tiles
         expect(screen.getByText('₪10,000')).toBeInTheDocument(); // actual savings (15k - 5k)
