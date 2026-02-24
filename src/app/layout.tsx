@@ -52,7 +52,7 @@ export default function RootLayout({
           <AuthProvider>
             <ErrorBoundary>
               <IdentityGate>
-                <main className="native-scroll touch-scroll relative z-10 w-full p-4 pt-[env(safe-area-inset-top)] pb-[calc(6rem+env(safe-area-inset-bottom))]">
+                <main className="native-scroll touch-scroll relative z-10 w-full p-4 pt-[env(safe-area-inset-top)] pb-0">
                   <AIChatButton />
                   {children}
                 </main>

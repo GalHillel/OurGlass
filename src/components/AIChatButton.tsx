@@ -267,7 +267,7 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
                     </div>
 
                     <span className="text-white/60 text-[13px] font-semibold flex-1 text-right tracking-tight">
-                        שאל את רועי, היועץ הפיננסי שלך...
+                        {bubbleMessage || "שאל את רועי, היועץ הפיננסי שלך..."}
                     </span>
 
                     <div className="hidden sm:flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">

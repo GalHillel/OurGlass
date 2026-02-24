@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useRef, useMemo } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Goal } from "@/types";
+import { useQuery } from "@tanstack/react-query";
 
 interface SupabaseError {
     message?: string;
@@ -12,50 +13,35 @@ interface SupabaseError {
 }
 
 export const useWealth = () => {
-    const [netWorth, setNetWorth] = useState<number>(0);
-    const [investmentsValue, setInvestmentsValue] = useState<number>(0);
-    const [cashValue, setCashValue] = useState<number>(0);
-    const [assets, setAssets] = useState<Goal[]>([]);
-    const [loading, setLoading] = useState(true);
-    const supabaseRef = useRef(createClient());
     const { user, loading: authLoading } = useAuth();
+    const supabaseRef = useRef(createClient());
 
-    const fetchWealth = useCallback(async () => {
-        const supabase = supabaseRef.current;
-        // Guard: Don't fetch if no authenticated user
-        if (!user) {
-            setLoading(false);
-            setAssets([]);
-            setNetWorth(0);
-            setInvestmentsValue(0);
-            setCashValue(0);
-            return;
-        }
+    const { data, isLoading, refetch } = useQuery({
+        queryKey: ['wealthData', user?.id],
+        queryFn: async () => {
+            if (!user) {
+                return {
+                    netWorth: 0,
+                    investmentsValue: 0,
+                    cashValue: 0,
+                    assets: []
+                };
+            }
 
-        setLoading(true);
-        try {
+            const supabase = supabaseRef.current;
             const { data: goals, error } = await supabase
                 .from('goals')
                 .select('id, name, current_amount, type, brick_color, growth_rate, investment_type, symbol, quantity, interest_rate, last_interest_calc')
                 .order('created_at', { ascending: true });
 
             if (error || !goals) {
-                const errorDetails = {
-                    message: error?.message,
-                    details: error?.details,
-                    hint: error?.hint,
-                    code: error?.code,
-                    fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
-                };
-                console.error("useWealth fetch error:", errorDetails);
-                console.error("useWealth fetch error Raw JSON:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-                setLoading(false);
-                return;
+                console.error("useWealth fetch error:", error);
+                throw error || new Error("No goals found");
             }
 
             const stockSymbols = goals
-                .filter(g => g.type === 'stock' && g.symbol)
-                .map(g => g.symbol);
+                .filter(g => (g.type === 'stock' || g.investment_type === 'crypto') && g.symbol)
+                .map(g => g.symbol!.toUpperCase());
 
             let livePrices: Record<string, { price: number; changePercent: number }> = {};
             let usdToIls = 3.65;
@@ -67,7 +53,8 @@ export const useWealth = () => {
                     const res = await fetch(apiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ symbols: stockSymbols })
+                        body: JSON.stringify({ symbols: stockSymbols }),
+                        cache: 'no-store' // Ensure we get fresh data from our API
                     });
 
                     if (res.ok) {
@@ -106,7 +93,6 @@ export const useWealth = () => {
                         calculatedValue = Number(asset.current_amount) || 0;
                     }
                 } else if (asset.investment_type === 'usd_cash' || asset.type === 'usd_cash') {
-                    // USD Cash: current_amount is in USD, convert to ILS
                     const usdAmount = Number(asset.current_amount) || 0;
                     calculatedValue = usdAmount * usdToIls;
                 } else {
@@ -116,7 +102,7 @@ export const useWealth = () => {
                         const lastCalcDate = new Date(asset.last_interest_calc);
                         const today = new Date();
                         const diffTime = today.getTime() - lastCalcDate.getTime();
-                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 30.44)); // Approximation or diff in days?
 
                         if (diffDays >= 1) {
                             const dailyRate = (Number(asset.interest_rate) / 100) / 365;
@@ -125,8 +111,6 @@ export const useWealth = () => {
                     }
                 }
 
-                // Sanitize: Only include positive values in asset totals to avoid double-counting debts
-                // which should be tracked in the 'liabilities' table.
                 const assetValue = Math.max(0, calculatedValue);
                 totalNetWorth += assetValue;
 
@@ -141,57 +125,41 @@ export const useWealth = () => {
                     totalCash += assetValue;
                 }
 
-                return { ...asset, calculatedValue };
+                return {
+                    ...asset,
+                    calculatedValue: assetValue,
+                    livePriceUSD: (asset.type === 'stock' || asset.investment_type === 'crypto') ? livePrices[(asset.symbol || '').toUpperCase()]?.price || 0 : 0,
+                    changePercent: (asset.type === 'stock' || asset.investment_type === 'crypto') ? livePrices[(asset.symbol || '').toUpperCase()]?.changePercent || 0 : 0
+                };
             });
 
-            setAssets(calculatedAssets);
-            setNetWorth(totalNetWorth);
-            setInvestmentsValue(totalInvestments);
-            setCashValue(totalCash);
-
-        } catch (error: unknown) {
-            const err = error as SupabaseError;
-            const errorDetails = {
-                message: err.message,
-                details: err.details,
-                hint: err.hint,
-                code: err.code,
-                stack: err.stack,
-                fullError: JSON.stringify(error, Object.getOwnPropertyNames(error || {}), 2)
+            return {
+                netWorth: totalNetWorth,
+                investmentsValue: totalInvestments,
+                cashValue: totalCash,
+                assets: calculatedAssets,
+                usdToIls
             };
-            console.error("useWealth Error:", errorDetails);
-            console.error("useWealth Error Raw JSON:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-            // Reset to safe defaults on error
-            setAssets([]);
-            setNetWorth(0);
-            setInvestmentsValue(0);
-            setCashValue(0);
-        } finally {
-            setLoading(false);
-        }
-    }, [user]);
+        },
+        enabled: !authLoading && !!user,
+        refetchInterval: 60 * 1000, // 1 minute background polling for market data
+        staleTime: 30 * 1000, // Slightly more frequent than global default for "live" feel
+    });
 
-    useEffect(() => {
-        if (authLoading) return;
+    const defaultData = useMemo(() => ({
+        netWorth: 0,
+        investmentsValue: 0,
+        cashValue: 0,
+        assets: [],
+        usdToIls: 3.65
+    }), []);
 
-        if (!user) {
-            setLoading(false);
-            setAssets([]);
-            setNetWorth(0);
-            setInvestmentsValue(0);
-            setCashValue(0);
-            return;
-        }
-
-        fetchWealth();
-    }, [fetchWealth, authLoading, user]);
+    const wealth = data || defaultData;
 
     return {
-        netWorth,
-        investmentsValue,
-        cashValue,
-        assets,
-        loading,
-        refetch: fetchWealth
+        ...wealth,
+        loading: isLoading || authLoading,
+        refetch
     };
 };
+

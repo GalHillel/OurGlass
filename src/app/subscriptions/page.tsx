@@ -82,7 +82,7 @@ export default function SubscriptionsPage() {
     const totalMonthly = subscriptions.reduce((sum, sub) => sum + Number(sub.amount), 0) + totalDebtMonthly;
 
     return (
-        <div className="flex flex-col gap-6 w-full mx-auto pt-8 pb-24 px-4">
+        <div className="flex flex-col gap-6 w-full mx-auto pt-8 pb-0 px-4">
             {/* Indicator */}
             {profile?.budget && (
                 (() => {
@@ -272,6 +272,9 @@ export default function SubscriptionsPage() {
                 initialData={selectedGhost}
                 onSuccess={fetchSubscriptions}
             />
+
+            {/* Final bottom spacer for edge-to-edge layout accessibility */}
+            <div className="h-32 w-full" />
         </div>
     );
 }

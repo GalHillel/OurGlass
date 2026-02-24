@@ -52,12 +52,14 @@ vi.mock('@/utils/supabase/client', () => ({
                 })
             }),
         }),
-        channel: () => ({
-            on: () => ({
-                subscribe: vi.fn()
-            }),
-            unsubscribe: vi.fn()
-        })
+        channel: () => {
+            const channelObj = {
+                on: () => channelObj,
+                subscribe: vi.fn(),
+                unsubscribe: vi.fn()
+            };
+            return channelObj;
+        }
     }),
 }));
 
@@ -67,16 +69,20 @@ vi.mock('framer-motion', async (importOriginal) => {
     return {
         ...actual,
         motion: {
-            div: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <div {...props} > {children} </div>,
-            button: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <button {...props} > {children} </button>,
-            span: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <span {...props} > {children} </span>,
-            section: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <section {...props} > {children} </section>,
-            nav: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <nav {...props} > {children} </nav>,
+            div: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <div {...props}>{children}</div>,
+            button: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <button {...props}>{children}</button>,
+            span: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <span {...props}>{children}</span>,
+            section: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <section {...props}>{children}</section>,
+            nav: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <nav {...props}>{children}</nav>,
         },
-        AnimatePresence: ({ children }: { children?: React.ReactNode }) => <>{children} </>,
+        AnimatePresence: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
         useScroll: () => ({ scrollYProgress: { get: () => 0 } }),
         useSpring: (v: unknown) => v,
-        useTransform: (v: unknown, f: (val: unknown) => unknown) => f(v),
+        useTransform: (v: unknown, f: any, o?: any) => {
+            if (typeof f === 'function') return f(v);
+            if (Array.isArray(o)) return o[0];
+            return v;
+        },
         useMotionValue: (v: unknown) => ({ get: () => v, set: vi.fn() }),
     };
 });

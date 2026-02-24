@@ -51,6 +51,7 @@ export interface HomeMosaicProps {
     selectedFilterCategory: string | null;
     onCategorySelect: (category: string | null) => void;
     onRefresh?: () => Promise<void>;
+    usdToIls?: number;
 }
 
 export const HomeMosaic = ({
@@ -72,7 +73,8 @@ export const HomeMosaic = ({
     onDateSelect,
     selectedFilterCategory,
     onCategorySelect,
-    onRefresh
+    onRefresh,
+    usdToIls
 }: HomeMosaicProps) => {
 
     // -- Calculations for Tiles --
@@ -96,7 +98,7 @@ export const HomeMosaic = ({
     const totalCash = cashAssets.reduce((sum, a) => sum + (Number(a.current_amount) || 0), 0);
 
     return (
-        <div className="grid grid-cols-2 gap-3 w-full max-w-md px-4 perspective-1000 pb-20">
+        <div className="grid grid-cols-2 gap-3 w-full max-w-md px-4 perspective-1000">
 
             {/* Row 1: Reactor Core (Full Width) */}
             <div className="col-span-2 mb-2">
@@ -236,7 +238,7 @@ export const HomeMosaic = ({
                         <div className="flex-1 overflow-y-auto">
                             {/* We filter assets for StockPortfolio if needed, but it takes all assets and filters internally usually.
                                 StockPortfolio takes `assets` prop. */}
-                            <StockPortfolio assets={assets} />
+                            <StockPortfolio assets={assets} usdToIls={usdToIls} />
                         </div>
                     </div>
                 </DialogContent>

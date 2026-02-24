@@ -79,7 +79,7 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="flex flex-col gap-6 max-w-md mx-auto pt-8 pb-32 px-4">
+        <div className="flex flex-col gap-6 max-w-md mx-auto pt-8 pb-0 px-4">
             <h1 className="text-3xl font-black text-white text-center mb-4 neon-text tracking-tight">הגדרות</h1>
 
             <div className="neon-card p-6 rounded-3xl space-y-6 relative overflow-hidden">
@@ -219,6 +219,9 @@ export default function SettingsPage() {
                 <LogOut className="w-4 h-4 ml-2" />
                 התנתק
             </Button>
+
+            {/* Final bottom spacer for edge-to-edge layout accessibility */}
+            <div className="h-32 w-full" />
         </div>
     );
 }

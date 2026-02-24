@@ -263,7 +263,7 @@ export default function WishlistPage() {
     };
 
     return (
-        <div className="flex flex-col gap-6 w-full mx-auto pt-8 pb-32 px-4 shadow-none">
+        <div className="flex flex-col gap-6 w-full mx-auto pt-8 pb-0 px-4 shadow-none">
 
 
             {/* Active Savings / Spare Change Harvester */}
@@ -494,6 +494,9 @@ export default function WishlistPage() {
                 mode={actionType}
                 onConfirm={handleMoneyMove}
             />
+
+            {/* Final bottom spacer for edge-to-edge layout accessibility */}
+            <div className="h-32 w-full" />
         </div >
     );
 }

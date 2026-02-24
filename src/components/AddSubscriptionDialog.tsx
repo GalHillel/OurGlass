@@ -135,8 +135,8 @@ export function AddSubscriptionDialog({
             }
 
             // Invalidate queries to refresh global state
-            queryClient.invalidateQueries({ queryKey: ['joint-finance'] });
-            queryClient.invalidateQueries({ queryKey: ['wealth-data'] });
+            queryClient.invalidateQueries({ queryKey: ['global-cashflow'] });
+            queryClient.invalidateQueries({ queryKey: ['wealthData'] });
 
             if (onSuccess) onSuccess();
             onClose();

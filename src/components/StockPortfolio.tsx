@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Plus, TrendingUp, TrendingDown, RefreshCcw, Rocket, Loader2, Sparkles } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,9 +14,12 @@ import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/components/AuthProvider";
+import { triggerHaptic } from "@/utils/haptics";
+import { cn } from "@/lib/utils";
 
 interface StockPortfolioProps {
     assets?: Goal[];
+    usdToIls?: number;
 }
 
 interface StockDisplay {
@@ -28,96 +32,50 @@ interface StockDisplay {
     originalCost: number;
 }
 
-export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
+export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioProps) => {
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
     const { profile } = useAuth();
-    const [stocks, setStocks] = useState<StockDisplay[]>([]);
-    const [exchangeRate, setExchangeRate] = useState(3.65); // Default fallback
+    const queryClient = useQueryClient();
+
     const [loading, setLoading] = useState(false);
-    const [refreshing, setRefreshing] = useState(false);
-    const [fetchError, setFetchError] = useState<string | null>(null);
-    const [isCachedData, setIsCachedData] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     // Dialog State
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [editingStock, setEditingStock] = useState<StockDisplay | null>(null);
 
     // Form State
-    // Form State
     const [symbolInput, setSymbolInput] = useState("");
     const [sharesInput, setSharesInput] = useState("");
-    // const [costInput, setCostInput] = useState(""); // Removed in favor of auto-calc
-    // const [costInput, setCostInput] = useState(""); // Removed in favor of auto-calc
 
-    // Filter relevant assets - memoized to prevent unnecessary recalculations
-    const stockAssets = useMemo(() => assets.filter(a => a.type === 'stock' && a.symbol), [assets]);
+    // Filter and Map stocks from assets prop (which comes from useQuery via useWealth)
+    // Filter and Map stocks from assets prop (which comes from useQuery via useWealth)
+    const stocks = useMemo(() => {
+        const stockAssets = assets.filter(a => a.type === 'stock' && a.symbol);
+        return stockAssets.map(asset => {
+            const sym = asset.symbol!;
+            const shares = asset.quantity || 0;
 
-    const fetchPrices = useCallback(async () => {
-        if (stockAssets.length === 0) return;
-        setRefreshing(true);
-        setFetchError(null);
+            // Use values directly from the enhanced asset object
+            return {
+                id: asset.id,
+                symbol: sym,
+                shares: shares,
+                currentPriceUSD: (asset as any).livePriceUSD || 0,
+                totalValueILS: asset.calculatedValue || 0,
+                changePercent: (asset as any).changePercent || 0,
+                originalCost: asset.current_amount || 0
+            };
+        });
+    }, [assets]);
 
-        try {
-            const symbols = stockAssets.map(a => a.symbol);
-            const res = await fetch('/api/market-data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ symbols })
-            });
-
-            if (!res.ok) throw new Error("Failed to fetch prices");
-
-            const data = await res.json();
-            const rate = data.exchangeRate || 3.65;
-            setExchangeRate(rate);
-
-            // Track if data is from cache
-            setIsCachedData(data.meta?.allCached || false);
-
-            const mapped: StockDisplay[] = stockAssets.map(asset => {
-                const sym = asset.symbol!;
-                // Try exact match or cleaned symbol (e.g. BTC-USD)
-                const liveData = data.stocks[sym] || data.stocks[sym.replace('-USD', '')];
-
-                const priceUSD = liveData?.price || 0;
-                const change = liveData?.changePercent || 0;
-                const shares = asset.quantity || 0;
-
-                // Math: priceUSD * shares * exchangeRate
-                const totalILS = priceUSD * shares * rate;
-
-                return {
-                    id: asset.id,
-                    symbol: sym,
-                    shares: shares,
-                    currentPriceUSD: priceUSD,
-                    totalValueILS: totalILS,
-                    changePercent: change,
-                    originalCost: asset.current_amount || 0
-                };
-            });
-
-            setStocks(mapped);
-        } catch (err) {
-            const errorMessage = (err as Error)?.message || 'Failed to fetch stock data';
-            console.error("StockPortfolio fetchPrices error:", errorMessage);
-            setFetchError(errorMessage);
-            // Keep existing stock data on error (graceful degradation)
-        } finally {
-            setRefreshing(false);
-        }
-    }, [stockAssets]);
-
-    useEffect(() => {
-        if (stockAssets.length > 0) {
-            fetchPrices();
-            const interval = setInterval(fetchPrices, 30000);
-            return () => clearInterval(interval);
-        } else {
-            setStocks([]);
-        }
-    }, [fetchPrices, stockAssets.length]);
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        triggerHaptic();
+        await queryClient.invalidateQueries({ queryKey: ['wealthData'] });
+        setTimeout(() => setIsRefreshing(false), 1000);
+    };
 
     // Derived Totals
     const portfolioValue = stocks.reduce((sum, s) => sum + s.totalValueILS, 0);
@@ -204,7 +162,7 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
             }
 
             closeModals();
-            fetchPrices();
+            await queryClient.invalidateQueries({ queryKey: ['wealthData'] });
         } catch (e: unknown) {
             console.error("Save Error:", JSON.stringify(e, null, 2));
             const err = e as { message?: string };
@@ -221,7 +179,7 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
             const { error } = await supabase.from('goals').delete().eq('id', id);
             if (error) throw error;
             toast.success("נמחק בהצלחה");
-            window.location.reload();
+            await queryClient.invalidateQueries({ queryKey: ['wealthData'] });
         } catch {
             toast.error("שגיאה במחיקה");
         }
@@ -261,10 +219,16 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
                             <Rocket className="w-4 h-4 text-purple-400" />
                             תיק השקעות חי
                         </h2>
-                        {refreshing && <RefreshCcw className="w-4 h-4 text-white/20 animate-spin" />}
-                        {isCachedData && !refreshing && (
-                            <span className="text-[10px] text-yellow-400/70 bg-yellow-500/10 px-2 py-0.5 rounded-full">מטמון</span>
-                        )}
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleRefresh}
+                                disabled={isRefreshing}
+                                className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 disabled:opacity-50"
+                                title="רענן נתונים"
+                            >
+                                <RefreshCcw className={cn("w-4 h-4", isRefreshing && "animate-spin text-purple-400")} />
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex flex-col gap-1">
@@ -272,7 +236,7 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
                             ₪{portfolioValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </div>
                         <div className="text-xs text-white/40 font-mono">
-                            שער דולר: ₪{exchangeRate.toFixed(2)}
+                            שער דולר: ₪{usdToIls.toFixed(2)}
                         </div>
                     </div>
                 </div>
@@ -346,7 +310,7 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
                     })}
                 </AnimatePresence>
 
-                {(refreshing && stocks.length === 0) ? (
+                {(isRefreshing && stocks.length === 0) ? (
                     <div className="space-y-3">
                         {[1, 2, 3].map((i) => (
                             <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
@@ -366,7 +330,7 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
                     </div>
                 ) : (
                     <>
-                        {stockAssets.length === 0 && !fetchError && (
+                        {stocks.length === 0 && (
                             <EmptyState
                                 icon={Sparkles}
                                 title="אין עדיין מניות?"
@@ -378,18 +342,7 @@ export const StockPortfolio = ({ assets = [] }: StockPortfolioProps) => {
                     </>
                 )}
 
-                {fetchError && (
-                    <div className="text-center py-8 px-4 rounded-2xl border border-red-500/20 bg-red-500/10">
-                        <p className="text-red-300/80 text-sm mb-3">שגיאה בטעינת נתוני המניות</p>
-                        <Button
-                            onClick={() => fetchPrices()}
-                            size="sm"
-                            className="bg-red-600/20 hover:bg-red-600/30 text-red-200 border border-red-500/30"
-                        >
-                            <RefreshCcw className="w-4 h-4 ml-1" /> נסה שוב
-                        </Button>
-                    </div>
-                )}
+                {/* Error handling moved to useWealth hook level */}
             </div>
 
             {/* Dialog for Add/Edit */}

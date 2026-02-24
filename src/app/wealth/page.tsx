@@ -42,6 +42,7 @@ export default function WealthPage() {
         investmentsValue,
         cashValue,
         assets,
+        usdToIls,
         loading,
         refetch
     } = useWealth();
@@ -109,7 +110,7 @@ export default function WealthPage() {
     getRank(trueNetWorth);
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white pb-24 px-4 space-y-6 pt-6">
+        <div className="min-h-screen bg-slate-950 text-white px-4 space-y-6 pt-6">
 
             <div className="mx-2 p-4 neon-card rounded-2xl flex flex-col items-center justify-center relative overflow-hidden group min-h-[160px]">
                 <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -170,7 +171,7 @@ export default function WealthPage() {
             {/* Live Portfolio */}
             {(!chartFilter || chartFilter === 'stock') && (
                 <div className="mx-0">
-                    <StockPortfolio assets={assets} />
+                    <StockPortfolio assets={assets} usdToIls={usdToIls} />
                 </div>
             )}
 
@@ -305,6 +306,9 @@ export default function WealthPage() {
                 onSuccess={refetch}
                 initialData={editingAsset}
             />
+
+            {/* Final bottom spacer for edge-to-edge layout accessibility */}
+            <div className="h-32 w-full" />
         </div>
     );
 }

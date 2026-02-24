@@ -15,8 +15,8 @@ describe('BudgetGauges', () => {
         // -500 balance -> 0 daily
         render(<BudgetGauges balance={-500} budget={10000} daysRemaining={5} />);
 
-        expect(screen.getByText((content) => content.includes('0'))).toBeInTheDocument(); // 0 daily
-        expect(screen.getByText((content) => content.includes('100'))).toBeInTheDocument(); // capped at 100% burn
+        expect(screen.getByText(/^0$/)).toBeInTheDocument(); // 0 daily
+        expect(screen.getByText(/100/)).toBeInTheDocument(); // capped at 100% burn
     });
 
     it('handles zero days remaining safely', () => {

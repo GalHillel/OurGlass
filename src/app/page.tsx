@@ -67,7 +67,7 @@ export default function Home() {
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
   const { user, profile, loading: authLoading } = useAuth();
-  const { assets } = useWealth();
+  const { assets, usdToIls } = useWealth();
   const { appIdentity } = useAppStore();
 
   const [burnRateData, setBurnRateData] = useState<{ status: 'safe' | 'warning' | 'critical', projectedDate: Date | null }>({ status: 'safe', projectedDate: null });
@@ -246,7 +246,7 @@ export default function Home() {
 
 
   return (
-    <div className="flex flex-col min-h-screen pb-20 text-white selection:bg-blue-500/50 bg-slate-950">
+    <div className="flex flex-col min-h-screen text-white selection:bg-blue-500/50 bg-slate-950">
 
 
 
@@ -256,7 +256,7 @@ export default function Home() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="flex-1 flex flex-col items-center gap-6 w-full mx-auto pb-8"
+        className="flex-1 flex flex-col items-center gap-6 w-full mx-auto"
       >
         {/* Pull to Refresh Wrapper */}
         <PullToRefresh onRefresh={fetchData}>
@@ -319,6 +319,7 @@ export default function Home() {
                   onDateSelect={setSelectedDate}
                   selectedFilterCategory={selectedFilterCategory}
                   onCategorySelect={setSelectedFilterCategory}
+                  usdToIls={usdToIls}
                 />
               </div>
             </div>
@@ -383,6 +384,9 @@ export default function Home() {
             </div>
           </motion.div>
         )}
+
+        {/* Final bottom spacer for edge-to-edge layout accessibility */}
+        <div className="h-32 w-full" />
       </motion.main>
 
       {/* AI Psychologist Nudge Button removed as it is now global */}

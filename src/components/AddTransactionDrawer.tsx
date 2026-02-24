@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
     Drawer,
     DrawerContent,
@@ -86,6 +87,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
 
     const { user, profile } = useAuth();
     const { appIdentity } = useAppStore();
+    const queryClient = useQueryClient();
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
@@ -163,6 +165,11 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                 const mappedTx = resultTx as Transaction;
                 if (onSuccess) onSuccess(numericAmount, mappedTx);
             }
+
+            // Global invalidation for all related cashflow components
+            queryClient.invalidateQueries({ queryKey: ["global-cashflow"] });
+            queryClient.invalidateQueries({ queryKey: ["settle-up"] });
+            queryClient.invalidateQueries({ queryKey: ["guilt-free"] });
 
             onClose();
 

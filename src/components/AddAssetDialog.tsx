@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData }: AddA
     const [investmentDate, setInvestmentDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(false);
     const { profile } = useAuth();
+    const queryClient = useQueryClient();
 
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
@@ -109,6 +111,9 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData }: AddA
                 if (error) throw error;
                 toast.success("נכס חדש נוסף");
             }
+
+            queryClient.invalidateQueries({ queryKey: ['wealthData'] });
+            queryClient.invalidateQueries({ queryKey: ['global-cashflow'] });
 
             onSuccess();
             onClose();

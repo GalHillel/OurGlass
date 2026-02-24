@@ -32,11 +32,11 @@ describe('GuiltFreeWallets', () => {
         vi.spyOn(hooks, 'useGuiltFreeWallets').mockReturnValue({
             data: {
                 pocketHim: 1000,
-                pocketHer: 1000,
+                pocketHer: 1200,
                 himRemaining: 200,
                 himSpent: 800,
-                herRemaining: 500,
-                herSpent: 500
+                herRemaining: 300,
+                herSpent: 900
             },
             isLoading: false
         } as never);
@@ -48,7 +48,11 @@ describe('GuiltFreeWallets', () => {
         expect(screen.getByText(/שלה/)).toBeInTheDocument();
 
         // Using regex for numbers to handle CountUp or formatting
+        expect(screen.getByText(/200/)).toBeInTheDocument();
+        expect(screen.getByText(/300/)).toBeInTheDocument();
         expect(screen.getByText(/800/)).toBeInTheDocument();
+        expect(screen.getByText(/900/)).toBeInTheDocument();
         expect(screen.getByText(/1,000/)).toBeInTheDocument();
+        expect(screen.getByText(/1,200/)).toBeInTheDocument();
     });
 });

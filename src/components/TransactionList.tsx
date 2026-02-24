@@ -301,6 +301,8 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
                     </motion.div>
                 );
             })}
+            {/* Final bottom spacer for edge-to-edge layout accessibility */}
+            <div className="h-32 w-full" />
         </motion.div>
     );
 });

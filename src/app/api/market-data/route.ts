@@ -6,7 +6,7 @@ const API_KEY = process.env.FINNHUB_API_KEY;
 
 // ============ CACHE CONFIGURATION ============
 const CACHE_DURATION_MS = 1 * 60 * 1000; // 1 minute for stock prices
-const EXCHANGE_RATE_CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours for exchange rate
+const EXCHANGE_RATE_CACHE_DURATION_MS = 1 * 60 * 60 * 1000; // 1 hour for exchange rate
 const FETCH_TIMEOUT_MS = 5000; // 5 second timeout per stock
 
 // ============ CACHE STORES ============

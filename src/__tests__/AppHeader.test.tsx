@@ -2,10 +2,25 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AppHeader } from '@/components/AppHeader';
 import { Home } from 'lucide-react';
+import * as hooks from '@/hooks/useJointFinance';
+
+vi.mock('@/hooks/useJointFinance');
 
 describe('AppHeader', () => {
     beforeEach(() => {
         document.body.className = '';
+        vi.spyOn(hooks, 'useGlobalCashflow').mockReturnValue({
+            data: {
+                budget: 10000,
+                totalSpent: 5000,
+                balance: 5000,
+                daysRemaining: 15,
+                dailyBudget: 333,
+                actualDailySpend: 333,
+                status: 'safe'
+            },
+            isLoading: false
+        } as any);
     });
 
     it('renders title and icon', () => {
