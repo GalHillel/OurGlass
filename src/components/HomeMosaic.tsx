@@ -50,6 +50,7 @@ export interface HomeMosaicProps {
     onDateSelect: (date: Date | null) => void;
     selectedFilterCategory: string | null;
     onCategorySelect: (category: string | null) => void;
+    onRefresh?: () => Promise<void>;
 }
 
 export const HomeMosaic = ({
@@ -70,7 +71,8 @@ export const HomeMosaic = ({
     selectedDate,
     onDateSelect,
     selectedFilterCategory,
-    onCategorySelect
+    onCategorySelect,
+    onRefresh
 }: HomeMosaicProps) => {
 
     // -- Calculations for Tiles --
