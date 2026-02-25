@@ -5,6 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Ghost, AlertCircle, Plus, Sparkles, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { SwipeableRow } from "./SwipeableRow";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { useAppStore } from "@/stores/appStore";
+import { formatAmount } from "@/lib/utils";
 
 interface GhostSub {
     name: string;
@@ -22,6 +25,7 @@ interface GhostSubscriptionsProps {
 }
 
 export function GhostSubscriptions({ onAddGhost }: GhostSubscriptionsProps) {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     const [ghosts, setGhosts] = useState<GhostSub[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -234,7 +238,7 @@ export function GhostSubscriptions({ onAddGhost }: GhostSubscriptionsProps) {
                                 <div className="flex justify-between items-start relative z-10">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
-                                            <h4 className="font-bold text-white">{ghost.name}</h4>
+                                            <h4 className="font-bold text-white">{isStealthMode ? 'מנוי חסוי' : ghost.name}</h4>
                                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">
                                                 {Math.round(ghost.confidence * 100)}% ודאות
                                             </span>
@@ -245,7 +249,7 @@ export function GhostSubscriptions({ onAddGhost }: GhostSubscriptionsProps) {
                                         </p>
                                     </div>
                                     <div className="text-left">
-                                        <div className="text-lg font-black text-white">₪{ghost.amount}</div>
+                                        <div className="text-lg font-black text-white">{formatAmount(ghost.amount, isStealthMode, CURRENCY_SYMBOL)}</div>
                                         <div className="text-[10px] text-white/40 uppercase">חודשי</div>
                                     </div>
                                 </div>

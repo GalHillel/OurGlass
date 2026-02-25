@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useAppStore } from "@/stores/appStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Home, Car, GraduationCap, CreditCard, Landmark, Wallet, CalendarClock, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,12 +13,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useLiabilities, useAddLiability, useDeleteLiability, isLiabilityActive } from "@/hooks/useWealthData";
 import { Liability, LiabilityType } from "@/types";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, formatAmount } from "@/lib/utils";
 import { EmptyState } from "@/components/EmptyState";
 import { useAuth } from "@/components/AuthProvider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { SwipeableRow } from "@/components/SwipeableRow";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 const LIABILITY_ICONS: Record<string, typeof Home> = {
     "משכנתא": Home,
@@ -48,6 +50,7 @@ const resolveAmounts = (liability: Liability) => {
 };
 
 export function LiabilitiesSection() {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     const { data: liabilities = [], isLoading } = useLiabilities();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -88,11 +91,11 @@ export function LiabilitiesSection() {
                 <div className="mt-4 grid grid-cols-2 gap-3">
                     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                         <p className="text-[10px] text-white/50">סה״כ יתרת חוב</p>
-                        <p className="text-lg font-black text-red-300">₪<AnimatedCounter value={totalDebt} /></p>
+                        <p className="text-lg font-black text-red-300">{formatAmount(totalDebt, isStealthMode, CURRENCY_SYMBOL, '***')}</p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                         <p className="text-[10px] text-white/50">תשלומי חוב פעילים / חודש</p>
-                        <p className="text-lg font-black text-orange-300">₪<AnimatedCounter value={totalMonthly} /></p>
+                        <p className="text-lg font-black text-orange-300">{formatAmount(totalMonthly, isStealthMode, CURRENCY_SYMBOL, '***')}</p>
                     </div>
                 </div>
             </div>
@@ -114,7 +117,7 @@ export function LiabilitiesSection() {
             ) : (
                 <AnimatePresence mode="popLayout">
                     {sortedLiabilities.map((liability) => (
-                        <LiabilityCard key={liability.id} liability={liability} />
+                        <LiabilityCard key={liability.id} liability={liability} isStealthMode={isStealthMode} />
                     ))}
                 </AnimatePresence>
             )}
@@ -122,7 +125,7 @@ export function LiabilitiesSection() {
     );
 }
 
-function LiabilityCard({ liability }: { liability: Liability }) {
+function LiabilityCard({ liability, isStealthMode }: { liability: Liability, isStealthMode: boolean }) {
     const deleteMutation = useDeleteLiability();
     const Icon = LIABILITY_ICONS[liability.category] || Landmark;
     const { total, remaining } = resolveAmounts(liability);
@@ -165,25 +168,27 @@ function LiabilityCard({ liability }: { liability: Liability }) {
                                 <p className="text-[11px] text-white/55">{liability.category}</p>
                             </div>
                             <div className="text-left">
-                                <p className="font-black text-lg text-red-300">₪{remaining.toLocaleString()}</p>
+                                <p className="font-black text-lg text-red-300">{formatAmount(remaining, isStealthMode, CURRENCY_SYMBOL, '***')}</p>
                                 <p className="text-[10px] text-white/45">יתרה לתשלום</p>
                             </div>
                         </div>
 
                         <div className="mt-3 space-y-1.5">
                             <div className="flex items-center justify-between text-[11px] text-white/60">
-                                <span>₪{paid.toLocaleString()} שולם מתוך ₪{total.toLocaleString()}</span>
-                                <span>{progress.toFixed(0)}%</span>
+                                <span>
+                                    {isStealthMode ? '***' : `${CURRENCY_SYMBOL}${paid.toLocaleString()}`} שולם מתוך {formatAmount(total, isStealthMode, CURRENCY_SYMBOL, '***')}
+                                </span>
+                                {!isStealthMode && <span>{progress.toFixed(0)}%</span>}
                             </div>
                             <Progress value={progress} className="h-2 bg-white/10 [&>div]:bg-red-400" />
                         </div>
 
                         <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-                            <span className="rounded-xl bg-white/10 px-2.5 py-1 text-white/80">₪{payment.toLocaleString()} / חודש</span>
-                            <span className="rounded-xl bg-red-500/15 px-2.5 py-1 text-red-200">{Number(liability.interest_rate || 0).toFixed(2)}% ריבית</span>
+                            <span className="rounded-xl bg-white/10 px-2.5 py-1 text-white/80">{formatAmount(payment, isStealthMode, CURRENCY_SYMBOL, '***')} / חודש</span>
+                            <span className="rounded-xl bg-red-500/15 px-2.5 py-1 text-red-200">{isStealthMode ? '***' : Number(liability.interest_rate || 0).toFixed(2)}% ריבית</span>
                             <span className="rounded-xl bg-white/10 px-2.5 py-1 text-white/70 inline-flex items-center gap-1">
                                 <CalendarClock className="w-3 h-3" />
-                                {liability.end_date ? new Date(liability.end_date).toLocaleDateString("he-IL") : "ללא תאריך סיום"}
+                                {liability.end_date ? new Date(liability.end_date).toLocaleDateString(LOCALE) : "ללא תאריך סיום"}
                             </span>
                             {!isActive && <span className="rounded-xl bg-emerald-500/15 px-2.5 py-1 text-emerald-200">שולם / הסתיים</span>}
                         </div>
@@ -276,8 +281,8 @@ function AddLiabilityDialog({ onClose }: { onClose: () => void }) {
                             <SelectTrigger className="mt-1 bg-white/5 border-white/10 text-white"><SelectValue /></SelectTrigger>
                             <SelectContent className="bg-slate-900 border-white/10 text-white">
                                 <SelectItem value="joint">משותף</SelectItem>
-                                <SelectItem value="him">שלו</SelectItem>
-                                <SelectItem value="her">שלה</SelectItem>
+                                <SelectItem value="him">{PAYERS.HIM}</SelectItem>
+                                <SelectItem value="her">{PAYERS.HER}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -285,18 +290,18 @@ function AddLiabilityDialog({ onClose }: { onClose: () => void }) {
 
                 <div className="grid grid-cols-2 gap-3">
                     <div>
-                        <Label className="text-white/70">סכום מקורי (₪)</Label>
+                        <Label className="text-white/70">סכום מקורי ({CURRENCY_SYMBOL})</Label>
                         <Input type="number" value={totalAmount} onChange={(e) => setTotalAmount(e.target.value)} placeholder="500000" className="mt-1 bg-white/5 border-white/10 text-white" />
                     </div>
                     <div>
-                        <Label className="text-white/70">יתרה נוכחית (₪)</Label>
+                        <Label className="text-white/70">יתרה נוכחית ({CURRENCY_SYMBOL})</Label>
                         <Input type="number" value={remainingAmount} onChange={(e) => setRemainingAmount(e.target.value)} placeholder="320000" className="mt-1 bg-white/5 border-white/10 text-white" />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                     <div>
-                        <Label className="text-white/70">תשלום חודשי (₪)</Label>
+                        <Label className="text-white/70">תשלום חודשי ({CURRENCY_SYMBOL})</Label>
                         <Input type="number" value={monthlyPayment} onChange={(e) => setMonthlyPayment(e.target.value)} placeholder="3500" className="mt-1 bg-white/5 border-white/10 text-white" />
                     </div>
                     <div>

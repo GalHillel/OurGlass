@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useAppStore } from "@/stores/appStore";
 import { Plus, TrendingUp, TrendingDown, RefreshCcw, Rocket, Loader2, Sparkles } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,7 +16,8 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/components/AuthProvider";
 import { triggerHaptic } from "@/utils/haptics";
-import { cn } from "@/lib/utils";
+import { cn, formatAmount } from "@/lib/utils";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 interface StockPortfolioProps {
     assets?: Goal[];
@@ -33,6 +35,7 @@ interface StockDisplay {
 }
 
 export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioProps) => {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
     const { profile } = useAuth();
@@ -62,9 +65,9 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
                 id: asset.id,
                 symbol: sym,
                 shares: shares,
-                currentPriceUSD: (asset as any).livePriceUSD || 0,
+                currentPriceUSD: (asset as Goal & { livePriceUSD?: number }).livePriceUSD || 0,
                 totalValueILS: asset.calculatedValue || 0,
-                changePercent: (asset as any).changePercent || 0,
+                changePercent: (asset as Goal & { changePercent?: number }).changePercent || 0,
                 originalCost: asset.current_amount || 0
             };
         });
@@ -77,8 +80,21 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
         setTimeout(() => setIsRefreshing(false), 1000);
     };
 
-    // Derived Totals
+    // Derived Daily Change
     const portfolioValue = stocks.reduce((sum, s) => sum + s.totalValueILS, 0);
+
+    // Total Portfolio Daily Change Calculation
+    const totalDailyChangeILS = stocks.reduce((sum, s) => {
+        const prevValueILS = s.totalValueILS / (1 + s.changePercent / 100);
+        return sum + (s.totalValueILS - prevValueILS);
+    }, 0);
+
+    const totalPortfolioPercent = portfolioValue > 0
+        ? (totalDailyChangeILS / (portfolioValue - totalDailyChangeILS)) * 100
+        : 0;
+
+    const isTotalPositive = totalDailyChangeILS > 0;
+    const isTotalNegative = totalDailyChangeILS < 0;
 
     // CRUD Operations
     // CRUD Operations
@@ -213,8 +229,8 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-transparent to-blue-600/5" />
                 <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 opacity-50" />
 
-                <div className="p-6 relative z-10">
-                    <div className="flex justify-between items-start mb-2">
+                <div className="p-6 relative z-10 flex flex-col h-full min-h-[160px]">
+                    <div className="flex justify-between items-start mb-4">
                         <h2 className="text-sm font-bold text-white/60 tracking-widest uppercase flex items-center gap-2">
                             <Rocket className="w-4 h-4 text-purple-400" />
                             תיק השקעות חי
@@ -231,25 +247,39 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
                         </div>
                     </div>
 
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1 mb-6">
                         <div className="text-4xl font-black text-white tracking-tight drop-shadow-lg tabular-nums">
-                            ₪{portfolioValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            {formatAmount(portfolioValue, isStealthMode, CURRENCY_SYMBOL, '***')}
                         </div>
-                        <div className="text-xs text-white/40 font-mono">
-                            שער דולר: ₪{usdToIls.toFixed(2)}
+                        <div className="flex items-center gap-2">
+                            <div className={cn(
+                                "text-sm font-bold flex items-center gap-1.5 px-2.5 py-0.5 rounded-full backdrop-blur-md border",
+                                isTotalPositive ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.1)]" :
+                                    isTotalNegative ? "text-rose-400 bg-rose-500/10 border-rose-500/20 shadow-[0_0_15px_rgba(251,113,133,0.1)]" :
+                                        "text-white/40 bg-white/5 border-white/10"
+                            )}>
+                                {isTotalPositive ? <TrendingUp className="w-3.5 h-3.5" /> : isTotalNegative ? <TrendingDown className="w-3.5 h-3.5" /> : null}
+                                <span className="tabular-nums">
+                                    {isTotalPositive ? '+' : ''}{formatAmount(totalDailyChangeILS, isStealthMode, CURRENCY_SYMBOL, '***')}
+                                    <span className="mx-1 opacity-40">|</span>
+                                    יומי: {totalPortfolioPercent.toFixed(2)}%
+                                </span>
+                            </div>
+                            <div className="text-[10px] text-white/30 font-mono uppercase tracking-wider ml-auto">
+                                שער דולר: {CURRENCY_SYMBOL}{usdToIls.toFixed(2)}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Quick Add Button */}
-                <div className="absolute bottom-6 left-6 z-20">
-                    <Button
-                        onClick={openAdd}
-                        size="sm"
-                        className="bg-white/10 hover:bg-white/20 text-white rounded-full border border-white/5 backdrop-blur-md transition-all hover:scale-105 active:scale-95"
-                    >
-                        <Plus className="w-4 h-4 ml-1" /> הוסף מניה
-                    </Button>
+                    <div className="mt-auto">
+                        <Button
+                            onClick={openAdd}
+                            size="sm"
+                            className="bg-white/10 hover:bg-white/20 text-white rounded-full border border-white/5 backdrop-blur-md transition-all hover:scale-105 active:scale-95 px-5"
+                        >
+                            <Plus className="w-4 h-4 ml-1.5" /> הוסף מניה
+                        </Button>
+                    </div>
                 </div>
             </div>
 
@@ -258,6 +288,9 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
                 <AnimatePresence mode="popLayout">
                     {stocks.map((stock) => {
                         const isPositive = stock.changePercent >= 0;
+                        const prevValueILS = stock.totalValueILS / (1 + stock.changePercent / 100);
+                        const dailyProfitILS = stock.totalValueILS - prevValueILS;
+                        const isProfitPositive = dailyProfitILS > 0;
 
                         return (
                             <motion.div
@@ -289,18 +322,20 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
                                         </div>
 
                                         {/* RIGHT: Value + Price/Change */}
-                                        <div className="text-left min-w-[100px]">
-                                            <div className={`font-bold text-lg tabular-nums leading-none ${stock.totalValueILS > 0 ? 'text-neon-green drop-shadow-[0_0_8px_rgba(74,222,128,0.5)]' : 'text-white'}`}>
-                                                ₪{stock.totalValueILS.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                        <div className="text-left min-w-[120px]">
+                                            <div className={`font-bold text-lg tabular-nums leading-none ${isProfitPositive ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]' : dailyProfitILS < 0 ? 'text-rose-400' : 'text-white'}`}>
+                                                {formatAmount(stock.totalValueILS, isStealthMode, CURRENCY_SYMBOL, '***')}
                                             </div>
-                                            <div className="flex justify-end items-center gap-2 mt-1.5">
-                                                <span className="text-[10px] text-white/40 font-mono">
-                                                    ${stock.currentPriceUSD.toFixed(1)}
-                                                </span>
-                                                <span className={`text-[10px] font-bold flex items-center ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                    {isPositive ? <TrendingUp className="w-3 h-3 mr-0.5" /> : <TrendingDown className="w-3 h-3 mr-0.5" />}
+                                            <div className="flex flex-col items-end mt-1.5">
+                                                <div className={`text-[10px] font-bold flex items-center leading-none ${isProfitPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {isProfitPositive ? '+' : ''}{formatAmount(dailyProfitILS, isStealthMode, CURRENCY_SYMBOL, '***')}
+                                                    <span className="mx-1 text-white/20">|</span>
+                                                    {isProfitPositive ? <TrendingUp className="w-2.5 h-2.5 mr-0.5" /> : <TrendingDown className="w-2.5 h-2.5 mr-0.5" />}
                                                     {Math.abs(stock.changePercent).toFixed(1)}%
-                                                </span>
+                                                </div>
+                                                <div className="text-[9px] text-white/20 font-mono mt-0.5">
+                                                    ${isStealthMode ? '***' : stock.currentPriceUSD.toFixed(1)}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

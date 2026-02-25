@@ -1,6 +1,9 @@
 import { useMemo } from "react";
+import { useAppStore } from "@/stores/appStore";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Goal } from "@/types";
+import { cn, formatAmount } from "@/lib/utils";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface WealthChartProps {
     assets: Goal[];
@@ -9,13 +12,13 @@ interface WealthChartProps {
 }
 
 export const WealthChart = ({ assets, selectedType, onSelect }: WealthChartProps) => {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
 
     const { data, totalValue } = useMemo(() => {
         let stocks = 0;
         let cash = 0;
-        let crypto = 0;
+        let foreignCurrency = 0;
         let realEstate = 0;
-        let usdCash = 0;
         let other = 0;
 
         // Map internal types to IDs we can filter by in the parent
@@ -25,25 +28,23 @@ export const WealthChart = ({ assets, selectedType, onSelect }: WealthChartProps
         assets.forEach((asset: Goal) => {
             const val = Number(asset.calculatedValue || asset.current_amount || 0);
 
-            if (asset.investment_type === 'crypto') crypto += val;
-            else if (asset.investment_type === 'real_estate') realEstate += val;
-            else if (asset.investment_type === 'usd_cash' || asset.type === 'usd_cash') usdCash += val;
+            if (asset.investment_type === 'real_estate') realEstate += val;
+            else if (asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency') foreignCurrency += val;
             else if (asset.type === 'stock') stocks += val;
             else if (asset.type === 'cash') cash += val;
             else other += val;
         });
 
         const result = [
-            { name: "מניות", value: stocks, color: "#8b5cf6", type: 'stock' }, // Purple
-            { name: "מזומן", value: cash, color: "#10b981", type: 'cash' }, // Emerald
-            { name: "נדל״ן", value: realEstate, color: "#3b82f6", type: 'real_estate' }, // Blue
-            { name: "קריפטו", value: crypto, color: "#f472b6", type: 'crypto' }, // Pink
-            { name: "דולר", value: usdCash, color: "#22c55e", type: 'usd_cash' }, // Green
+            { name: "מניות", value: stocks, color: "#8b5cf6", type: 'stock' },
+            { name: "מזומן", value: cash, color: "#10b981", type: 'cash' },
+            { name: "נדל״ן", value: realEstate, color: "#3b82f6", type: 'real_estate' },
+            { name: "מט״ח", value: foreignCurrency, color: "#22c55e", type: 'foreign_currency' },
         ].filter(item => item.value > 0);
 
         if (other > 0) result.push({ name: "אחר", value: other, color: "#9ca3af", type: 'other' });
 
-        const total = stocks + cash + crypto + realEstate + usdCash + other;
+        const total = stocks + cash + foreignCurrency + realEstate + other;
 
         return { data: result, totalValue: total };
 
@@ -87,7 +88,9 @@ export const WealthChart = ({ assets, selectedType, onSelect }: WealthChartProps
                         ))}
                     </Pie>
                     <Tooltip
-                        formatter={(value: number | string | undefined) => `₪${Number(value || 0).toLocaleString()}`}
+                        formatter={(value: number | string | undefined) =>
+                            formatAmount(Number(value || 0), isStealthMode, CURRENCY_SYMBOL)
+                        }
                         contentStyle={{
                             backgroundColor: 'rgba(15, 23, 42, 0.9)',
                             borderColor: 'rgba(255,255,255,0.1)',
@@ -104,9 +107,9 @@ export const WealthChart = ({ assets, selectedType, onSelect }: WealthChartProps
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-white/40 text-[10px] uppercase tracking-widest">שווי נקי</span>
                 <span className="text-xl font-black text-white">
-                    {totalValue >= 1000000
-                        ? `₪${(totalValue / 1000000).toFixed(2)}M`
-                        : `₪${(totalValue / 1000).toFixed(0)}k`}
+                    {isStealthMode ? '***' : (totalValue >= 1000000
+                        ? `${CURRENCY_SYMBOL}${(totalValue / 1000000).toFixed(2)}M`
+                        : `${CURRENCY_SYMBOL}${(totalValue / 1000).toFixed(0)}k`)}
                 </span>
             </div>
 

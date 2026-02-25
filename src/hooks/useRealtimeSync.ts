@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
+import { Transaction } from "@/types";
 
 export function useRealtimeSync() {
     const queryClient = useQueryClient();
@@ -18,9 +19,9 @@ export function useRealtimeSync() {
                 (payload) => {
                     console.log("Realtime: Transactions changed", payload);
                     if (payload.eventType === 'INSERT') {
-                        queryClient.setQueriesData({ queryKey: ['transactions'] }, (oldData: any) => {
+                        queryClient.setQueriesData({ queryKey: ['transactions'] }, (oldData: Transaction[] | undefined) => {
                             if (!oldData) return oldData;
-                            if (Array.isArray(oldData)) return [payload.new, ...oldData];
+                            if (Array.isArray(oldData)) return [payload.new as Transaction, ...oldData];
                             return oldData;
                         });
                     }

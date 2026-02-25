@@ -3,10 +3,12 @@ import { Check, Sparkles, Plus, Minus, ThumbsDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WishlistItem } from "@/types";
 import { triggerHaptic } from "@/utils/haptics";
-import { cn } from "@/lib/utils";
+import { cn, formatAmount } from "@/lib/utils";
 import CountUp from 'react-countup';
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { differenceInHours } from 'date-fns';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { useAppStore } from "@/stores/appStore";
 
 interface WishlistCardProps {
     item: WishlistItem;
@@ -15,6 +17,7 @@ interface WishlistCardProps {
 }
 
 export const WishlistCard = ({ item, onAction, onClick }: WishlistCardProps) => {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     // 3D Tilt Logic
     const x = useMotionValue(0);
     const y = useMotionValue(0);
@@ -105,10 +108,14 @@ export const WishlistCard = ({ item, onAction, onClick }: WishlistCardProps) => 
                                 "text-lg font-bold font-mono tracking-tight",
                                 isFullyFunded ? "text-emerald-400" : "text-white/90"
                             )}>
-                                ₪<CountUp end={saved} separator="," duration={1.5} />
+                                {isStealthMode ? (
+                                    <span>{CURRENCY_SYMBOL}***</span>
+                                ) : (
+                                    <><span className="mr-1">{CURRENCY_SYMBOL}</span><CountUp end={saved} separator="," duration={1.5} /></>
+                                )}
                             </span>
                             <span className="text-xs text-white/40 font-medium uppercase tracking-wide mb-0.5">
-                                מתוך ₪{item.price.toLocaleString()}
+                                מתוך {formatAmount(item.price, isStealthMode, CURRENCY_SYMBOL)}
                             </span>
                         </div>
                     </div>
@@ -136,7 +143,7 @@ export const WishlistCard = ({ item, onAction, onClick }: WishlistCardProps) => 
                                 }}
                                 className="text-[10px] text-white/20 hover:text-red-400 underline decoration-red-500/30 transition-colors"
                             >
-                                אני באמת חייב את זה
+                                {PAYERS.HIM} באמת חייב את זה
                             </button>
                         </div>
                     ) : !isFullyFunded ? (

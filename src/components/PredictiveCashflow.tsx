@@ -7,6 +7,7 @@ import { Transaction, Subscription, Liability } from "@/types";
 import { getBillingPeriodForDate, getDaysRemainingInCycle } from "@/lib/billing";
 import { differenceInDays, addDays, format, isSameDay } from "date-fns";
 import { he } from "date-fns/locale";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface PredictiveCashflowProps {
     balance: number;
@@ -148,12 +149,12 @@ export function PredictiveCashflow({ balance, budget, transactions, subscription
             <div className="grid grid-cols-3 gap-2">
                 <div className="bg-white/5 rounded-xl p-2 text-center">
                     <p className="text-[9px] text-white/40">הוצאה יומית</p>
-                    <p className="text-sm font-bold text-white">₪{chartData.avgDailySpend}</p>
+                    <p className="text-sm font-bold text-white">{CURRENCY_SYMBOL}{chartData.avgDailySpend}</p>
                 </div>
                 <div className="bg-white/5 rounded-xl p-2 text-center">
                     <p className="text-[9px] text-white/40">צפי סוף חודש</p>
                     <p className={`text-sm font-bold ${chartData.projectedEndBalance > 0 ? "text-emerald-400" : "text-red-400"}`}>
-                        ₪{chartData.projectedEndBalance.toLocaleString()}
+                        {CURRENCY_SYMBOL}{chartData.projectedEndBalance.toLocaleString()}
                     </p>
                 </div>
                 <div className="bg-white/5 rounded-xl p-2 text-center">
@@ -183,7 +184,7 @@ export function PredictiveCashflow({ balance, budget, transactions, subscription
                             tick={{ fontSize: 9, fill: "rgba(255,255,255,0.2)" }}
                             axisLine={false}
                             tickLine={false}
-                            tickFormatter={(v: number) => `₪${(v / 1000).toFixed(0)}k`}
+                            tickFormatter={(v: number) => `${CURRENCY_SYMBOL}${(v / 1000).toFixed(0)}k`}
                             width={40}
                         />
                         <Tooltip
@@ -195,7 +196,7 @@ export function PredictiveCashflow({ balance, budget, transactions, subscription
                                 fontSize: "11px",
                             }}
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            formatter={(value: any) => [`₪${Number(value).toLocaleString()}`, ""]}
+                            formatter={(value: any) => [`${CURRENCY_SYMBOL}${Number(value).toLocaleString()}`, ""]}
                         />
                         <ReferenceLine y={0} stroke="rgba(239,68,68,0.3)" strokeDasharray="3 3" />
                         <Area type="monotone" dataKey="actual" stroke="#3b82f6" strokeWidth={2} fill="url(#cashflowGrad)" dot={false} />

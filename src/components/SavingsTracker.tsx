@@ -1,8 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useAppStore } from "@/stores/appStore";
 import { TrendingDown, Wallet, PiggyBank, Target, AlertTriangle, CheckCircle, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatAmount } from "@/lib/utils";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface SavingsTrackerProps {
     monthlyIncome: number;    // Total income this month
@@ -11,6 +13,7 @@ interface SavingsTrackerProps {
 }
 
 export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTrackerProps) => {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     // Calculations
     const actualSavings = monthlyIncome - totalSpent;
     const targetSavings = monthlyIncome - budget;
@@ -34,7 +37,7 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
         statusIcon = <CheckCircle className="w-4 h-4" />;
     } else if (actualSavings > 0 && isOverBudget) {
         status = "warning";
-        statusMessage = `חרגתם ב-₪${overBudgetAmount.toLocaleString()} אך עדיין חוסכים`;
+        statusMessage = isStealthMode ? `חרגתם אך עדיין חוסכים` : `חרגתם ב-${CURRENCY_SYMBOL}${overBudgetAmount.toLocaleString()} אך עדיין חוסכים`;
         statusIcon = <AlertTriangle className="w-4 h-4" />;
     } else {
         status = "overspent";
@@ -84,7 +87,7 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
                         <Wallet className="w-3.5 h-3.5 text-emerald-400" />
                         <span className="text-[10px] text-white/50">הכנסות</span>
                     </div>
-                    <span className="text-lg font-bold text-white">₪{monthlyIncome.toLocaleString()}</span>
+                    <span className="text-lg font-bold text-white">{formatAmount(monthlyIncome, isStealthMode, CURRENCY_SYMBOL, '***')}</span>
                 </div>
 
                 {/* Budget */}
@@ -93,7 +96,7 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
                         <Target className="w-3.5 h-3.5 text-blue-400" />
                         <span className="text-[10px] text-white/50">תקציב</span>
                     </div>
-                    <span className="text-lg font-bold text-white">₪{budget.toLocaleString()}</span>
+                    <span className="text-lg font-bold text-white">{formatAmount(budget, isStealthMode, CURRENCY_SYMBOL, '***')}</span>
                 </div>
 
                 {/* Spent */}
@@ -103,7 +106,7 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
                         <span className="text-[10px] text-white/50">הוצאות</span>
                     </div>
                     <span className={cn("text-lg font-bold", isOverBudget ? "text-red-400" : "text-white")}>
-                        ₪{totalSpent.toLocaleString()}
+                        {formatAmount(totalSpent, isStealthMode, CURRENCY_SYMBOL, '***')}
                     </span>
                 </div>
 
@@ -114,7 +117,7 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
                         <span className="text-[10px] text-white/50">חיסכון</span>
                     </div>
                     <span className={cn("text-lg font-bold", actualSavings >= 0 ? "text-emerald-400" : "text-red-400")}>
-                        {actualSavings < 0 && "-"}₪{Math.abs(actualSavings).toLocaleString()}
+                        {actualSavings < 0 && !isStealthMode && "-"}{formatAmount(Math.abs(actualSavings), isStealthMode, CURRENCY_SYMBOL, '***')}
                     </span>
                 </div>
             </div>
@@ -124,8 +127,8 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
                 <div className="flex justify-between text-[10px] mb-1">
                     <span className="text-white/50">ניצול תקציב</span>
                     <span className={cn(isOverBudget ? "text-red-400" : "text-white/70")}>
-                        {Math.round(budgetUsagePercent)}%
-                        {isOverBudget && ` (חריגה של ₪${overBudgetAmount.toLocaleString()})`}
+                        {isStealthMode ? '**%' : `${Math.round(budgetUsagePercent)}%`}
+                        {isOverBudget && !isStealthMode && ` (חריגה של ${CURRENCY_SYMBOL}${overBudgetAmount.toLocaleString()})`}
                     </span>
                 </div>
                 <div className="h-2 bg-white/10 rounded-full overflow-hidden">
@@ -154,13 +157,13 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
                 <div className="mt-3 pt-3 border-t border-white/10">
                     <div className="flex justify-between text-[10px]">
                         <span className="text-white/50">יעד חיסכון:</span>
-                        <span className="text-white/70">₪{targetSavings.toLocaleString()}</span>
+                        <span className="text-white/70">{formatAmount(targetSavings, isStealthMode, CURRENCY_SYMBOL, '***')}</span>
                     </div>
                     <div className="flex justify-between text-[10px] mt-1">
                         <span className="text-white/50">חיסכון בפועל:</span>
                         <span className={cn("font-medium", actualSavings >= targetSavings ? "text-emerald-400" : "text-amber-400")}>
-                            ₪{actualSavings.toLocaleString()}
-                            {actualSavings >= targetSavings ? " ✓" : ` (חסרים ₪${(targetSavings - actualSavings).toLocaleString()})`}
+                            {formatAmount(actualSavings, isStealthMode, CURRENCY_SYMBOL, '***')}
+                            {actualSavings >= targetSavings ? " ✓" : !isStealthMode ? ` (חסרים ${CURRENCY_SYMBOL}${(targetSavings - actualSavings).toLocaleString()})` : ""}
                         </span>
                     </div>
                 </div>

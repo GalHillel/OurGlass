@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { SubscriptionKiller } from '@/components/SubscriptionKiller';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 describe('SubscriptionKiller', () => {
     it('shows empty state initially', () => {
@@ -24,8 +25,8 @@ describe('SubscriptionKiller', () => {
         expect(screen.getByText('כפילות אפשרית')).toBeInTheDocument();
         expect(screen.getByText('שימוש נמוך')).toBeInTheDocument();
 
-        // Check amount formatting (₪70)
-        expect(screen.getByText(/₪70/)).toBeInTheDocument();
+        // Check amount formatting (${CURRENCY_SYMBOL}70)
+        expect(screen.getByText(/${CURRENCY_SYMBOL}70/)).toBeInTheDocument();
     });
 
     it('displays all clear when no issues found', () => {

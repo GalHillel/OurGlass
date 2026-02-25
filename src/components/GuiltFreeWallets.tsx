@@ -5,6 +5,7 @@ import { Wallet, User } from "lucide-react";
 import { useGuiltFreeWallets } from "@/hooks/useJointFinance";
 import { Skeleton } from "@/components/ui/skeleton";
 import CountUp from "react-countup";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 export function GuiltFreeWallets({ viewingDate = new Date() }: { viewingDate?: Date }) {
     const { data, isLoading } = useGuiltFreeWallets(viewingDate);
@@ -28,7 +29,7 @@ export function GuiltFreeWallets({ viewingDate = new Date() }: { viewingDate?: D
                 {/* Him */}
                 {data.pocketHim > 0 && (
                     <WalletCard
-                        label="שלו"
+                        label={PAYERS.HIM}
                         remaining={data.himRemaining}
                         total={data.pocketHim}
                         spent={data.himSpent}
@@ -39,7 +40,7 @@ export function GuiltFreeWallets({ viewingDate = new Date() }: { viewingDate?: D
                 {/* Her */}
                 {data.pocketHer > 0 && (
                     <WalletCard
-                        label="שלה"
+                        label={PAYERS.HER}
                         remaining={data.herRemaining}
                         total={data.pocketHer}
                         spent={data.herSpent}
@@ -94,7 +95,7 @@ function WalletCard({
             </div>
 
             <div className={`text-xl font-black ${isLow ? "text-red-400" : c.text}`}>
-                ₪<CountUp end={remaining} separator="," duration={0.8} />
+                ${CURRENCY_SYMBOL}<CountUp end={remaining} separator="," duration={0.8} />
             </div>
 
             {/* Progress bar */}
@@ -108,8 +109,8 @@ function WalletCard({
             </div>
 
             <div className="flex justify-between text-[9px] text-white/30">
-                <span>הוצאות: ₪{spent.toLocaleString()}</span>
-                <span>מתוך ₪{total.toLocaleString()}</span>
+                <span>הוצאות: {CURRENCY_SYMBOL}{spent.toLocaleString()}</span>
+                <span>מתוך {CURRENCY_SYMBOL}{total.toLocaleString()}</span>
             </div>
         </div>
     );

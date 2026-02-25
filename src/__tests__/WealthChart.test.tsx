@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { WealthChart } from '@/components/WealthChart';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 vi.mock('recharts', async () => {
     const ActualRecharts = await vi.importActual('recharts');
@@ -26,6 +27,6 @@ describe('WealthChart', () => {
         render(<WealthChart assets={assets as never} selectedType={null} onSelect={vi.fn()} />);
 
         // Total value = 30k
-        expect(screen.getByText('₪30k')).toBeInTheDocument();
+        expect(screen.getByText(`${CURRENCY_SYMBOL}30k`)).toBeInTheDocument();
     });
 });

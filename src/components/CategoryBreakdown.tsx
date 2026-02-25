@@ -23,8 +23,10 @@ import {
   CreditCard,
 } from "lucide-react";
 import { Transaction, Subscription, Liability } from "@/types";
-import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/appStore";
+import { cn, formatAmount } from "@/lib/utils";
 import { isLiabilityActive } from "@/hooks/useWealthData";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 // Single unified category icons (same for both transactions and subscriptions)
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -106,6 +108,7 @@ export const CategoryBreakdown = ({
   onCategorySelect,
   viewingDate = new Date()
 }: CategoryBreakdownProps) => {
+  const isStealthMode = useAppStore(s => s.isStealthMode);
   const { total, rows } = useMemo(() => {
     // Track amount and whether category has transactions
     const byCategory = new Map<string, { sum: number; hasTransactions: boolean }>();
@@ -195,7 +198,7 @@ export const CategoryBreakdown = ({
             </button>
           )}
           <span className="text-xs text-white/50">
-            סה״כ ₪{total.toLocaleString()}
+            סה״כ {formatAmount(total, isStealthMode, CURRENCY_SYMBOL)}
           </span>
         </div>
       </div>
@@ -236,7 +239,7 @@ export const CategoryBreakdown = ({
                     )}
                   </div>
                   <span className={cn("text-sm font-bold shrink-0", isSelected ? "text-blue-200" : "text-white")}>
-                    ₪{Math.round(sum).toLocaleString()}
+                    {formatAmount(sum, isStealthMode, CURRENCY_SYMBOL)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-white/10 overflow-hidden">
@@ -287,7 +290,7 @@ export const CategoryBreakdown = ({
                         </span>
                       </div>
                       <span className="text-sm font-bold text-red-400 shrink-0 mr-3">
-                        ₪{Number(tx.amount).toLocaleString()}
+                        {formatAmount(tx.amount, isStealthMode, CURRENCY_SYMBOL)}
                       </span>
                     </div>
                   ))

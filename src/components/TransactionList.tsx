@@ -1,6 +1,7 @@
 "use client";
 
 import { Transaction, Subscription } from "@/types";
+import { useAppStore } from "@/stores/appStore";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { Trash2, ShoppingBag, Coffee, Car, Film, FileText, Utensils, Fuel, ShoppingCart, Calendar } from "lucide-react";
@@ -38,10 +39,13 @@ import React, { memo, useRef, useMemo } from 'react';
 import { motion } from "framer-motion";
 import { ActivePress } from "@/components/ui/ActivePress";
 import { SurpriseReveal } from "./SurpriseReveal";
+import { cn, formatAmount } from "@/lib/utils";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 // ... imports ...
 
 export const TransactionList = memo(({ transactions, subscriptions = [], onRefresh, onEdit, activeFilter, activeDateFilter, currentPayer = 'him' }: TransactionListProps) => {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
     const [detectedSub, setDetectedSub] = React.useState<{ name: string, amount: number } | null>(null);
@@ -219,7 +223,7 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
                         </div>
                         <div>
                             <p className="text-xs text-blue-200">זיהינו חיוב קבוע</p>
-                            <p className="text-sm font-bold text-white">{detectedSub.name} (₪{detectedSub.amount})</p>
+                            <p className="text-sm font-bold text-white">{detectedSub.name} ({formatAmount(detectedSub.amount, isStealthMode, CURRENCY_SYMBOL, '***')})</p>
                         </div>
                     </div>
                     <button className="text-xs bg-blue-500/20 hover:bg-blue-500/40 text-blue-200 px-3 py-1.5 rounded-lg transition-colors ml-6">
@@ -294,7 +298,7 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
                                             {installmentLabel}
                                         </span>
                                     )}
-                                    <span className="font-bold text-white">₪{tx.amount}</span>
+                                    <span className="font-bold text-white">{formatAmount(tx.amount, isStealthMode, CURRENCY_SYMBOL, '***')}</span>
                                 </div>
                             </ActivePress>
                         </SwipeableRow>

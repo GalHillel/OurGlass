@@ -45,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { NumericKeypad } from "./NumericKeypad";
 import confetti from "canvas-confetti";
 import { useAppStore } from "@/stores/appStore";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface AddTransactionDrawerProps {
     isOpen: boolean;
@@ -135,7 +136,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
             if (context?.previousTransactions) {
                 queryClient.setQueriesData({ queryKey: ['transactions'] }, context.previousTransactions);
             }
-            const errorMsg = (err as any)?.message || "שגיאה בשמירה";
+            const errorMsg = err instanceof Error ? err.message : "שגיאה בשמירה";
             toast.error("שגיאה בשמירה: " + errorMsg);
             console.error("Save error:", err);
             hapticError();
@@ -329,7 +330,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                         <div className="absolute inset-0 bg-blue-500/5 blur-3xl" />
                         <span className="text-white/40 text-xs mb-1 relative z-10">סכום ההוצאה</span>
                         <div className="flex items-baseline relative z-10 rtl:flex-row-reverse gap-1">
-                            <span className="text-3xl text-blue-400">₪</span>
+                            <span className="text-3xl text-blue-400">{CURRENCY_SYMBOL}</span>
                             <span className={cn("font-black text-white tracking-tighter transition-all", amountStr.length > 5 ? "text-5xl" : "text-6xl")}>
                                 {amountStr || "0"}
                             </span>
@@ -381,9 +382,9 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                         <div className="flex gap-3">
                             {/* Payer Toggle */}
                             <div className="flex bg-slate-900 rounded-xl p-1 border border-white/5 flex-1">
-                                <button type="button" onClick={() => { triggerHaptic(); setPayer("him"); }} className={cn("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all", payer === "him" ? "bg-blue-600 shadow-md text-white" : "text-white/30")}>אני</button>
+                                <button type="button" onClick={() => { triggerHaptic(); setPayer("him"); }} className={cn("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all", payer === "him" ? "bg-blue-600 shadow-md text-white" : "text-white/30")}>{PAYERS.HIM}</button>
                                 <button type="button" onClick={() => { triggerHaptic(); setPayer("joint"); }} className={cn("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all", payer === "joint" ? "bg-purple-600 shadow-md text-white" : "text-white/30")}>משותף</button>
-                                <button type="button" onClick={() => { triggerHaptic(); setPayer("her"); }} className={cn("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all", payer === "her" ? "bg-pink-600 shadow-md text-white" : "text-white/30")}>בת זוג</button>
+                                <button type="button" onClick={() => { triggerHaptic(); setPayer("her"); }} className={cn("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all", payer === "her" ? "bg-pink-600 shadow-md text-white" : "text-white/30")}>{PAYERS.HER}</button>
                             </div>
 
                             {/* Date Picker - NATIVE */}
@@ -439,7 +440,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                             </div>
                             {installments > 1 && (
                                 <div className="text-center text-xs text-blue-300/60 font-mono">
-                                    {installments} תשלומים של ₪{(parseFloat(amountStr || "0") / installments).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                    {installments} תשלומים של {CURRENCY_SYMBOL}{(parseFloat(amountStr || "0") / installments).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                 </div>
                             )}
                         </div>

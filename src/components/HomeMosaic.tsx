@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
     HeartPulse,
     PiggyBank,
@@ -12,14 +12,21 @@ import {
     Zap,
     Users,
     CalendarDays,
-    PieChart
+    PieChart,
+    Settings2,
+    Plus,
+    LayoutGrid,
+    Sparkles,
+    Gift,
+    CreditCard,
+    ChevronLeft,
+    CalendarRange
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
-
 import { BudgetHealthScore } from "@/components/BudgetHealthScore";
 import { SavingsTracker } from "@/components/SavingsTracker";
 import { StockPortfolio } from "@/components/StockPortfolio";
-import { cn } from "@/lib/utils";
+import { cn, formatAmount } from "@/lib/utils";
 import { Transaction, Asset, Subscription, Liability } from "@/types";
 import { ReactorCore } from "@/components/ReactorCore";
 import { PartnerStats } from "@/components/PartnerStats";
@@ -53,10 +60,18 @@ export interface HomeMosaicProps {
     onCategorySelect: (category: string | null) => void;
     onRefresh?: () => Promise<void>;
     usdToIls?: number;
+    viewingDate: Date;
+    onViewingDateChange: (date: Date | ((prev: Date) => Date)) => void;
 }
 
-import React, { useMemo } from "react";
-import { useDashboardStore } from "@/stores/dashboardStore";
+import React, { useState, useMemo } from "react";
+import { useDashboardStore, WidgetConfig } from "@/stores/dashboardStore";
+import { useAppStore } from "@/stores/appStore";
+import { triggerHaptic } from "@/utils/haptics";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { format, subMonths, addMonths } from "date-fns";
+import { he } from "date-fns/locale";
+import { getBillingPeriodForDate } from "@/lib/billing";
 
 export const HomeMosaic = React.memo(({
     balance,
@@ -78,10 +93,14 @@ export const HomeMosaic = React.memo(({
     selectedFilterCategory,
     onCategorySelect,
     onRefresh,
-    usdToIls
+    usdToIls,
+    viewingDate,
+    onViewingDateChange
 }: HomeMosaicProps) => {
+    const [isEditModeOpen, setIsEditModeOpen] = useState(false);
 
-    const { widgets } = useDashboardStore();
+    const { isStealthMode } = useAppStore();
+    const { widgets, features } = useDashboardStore();
 
     // -- Calculations for Tiles --
     const budgetUsedPercent = useMemo(() => Math.min(100, Math.round((totalExpenses / budget) * 100)), [totalExpenses, budget]);
@@ -93,7 +112,7 @@ export const HomeMosaic = React.memo(({
     const stockAssets = useMemo(() => assets.filter(a => a.type === 'stock'), [assets]);
 
     const cashAssets = useMemo(() => assets.filter(a => a.type === 'cash'), [assets]);
-    const totalCash = useMemo(() => cashAssets.reduce((sum, a) => sum + (Number(a.current_amount) || 0), 0), [cashAssets]);
+    const totalCash = useMemo(() => cashAssets.reduce((sum: number, a: Asset) => sum + (Number(a.current_amount) || 0), 0), [cashAssets]);
 
     const activeWidgets = useMemo(() => {
         return [...widgets].filter(w => w.enabled).sort((a, b) => a.order - b.order);
@@ -116,6 +135,38 @@ export const HomeMosaic = React.memo(({
                                 cycleEnd={cycleEnd}
                             />
                         </div>
+
+                        {/* Integrated Billing Cycle Navigation */}
+                        <div className="mt-4 px-2 flex items-center justify-between">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onViewingDateChange(prev => subMonths(prev, 1));
+                                    triggerHaptic();
+                                }}
+                                className="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-90 transition-all border border-white/10"
+                            >
+                                <ChevronRight className="w-4 h-4 text-white/60" />
+                            </button>
+                            <div className="flex items-center gap-2.5 px-4 py-2 bg-white/5 rounded-2xl border border-white/10">
+                                <CalendarRange className="w-4 h-4 text-blue-400" />
+                                <span className="text-sm font-bold text-white/90">
+                                    {format(getBillingPeriodForDate(viewingDate).start, 'd.M', { locale: he })}
+                                    {' - '}
+                                    {format(getBillingPeriodForDate(viewingDate).end, 'd.M', { locale: he })}
+                                </span>
+                            </div>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onViewingDateChange(prev => addMonths(prev, 1));
+                                    triggerHaptic();
+                                }}
+                                className="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-90 transition-all border border-white/10"
+                            >
+                                <ChevronLeft className="w-4 h-4 text-white/60" />
+                            </button>
+                        </div>
                     </div>
                 );
             case 'ai-hub':
@@ -136,6 +187,7 @@ export const HomeMosaic = React.memo(({
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
+                                layout
                                 whileTap={{ scale: 0.95 }}
                                 className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
                             >
@@ -180,6 +232,7 @@ export const HomeMosaic = React.memo(({
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
+                                layout
                                 whileTap={{ scale: 0.95 }}
                                 className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
                             >
@@ -193,7 +246,7 @@ export const HomeMosaic = React.memo(({
                                 <div className="relative z-10">
                                     <h3 className="text-sm font-medium text-emerald-100/80">חיסכון חודשי</h3>
                                     <div className="text-xl font-bold text-white mt-0.5">
-                                        ₪{Math.max(0, actualSavings).toLocaleString()}
+                                        {formatAmount(Math.max(0, actualSavings), isStealthMode, CURRENCY_SYMBOL)}
                                     </div>
                                     <p className="text-[10px] text-emerald-200/60 mt-1">
                                         {savingsRate}% מההכנסה
@@ -214,10 +267,27 @@ export const HomeMosaic = React.memo(({
                     </Dialog>
                 );
             case 'investments':
+                if (!features.enableStocks) {
+                    return (
+                        <motion.div
+                            key={key}
+                            layout
+                            whileTap={{ scale: 0.95 }}
+                            className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/5 rounded-3xl p-6 flex flex-col items-center justify-center gap-2 text-center"
+                        >
+                            <div className="p-3 bg-purple-500/10 rounded-full">
+                                <Rocket className="w-6 h-6 text-purple-300/30" />
+                            </div>
+                            <p className="text-xs text-white/30 font-medium">תיק השקעות</p>
+                            <p className="text-[10px] text-blue-300/50">הפעל בהגדרות</p>
+                        </motion.div>
+                    );
+                }
                 return (
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
+                                layout
                                 whileTap={{ scale: 0.95 }}
                                 className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
@@ -248,6 +318,7 @@ export const HomeMosaic = React.memo(({
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
+                                layout
                                 whileTap={{ scale: 0.95 }}
                                 className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
@@ -281,7 +352,7 @@ export const HomeMosaic = React.memo(({
                                         <p>אין כספות פעילות</p>
                                     </div>
                                 ) : (
-                                    cashAssets.map(asset => (
+                                    cashAssets.map((asset: Asset) => (
                                         <div key={asset.id} className="bg-white/5 rounded-2xl p-4 border border-white/5 flex justify-between items-center">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">
@@ -293,7 +364,9 @@ export const HomeMosaic = React.memo(({
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-lg font-bold text-emerald-400">₪{Number(asset.current_amount).toLocaleString()}</div>
+                                                <div className="text-lg font-bold text-emerald-400">
+                                                    {formatAmount(Number(asset.current_amount), isStealthMode, CURRENCY_SYMBOL)}
+                                                </div>
                                             </div>
                                         </div>
                                     ))
@@ -310,7 +383,7 @@ export const HomeMosaic = React.memo(({
                                 </div>
                                 <div className="mt-4">
                                     <WealthTimeMachine
-                                        currentNetWorth={totalCash + stockAssets.reduce((s, a) => s + (Number(a.current_amount) || 0), 0)}
+                                        currentNetWorth={totalCash + stockAssets.reduce((s: number, a: Asset) => s + (Number(a.current_amount) || 0), 0)}
                                         monthlySavings={Math.max(0, actualSavings)}
                                     />
                                 </div>
@@ -323,6 +396,7 @@ export const HomeMosaic = React.memo(({
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
+                                layout
                                 whileTap={{ scale: 0.95 }}
                                 className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
@@ -352,6 +426,7 @@ export const HomeMosaic = React.memo(({
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
+                                layout
                                 whileTap={{ scale: 0.95 }}
                                 className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
@@ -362,7 +437,7 @@ export const HomeMosaic = React.memo(({
                                 <div className="relative z-10">
                                     <h3 className="text-base font-bold text-white">חלוקה</h3>
                                     <p className="text-[10px] text-pink-200/60 mt-1">
-                                        אני / את / אנחנו
+                                        {PAYERS.HIM} / {PAYERS.HER} / {PAYERS.JOINT}
                                     </p>
                                 </div>
                             </motion.div>
@@ -381,6 +456,7 @@ export const HomeMosaic = React.memo(({
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
+                                layout
                                 whileTap={{ scale: 0.95 }}
                                 className="col-span-2 bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex items-center justify-between group cursor-pointer"
                             >
@@ -416,6 +492,7 @@ export const HomeMosaic = React.memo(({
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
+                                layout
                                 whileTap={{ scale: 0.95 }}
                                 className="col-span-2 bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex items-center justify-between group cursor-pointer"
                             >
@@ -450,16 +527,80 @@ export const HomeMosaic = React.memo(({
                     </Dialog>
                 );
             case 'settlements':
-                // Optional placeholder or SettleUp widget if user re-enables it
+                if (!features.enableSettlements) return null;
+                // SettleUp widget placeholder
                 return null;
+            case 'subscriptions':
+                return (
+                    <motion.div
+                        key={key}
+                        layout
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => window.location.href = '/subscriptions'}
+                        className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
+                    >
+                        <div className="absolute inset-0 bg-blue-400/5 group-hover:bg-blue-400/10 transition-colors" />
+                        <div className="flex justify-between items-start relative z-10">
+                            <div className="p-2 bg-blue-500/20 rounded-xl">
+                                <CreditCard className="w-5 h-5 text-blue-300" />
+                            </div>
+                        </div>
+                        <div className="relative z-10">
+                            <h3 className="text-sm font-medium text-blue-100/80">קבועות</h3>
+                            <div className="text-xl font-bold text-white mt-0.5">
+                                {subscriptions.length} מנויים
+                            </div>
+                        </div>
+                    </motion.div>
+                );
+            case 'wishlist':
+                return (
+                    <motion.div
+                        key={key}
+                        layout
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => window.location.href = '/wishlist'}
+                        className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
+                    >
+                        <div className="absolute inset-0 bg-pink-400/5 group-hover:bg-pink-400/10 transition-colors" />
+                        <div className="flex justify-between items-start relative z-10">
+                            <div className="p-2 bg-pink-500/20 rounded-xl">
+                                <Gift className="w-5 h-5 text-pink-300" />
+                            </div>
+                        </div>
+                        <div className="relative z-10">
+                            <h3 className="text-sm font-medium text-pink-100/80">משאלות</h3>
+                            <div className="text-xl font-bold text-white mt-0.5">
+                                {isStealthMode ? '***' : assets.filter(a => a.type === 'wish').length} פריטים
+                            </div>
+                        </div>
+                    </motion.div>
+                );
             default:
                 return null;
         }
     };
 
     return (
-        <div className="grid grid-cols-2 gap-3 w-full max-w-md px-4 perspective-1000">
-            {activeWidgets.map((widget) => renderWidget(widget.id, widget.id))}
+        <div className="w-full max-w-md space-y-4">
+            <div className="grid grid-cols-2 gap-3 w-full px-4 perspective-1000">
+                <AnimatePresence mode="popLayout">
+                    {activeWidgets.length > 0 ? (
+                        activeWidgets.map((widgetValue: WidgetConfig) => renderWidget(widgetValue.id, widgetValue.id))
+                    ) : (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="col-span-2"
+                        >
+                            <div className="text-center py-12 bg-white/5 rounded-3xl border border-dashed border-white/10">
+                                <LayoutGrid className="w-8 h-8 mx-auto mb-3 opacity-20 text-white" />
+                                <p className="text-white/40 text-sm">הדשבורד ריק. ניתן להפעיל רכיבים בהגדרות.</p>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
     );
 });

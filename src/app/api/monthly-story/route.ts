@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getBillingPeriodForDate } from "@/lib/billing";
 import { primaryModel } from "@/lib/ai-router";
 import { NextResponse } from "next/server";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 export const runtime = "edge";
 
@@ -58,9 +59,9 @@ export async function GET() {
         You are a financial storyteller for "OurGlass", a premium AI-first finance app.
         Create a 4-slide "Spotify Wrapped" style story for this couple.
         Data:
-        - Total Spent This Month: ₪${totalSpent}
-        - Budget: ₪${profile.budget}
-        - Top Spending Category: ${biggestCategory[0]} (₪${biggestCategory[1]})
+        - Total Spent This Month: ${CURRENCY_SYMBOL}${totalSpent}
+        - Budget: ${CURRENCY_SYMBOL}${profile.budget}
+        - Top Spending Category: ${biggestCategory[0]} ($${CURRENCY_SYMBOL}${biggestCategory[1]})
         - Number of Transactions: ${transactions.length}
         - Passive Income/Savings Goal progress: High
         

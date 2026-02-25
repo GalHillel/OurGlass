@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useAppStore } from "@/stores/appStore";
 import { Transaction, Subscription, Liability } from "@/types";
 import { motion } from "framer-motion";
 import {
@@ -19,8 +20,9 @@ import {
     CreditCard,
     RefreshCw
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatAmount } from "@/lib/utils";
 import { isLiabilityActive } from "@/hooks/useWealthData";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 // Combined icon map from various sources for consistency
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -53,6 +55,7 @@ interface SpendingBreakdownProps {
 }
 
 export const SpendingBreakdown = ({ transactions, subscriptions, liabilities, viewingDate = new Date() }: SpendingBreakdownProps) => {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     const { total, items } = useMemo(() => {
         const grouped = new Map<string, number>();
 
@@ -126,7 +129,7 @@ export const SpendingBreakdown = ({ transactions, subscriptions, liabilities, vi
                             <div className="flex-1 flex flex-col justify-center gap-1.5">
                                 <div className="flex justify-between items-end w-full">
                                     <span className="text-sm font-medium text-white/90 leading-none">{item.name}</span>
-                                    <span className="text-sm font-bold text-white leading-none">₪{item.value.toLocaleString()}</span>
+                                    <span className="text-sm font-bold text-white leading-none">{formatAmount(item.value, isStealthMode, CURRENCY_SYMBOL)}</span>
                                 </div>
 
                                 {/* Progress Bar Container */}

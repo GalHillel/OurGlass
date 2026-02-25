@@ -40,13 +40,15 @@ export const useWealth = () => {
             }
 
             const stockSymbols = goals
-                .filter(g => (g.type === 'stock' || g.investment_type === 'crypto') && g.symbol)
+                .filter(g => g.type === 'stock' && g.symbol)
                 .map(g => g.symbol!.toUpperCase());
 
-            let livePrices: Record<string, { price: number; changePercent: number }> = {};
-            let usdToIls = 3.65;
+            const hasUsdAssets = goals.some(g => g.type === 'stock' || g.type === 'foreign_currency' || g.investment_type === 'foreign_currency');
 
-            if (stockSymbols.length > 0) {
+            let livePrices: Record<string, { price: number; changePercent: number }> = {};
+            let usdToIls = 3.65; // fallback
+
+            if (hasUsdAssets) {
                 try {
                     const origin = typeof window !== 'undefined' ? window.location.origin : '';
                     const apiUrl = `${origin}/api/market-data`;
@@ -54,7 +56,7 @@ export const useWealth = () => {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ symbols: stockSymbols }),
-                        cache: 'no-store' // Ensure we get fresh data from our API
+                        cache: 'no-store'
                     });
 
                     if (res.ok) {
@@ -62,8 +64,8 @@ export const useWealth = () => {
                         livePrices = data.stocks || {};
                         usdToIls = data.usdToIls || data.exchangeRate || 3.65;
                     }
-                } catch {
-                    console.warn("Market data fetch failed, using fallback prices.");
+                } catch (e) {
+                    console.warn("Market data fetch failed, using fallback rate.", e);
                 }
             }
 
@@ -83,16 +85,7 @@ export const useWealth = () => {
                     } else {
                         calculatedValue = Number(asset.current_amount) || 0;
                     }
-                } else if (asset.investment_type === 'crypto' && asset.symbol) {
-                    const priceData = livePrices[asset.symbol];
-                    if (priceData && priceData.price) {
-                        const quantity = Number(asset.quantity) || 0;
-                        const livePriceUSD = priceData.price;
-                        calculatedValue = quantity * livePriceUSD * usdToIls;
-                    } else {
-                        calculatedValue = Number(asset.current_amount) || 0;
-                    }
-                } else if (asset.investment_type === 'usd_cash' || asset.type === 'usd_cash') {
+                } else if (asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency') {
                     const usdAmount = Number(asset.current_amount) || 0;
                     calculatedValue = usdAmount * usdToIls;
                 } else {
@@ -116,7 +109,6 @@ export const useWealth = () => {
 
                 const isInvestment =
                     asset.type === 'stock' ||
-                    asset.investment_type === 'crypto' ||
                     asset.investment_type === 'real_estate';
 
                 if (isInvestment) {
@@ -128,8 +120,8 @@ export const useWealth = () => {
                 return {
                     ...asset,
                     calculatedValue: assetValue,
-                    livePriceUSD: (asset.type === 'stock' || asset.investment_type === 'crypto') ? livePrices[(asset.symbol || '').toUpperCase()]?.price || 0 : 0,
-                    changePercent: (asset.type === 'stock' || asset.investment_type === 'crypto') ? livePrices[(asset.symbol || '').toUpperCase()]?.changePercent || 0 : 0
+                    livePriceUSD: asset.type === 'stock' ? livePrices[(asset.symbol || '').toUpperCase()]?.price || 0 : 0,
+                    changePercent: asset.type === 'stock' ? livePrices[(asset.symbol || '').toUpperCase()]?.changePercent || 0 : 0
                 };
             });
 
@@ -151,7 +143,7 @@ export const useWealth = () => {
         investmentsValue: 0,
         cashValue: 0,
         assets: [],
-        usdToIls: 3.65
+        usdToIls: 3.7
     }), []);
 
     const wealth = data || defaultData;

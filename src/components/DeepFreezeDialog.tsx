@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ThermometerSnowflake, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface DeepFreezeDialogProps {
     isOpen: boolean;
@@ -44,7 +45,7 @@ export const DeepFreezeDialog = ({ isOpen, amount, onFreeze, onBuyAnyway, onCanc
 
                             <div className="space-y-2">
                                 <h2 className="text-2xl font-black text-white leading-tight">
-                                    רגע, זה ₪{amount}! 🥶
+                                    רגע, זה {CURRENCY_SYMBOL}{amount}! 🥶
                                 </h2>
                                 <p className="text-slate-300 text-sm leading-relaxed px-2">
                                     זו הוצאה גדולה. מחקרים מראים ש-40% מהקניות האימפולסיביות מיותרות.
@@ -68,7 +69,7 @@ export const DeepFreezeDialog = ({ isOpen, amount, onFreeze, onBuyAnyway, onCanc
                                     variant="ghost"
                                     className="w-full text-slate-400 hover:text-white hover:bg-white/5 h-12 rounded-xl text-sm"
                                 >
-                                    לא, אני חייב את זה עכשיו
+                                    לא, {PAYERS.HIM} חייב את זה עכשיו
                                     <ArrowRight className="w-4 h-4 mr-2" />
                                 </Button>
                             </div>

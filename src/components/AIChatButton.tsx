@@ -10,7 +10,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useAppStore } from "@/stores/appStore";
 import { useWealth } from "@/hooks/useWealth";
-import { PAYERS } from "@/lib/constants";
+import { PAYERS, CURRENCY_SYMBOL } from "@/lib/constants";
 import { motion } from "framer-motion";
 import { FinancialContext, Goal, Liability, Transaction, Subscription, WishlistItem, WealthSnapshot } from "@/types";
 import { isLiabilityActive } from "@/hooks/useWealthData";
@@ -42,11 +42,11 @@ function generateDynamicInsight(context: FinancialContext | null, firstName: str
 
     // Pick the most relevant insight
     if (budgetUsedPct >= 90) return `${firstName}, ניצלת ${budgetUsedPct}% מהתקציב — בוא נראה איפה לחסוך`;
-    if (budgetUsedPct >= 70) return `${firstName}, נשארו לך ₪${remaining.toLocaleString()} — מעקב חכם?`;
+    if (budgetUsedPct >= 70) return `${firstName}, נשארו לך $${CURRENCY_SYMBOL}${remaining.toLocaleString()} — מעקב חכם?`;
     if (budgetUsedPct <= 20 && totalSpent > 0) return `${firstName}, חיסכון מדהים! רק ${budgetUsedPct}% מהתקציב 🎯`;
-    if (topCat && topCat[1] > budget * 0.25) return `${firstName}, הוצאת ₪${topCat[1].toLocaleString()} על ${topCat[0]} — ננתח?`;
+    if (topCat && topCat[1] > budget * 0.25) return `${firstName}, הוצאת $${CURRENCY_SYMBOL}${topCat[1].toLocaleString()} על ${topCat[0]} — ננתח?`;
     if (subscriptions?.length > 5) return `${firstName}, יש לך ${subscriptions.length} מנויים — אפשר לחסוך?`;
-    if (remaining > 2000) return `${firstName}, יש ₪${remaining.toLocaleString()} פנויים — מה עושים איתם?`;
+    if (remaining > 2000) return `${firstName}, יש $${CURRENCY_SYMBOL}${remaining.toLocaleString()} פנויים — מה עושים איתם?`;
 
     return `${firstName}, רוצה סיכום חכם של החודש? ✨`;
 }
@@ -134,9 +134,9 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
 
             const assetsSummary = (wealthAssets || []).reduce((acc, asset: Goal) => {
                 const valueInIls = toSafeNumber(asset.calculatedValue ?? asset.current_amount);
-                if (asset.type === 'stock' || asset.investment_type === 'crypto' || asset.investment_type === 'real_estate') {
+                if (asset.type === 'stock' || asset.investment_type === 'real_estate') {
                     acc.stocksInvestments += valueInIls;
-                } else if (asset.investment_type === 'usd_cash' || asset.type === 'usd_cash') {
+                } else if (asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency') {
                     acc.usdCash.usdAmount += toSafeNumber(asset.current_amount);
                     acc.usdCash.ilsValue += valueInIls;
                 } else if (asset.type === 'money_market') {

@@ -10,6 +10,18 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { LogOut, Save, User, Smartphone } from "lucide-react";
 import { useAppStore } from "@/stores/appStore";
+import { useDashboardStore, FeatureKey } from "@/stores/dashboardStore";
+import { Switch } from "@/components/ui/switch";
+import {
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerTrigger,
+} from "@/components/ui/drawer";
+import { triggerHaptic } from "@/utils/haptics";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CustomizationManager } from "@/components/CustomizationManager";
 
 export default function SettingsPage() {
     console.log("Settings Page Rendering"); // Debug log for build verification
@@ -24,6 +36,8 @@ export default function SettingsPage() {
     const [income, setIncome] = useState("");
     const [loading, setLoading] = useState(false);
     const { appIdentity, setAppIdentity } = useAppStore();
+    const features = useDashboardStore((s) => s.features);
+    const toggleFeature = useDashboardStore((s) => s.toggleFeature);
 
     const [isLoaded, setIsLoaded] = useState(false);
 
@@ -116,7 +130,7 @@ export default function SettingsPage() {
                                 className="bg-slate-950/50 border-white/10 text-white pl-10 text-lg font-mono h-11"
                                 placeholder="0.00"
                             />
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">₪</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">{CURRENCY_SYMBOL}</span>
                         </div>
                     </div>
 
@@ -130,7 +144,7 @@ export default function SettingsPage() {
                                 className="bg-slate-950/50 border-emerald-500/20 text-emerald-100 pl-10 text-lg font-mono font-bold h-11 focus:border-emerald-500/50"
                                 placeholder="25000"
                             />
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500/50">₪</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500/50">{CURRENCY_SYMBOL}</span>
                         </div>
                     </div>
 
@@ -139,7 +153,7 @@ export default function SettingsPage() {
                         <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 flex justify-between items-center animate-in fade-in slide-in-from-top-2">
                             <span className="text-xs text-emerald-200">פוטנציאל חיסכון:</span>
                             <span className="font-bold text-emerald-400 font-mono">
-                                {savingsRate.toFixed(0)}% (₪{potentialSavings.toLocaleString()})
+                                {savingsRate.toFixed(0)}% ({CURRENCY_SYMBOL}{potentialSavings.toLocaleString()})
                             </span>
                         </div>
                     )}
@@ -148,7 +162,7 @@ export default function SettingsPage() {
                         <div className="p-3 bg-red-500/10 rounded-xl border border-red-500/20 flex justify-between items-center animate-in fade-in slide-in-from-top-2">
                             <span className="text-xs text-red-200">גירעון מתוכנן:</span>
                             <span className="font-bold text-red-400 font-mono">
-                                (₪{(Number(budget) - Number(income)).toLocaleString()})
+                                ({CURRENCY_SYMBOL}{(Number(budget) - Number(income)).toLocaleString()})
                             </span>
                         </div>
                     )}
@@ -163,7 +177,7 @@ export default function SettingsPage() {
                                 className="bg-slate-950/50 border-white/10 text-white pl-10 text-lg font-mono font-bold h-11"
                                 placeholder="20000"
                             />
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">₪</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">{CURRENCY_SYMBOL}</span>
                         </div>
                     </div>
 
@@ -185,7 +199,7 @@ export default function SettingsPage() {
                                     }`}
                             >
                                 <span className="text-2xl mb-1">👨🏻</span>
-                                <span className="text-xs font-bold">גל</span>
+                                <span className="text-xs font-bold">{PAYERS.HIM}</span>
                             </button>
                             <button
                                 onClick={() => setAppIdentity('her')}
@@ -195,7 +209,7 @@ export default function SettingsPage() {
                                     }`}
                             >
                                 <span className="text-2xl mb-1">👩🏻</span>
-                                <span className="text-xs font-bold">איריס</span>
+                                <span className="text-xs font-bold">{PAYERS.HER}</span>
                             </button>
                         </div>
                     </div>
@@ -209,6 +223,46 @@ export default function SettingsPage() {
                     <Save className="w-4 h-4 ml-2" />
                     {loading ? "שומר..." : "שמור שינויים"}
                 </Button>
+            </div>
+
+            {/* ── Universal Customization Section ── */}
+            <div className="neon-card p-6 rounded-3xl space-y-5 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+                <div className="flex items-center gap-3 relative z-10">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-emerald-500/20 border border-white/5 flex items-center justify-center shadow-[0_0_12px_rgba(59,130,246,0.2)]">
+                        <span className="text-2xl">🎨</span>
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-white">התאמה אישית</h2>
+                        <p className="text-xs text-white/40">שלוט במראה ובתכונות של האפליקציה</p>
+                    </div>
+                </div>
+
+                <Drawer>
+                    <DrawerTrigger asChild>
+                        <Button
+                            className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 h-14 rounded-2xl transition-all flex items-center justify-between px-6 group"
+                            onClick={() => triggerHaptic()}
+                        >
+                            <span className="font-bold">ערוך פריסת רכיבים ומסכים</span>
+                            <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
+                                <Save className="w-4 h-4 text-blue-300 rotate-90" />
+                            </div>
+                        </Button>
+                    </DrawerTrigger>
+                    <DrawerContent className="bg-slate-950 border-white/10 h-[85vh]">
+                        <div className="max-w-md mx-auto w-full h-full flex flex-col pt-2">
+                            <DrawerHeader className="border-b border-white/5 pb-4">
+                                <div className="mx-auto w-12 h-1.5 bg-white/10 rounded-full mb-6" />
+                                <DrawerTitle className="text-2xl font-black text-white neon-text text-center">מרכז ההתאמה האישית</DrawerTitle>
+                            </DrawerHeader>
+                            <div className="flex-1 overflow-y-auto px-4 pb-12 pt-4">
+                                <CustomizationManager />
+                            </div>
+                        </div>
+                    </DrawerContent>
+                </Drawer>
             </div>
 
             <Button

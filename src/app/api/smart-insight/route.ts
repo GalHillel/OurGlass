@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -29,10 +30,10 @@ export async function POST(req: Request) {
 You are a highly intelligent, proactive financial assistant in the OurGlass app.
 Generate ONE highly contextual, daily "smart insight" for the user based on their data.
 Today is day ${dayOfMonth} of the month.
-Monthly Income: ₪${monthlyIncome}
-Hourly Wage: ₪${hourlyWage}
-Total Spent this month (variable): ₪${totalSpend}
-Total Fixed Payments (Loans + Subs): ₪${totalFixed}
+Monthly Income: ${CURRENCY_SYMBOL}${monthlyIncome}
+Hourly Wage: ${CURRENCY_SYMBOL}${hourlyWage}
+Total Spent this month (variable): ${CURRENCY_SYMBOL}${totalSpend}
+Total Fixed Payments (Loans + Subs): $${CURRENCY_SYMBOL}${totalFixed}
 Top 3 biggest expenses: ${JSON.stringify(topTx.map(t => ({ desc: t.description, amount: t.amount })))}
 
 Rules:

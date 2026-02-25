@@ -4,8 +4,10 @@ import { useMemo } from "react";
 import { Transaction, Subscription, Liability } from "@/types";
 import { motion } from "framer-motion";
 import { User, Users, Heart } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatAmount } from "@/lib/utils";
 import { isLiabilityActive } from "@/hooks/useWealthData";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { useAppStore } from "@/stores/appStore";
 
 interface PartnerStatsProps {
     transactions: Transaction[];
@@ -16,6 +18,8 @@ interface PartnerStatsProps {
 }
 
 export const PartnerStats = ({ transactions, subscriptions = [], liabilities = [], viewingDate = new Date() }: PartnerStatsProps) => {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
+
     const stats = useMemo(() => {
         // Logic: My Spend (Him), Her Spend, Joint Spend
         // Assuming 'him' is the current user for "My Spend" label, or use generic names
@@ -42,9 +46,9 @@ export const PartnerStats = ({ transactions, subscriptions = [], liabilities = [
         const jointTotal = calculateTotal('joint');
 
         return [
-            { id: 'him', label: 'גל', amount: himTotal, icon: User, color: 'text-blue-400' },
+            { id: 'him', label: PAYERS.HIM, amount: himTotal, icon: User, color: 'text-blue-400' },
             { id: 'joint', label: 'משותף', amount: jointTotal, icon: Users, color: 'text-purple-400' },
-            { id: 'her', label: 'איריס', amount: herTotal, icon: Heart, color: 'text-pink-400' },
+            { id: 'her', label: PAYERS.HER, amount: herTotal, icon: Heart, color: 'text-pink-400' },
         ];
     }, [transactions, subscriptions, liabilities, viewingDate]);
 
@@ -68,7 +72,9 @@ export const PartnerStats = ({ transactions, subscriptions = [], liabilities = [
                         <stat.icon className={cn("w-4 h-4", stat.color.match(/text-\w+-\d+/)?.[0])} />
                     </div>
                     <span className="text-[10px] text-white/50 mb-0.5 font-medium">{stat.label}</span>
-                    <span className="text-sm font-bold text-white">₪{stat.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                    <span className="text-sm font-bold text-white">
+                        {formatAmount(stat.amount, isStealthMode, CURRENCY_SYMBOL)}
+                    </span>
                 </motion.div>
             ))}
         </div>

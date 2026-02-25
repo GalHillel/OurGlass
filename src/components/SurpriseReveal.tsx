@@ -6,6 +6,7 @@ import { Gift, EyeOff, PartyPopper } from "lucide-react";
 import { Transaction } from "@/types";
 import { cn } from "@/lib/utils";
 import { hapticSuccess, hapticHeavy } from "@/utils/haptics";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 const generateParticles = () =>
     Array.from({ length: 24 }).map((_, i) => ({
@@ -128,7 +129,7 @@ export function SurpriseReveal({ transaction, isRecipient }: SurpriseRevealProps
                                 <>
                                     <EyeOff className="w-8 h-8 text-purple-400/50 mx-auto" />
                                     <p className="text-xs text-purple-300/40">
-                                        הפתעה! תתגלה ב-{new Date(transaction.surprise_reveal_date!).toLocaleDateString("he-IL")}
+                                        הפתעה! תתגלה ב-{new Date(transaction.surprise_reveal_date!).toLocaleDateString(LOCALE)}
                                     </p>
                                 </>
                             ) : (
@@ -161,12 +162,12 @@ export function SurpriseReveal({ transaction, isRecipient }: SurpriseRevealProps
                             {transaction.description || "הפתעה"}
                         </p>
                         <p className="text-[10px] text-white/40">
-                            {new Date(transaction.date).toLocaleDateString("he-IL")}
+                            {new Date(transaction.date).toLocaleDateString(LOCALE)}
                         </p>
                     </div>
                     <div className="text-left">
                         <p className="font-black text-lg text-purple-300">
-                            ₪{transaction.amount.toLocaleString()}
+                            {CURRENCY_SYMBOL}{transaction.amount.toLocaleString()}
                         </p>
                     </div>
                 </div>

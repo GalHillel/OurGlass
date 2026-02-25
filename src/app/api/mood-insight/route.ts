@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
 You are a behavioral finance AI in the OurGlass app.
 Analyze this user's mood vs. spending data:
 ${JSON.stringify(chartData, null, 2)}
-User also has ₪${totalFixed} in fixed monthly expenses (Subscriptions + Loans).
+User also has $${CURRENCY_SYMBOL}${totalFixed} in fixed monthly expenses (Subscriptions + Loans).
 
 Provide exactly ONE short sentence in modern Hebrew (max 12 words) summarizing their emotional spending pattern.
 Classify it as "warning" (if they spend a lot when sad/angry), "success" (if stable), or "info" (if they spend for celebrations).

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useAppStore } from "@/stores/appStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
-import { cn } from "@/lib/utils";
+import { cn, formatAmount } from "@/lib/utils";
 import { triggerHaptic } from "@/utils/haptics";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface ReactorCoreProps {
     income: number;
@@ -17,6 +19,7 @@ interface ReactorCoreProps {
 }
 
 export const ReactorCore = ({ income, budget, expenses, balance, burnRateStatus, cycleStart, cycleEnd }: ReactorCoreProps) => {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     const [isPressed, setIsPressed] = useState(false);
 
     const { percentage, projectedBalance, daysRemaining } = useMemo(() => {
@@ -108,9 +111,9 @@ export const ReactorCore = ({ income, budget, expenses, balance, burnRateStatus,
                                     "text-6xl sm:text-7xl font-sans font-black tracking-tighter tabular-nums",
                                     projectedBalance >= 0 ? "text-emerald-400 drop-shadow-[0_0_25px_rgba(52,211,153,0.5)]" : "text-red-500 drop-shadow-[0_0_25px_rgba(239,68,68,0.5)]"
                                 )}>
-                                    <AnimatedCounter value={Math.abs(projectedBalance)} />
+                                    {isStealthMode ? '***' : <AnimatedCounter value={Math.abs(projectedBalance)} />}
                                 </span>
-                                <span className="text-3xl text-emerald-400/40 font-light ml-2">₪</span>
+                                {!isStealthMode && <span className="text-3xl text-emerald-400/40 font-light ml-2">{CURRENCY_SYMBOL}</span>}
                             </div>
                         </motion.div>
                     ) : (
@@ -137,9 +140,9 @@ export const ReactorCore = ({ income, budget, expenses, balance, burnRateStatus,
                                         ? "text-white drop-shadow-[0_0_35px_rgba(255,255,255,0.2)]"
                                         : "text-red-500 drop-shadow-[0_0_35px_rgba(239,68,68,0.4)]"
                                 )}>
-                                    <AnimatedCounter value={Math.abs(balance)} />
+                                    {isStealthMode ? '***' : <AnimatedCounter value={Math.abs(balance)} />}
                                 </span>
-                                <span className="text-3xl text-white/30 font-light ml-2">₪</span>
+                                {!isStealthMode && <span className="text-3xl text-white/30 font-light ml-2">{CURRENCY_SYMBOL}</span>}
                             </div>
                         </motion.div>
                     )}
@@ -150,7 +153,7 @@ export const ReactorCore = ({ income, budget, expenses, balance, burnRateStatus,
                     <div className="flex flex-col items-center border-r border-white/10 pr-6">
                         <span className="text-[9px] font-mono text-blue-300/60 uppercase tracking-widest mb-1">תקציב</span>
                         <span className="text-lg font-mono font-bold text-blue-100 tabular-nums">
-                            {budget.toLocaleString()}
+                            {formatAmount(budget, isStealthMode, CURRENCY_SYMBOL, '***')}
                         </span>
                     </div>
 
@@ -160,7 +163,7 @@ export const ReactorCore = ({ income, budget, expenses, balance, burnRateStatus,
                             "text-lg font-mono font-bold tabular-nums",
                             isCrisis ? "text-red-400 text-shadow-glow" : "text-purple-100"
                         )}>
-                            {expenses.toLocaleString()}
+                            {formatAmount(expenses, isStealthMode, CURRENCY_SYMBOL, '***')}
                         </span>
                     </div>
                 </div>

@@ -4,6 +4,7 @@ import { AIChatButton } from '@/components/AIChatButton';
 import { useAuth } from '@/components/AuthProvider';
 import { useAppStore } from '@/stores/appStore';
 import { useWealth } from '@/hooks/useWealth';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 vi.mock('next/navigation', () => ({
     usePathname: vi.fn(() => '/')
@@ -14,7 +15,7 @@ vi.mock('@/components/AuthProvider');
 vi.mock('@/stores/appStore');
 vi.mock('@/hooks/useWealth');
 vi.mock('@/lib/constants', () => ({
-    PAYERS: { HIM: 'גל', HER: 'איריס', JOINT: 'משותף' }
+    PAYERS: { HIM: PAYERS.HIM, HER: PAYERS.HER, JOINT: 'משותף' }
 }));
 vi.mock('@/utils/supabase/client', () => ({
     createClient: () => ({
@@ -84,7 +85,7 @@ describe('AIChatButton', () => {
         // Use findByTestId for robustness
         const bubble = await screen.findByTestId('bubble-message');
         expect(bubble).toBeInTheDocument();
-        expect(bubble).toHaveTextContent(/גל/);
+        expect(bubble).toHaveTextContent(new RegExp(PAYERS.HIM));
 
         // Advance more to check hiding
         act(() => {
@@ -96,6 +97,6 @@ describe('AIChatButton', () => {
         });
 
         // Should revert to default message
-        expect(screen.getByTestId('bubble-message')).not.toHaveTextContent(/גל/);
+        expect(screen.getByTestId('bubble-message')).not.toHaveTextContent(new RegExp(PAYERS.HIM));
     });
 });

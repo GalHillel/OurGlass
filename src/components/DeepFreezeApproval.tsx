@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { hapticWarning, hapticSuccess, hapticHeavy } from "@/utils/haptics";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface DeepFreezeRequest {
     id: string;
@@ -80,7 +81,7 @@ export function DeepFreezeApproval({ isOpen, onClose, request, onApprove, onReje
                         </div>
                         <div className="flex justify-between text-sm">
                             <span className="text-white/50">סכום</span>
-                            <span className="font-bold text-orange-400">₪{request.amount.toLocaleString()}</span>
+                            <span className="font-bold text-orange-400">{CURRENCY_SYMBOL}{request.amount.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                             <span className="text-white/50">מבקש/ת</span>

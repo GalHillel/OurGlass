@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { RoundUpVault } from '@/components/RoundUpVault';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 describe('RoundUpVault', () => {
     it('returns null if potential is under 10', () => {
@@ -21,7 +22,7 @@ describe('RoundUpVault', () => {
         render(<RoundUpVault transactions={txs as never} />);
 
         expect(screen.getByText('כספת האגורות')).toBeInTheDocument();
-        expect(screen.getByText('₪13')).toBeInTheDocument();
-        expect(screen.getByText(/היו לך עוד ₪13 בצד החודש!/)).toBeInTheDocument();
+        expect(screen.getByText(`${CURRENCY_SYMBOL}13`)).toBeInTheDocument();
+        expect(screen.getByText(/היו לך עוד ${CURRENCY_SYMBOL}13 בצד החודש!/)).toBeInTheDocument();
     });
 });

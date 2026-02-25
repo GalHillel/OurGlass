@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { SavingsTracker } from '@/components/SavingsTracker';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 describe('SavingsTracker', () => {
     it('shows excellent status when actual savings >= target', () => {
@@ -8,7 +9,7 @@ describe('SavingsTracker', () => {
         // actual savings = 7000, target savings = 4000
 
         expect(screen.getByText('מצוין! עומדים ביעד החיסכון')).toBeInTheDocument();
-        expect(screen.getByText('₪7,000')).toBeInTheDocument(); // Saved
+        expect(screen.getByText(`${CURRENCY_SYMBOL}7,000`)).toBeInTheDocument(); // Saved
     });
 
     it('shows good status when saving but missed target', () => {
@@ -37,7 +38,7 @@ describe('SavingsTracker', () => {
         render(<SavingsTracker monthlyIncome={10000} budget={5000} totalSpent={6000} />);
         // Savings = 4000 > 0. Over Budget = True.
 
-        expect(screen.getByText('חרגתם ב-₪1,000 אך עדיין חוסכים')).toBeInTheDocument();
+        expect(screen.getByText(`חרגתם ב-${CURRENCY_SYMBOL}1,000 אך עדיין חוסכים`)).toBeInTheDocument();
     });
 
     it('shows overspent status when spending > income', () => {

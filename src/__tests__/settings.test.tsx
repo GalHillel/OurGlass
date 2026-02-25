@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SettingsPage from '@/app/settings/page';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 vi.mock('next/navigation', () => ({
     useRouter: () => ({ push: vi.fn(), refresh: vi.fn() })
@@ -46,7 +47,7 @@ describe('Settings Page', () => {
         render(<SettingsPage />);
 
         // Potential savings logic: Income (15000) - Budget (10000) = 5000
-        expect(screen.getByText(/₪5,000/)).toBeInTheDocument();
+        expect(screen.getByText(/${CURRENCY_SYMBOL}5,000/)).toBeInTheDocument();
 
         fireEvent.click(screen.getByText('שמור שינויים'));
 

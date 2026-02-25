@@ -6,6 +6,10 @@ import { Slider } from "@/components/ui/slider";
 import { Clock } from "lucide-react";
 import CountUp from "react-countup";
 import { calculateFutureWealth } from "@/lib/utils";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+
+import { useAppStore } from "@/stores/appStore";
+import { formatAmount } from "@/lib/utils";
 
 interface WealthTimeMachineProps {
     currentNetWorth: number;
@@ -13,6 +17,7 @@ interface WealthTimeMachineProps {
 }
 
 export const WealthTimeMachine = ({ currentNetWorth, monthlySavings = 5000 }: WealthTimeMachineProps) => {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     const [years, setYears] = useState(5);
     const [rate, setRate] = useState(7); // Annual return rate %
     const [savings, setSavings] = useState(monthlySavings);
@@ -53,10 +58,10 @@ export const WealthTimeMachine = ({ currentNetWorth, monthlySavings = 5000 }: We
                     <div className="text-center space-y-1">
                         <p className="text-sm text-white/50">בעוד {years} שנים, השווי שלך יהיה:</p>
                         <div className="text-4xl font-black text-blue-200 neon-text tracking-tight">
-                            ₪<CountUp end={projectedWealth} separator="," duration={0.8} />
+                            {formatAmount(projectedWealth, isStealthMode, CURRENCY_SYMBOL)}
                         </div>
                         <p className="text-xs text-emerald-400 font-bold">
-                            (גידול של +₪{difference.toLocaleString()})
+                            (גידול של +{formatAmount(difference, isStealthMode, CURRENCY_SYMBOL)})
                         </p>
                     </div>
 
@@ -83,7 +88,7 @@ export const WealthTimeMachine = ({ currentNetWorth, monthlySavings = 5000 }: We
                         <div className="space-y-3">
                             <div className="flex justify-between text-sm">
                                 <span className="text-white/70">חיסכון חודשי</span>
-                                <span className="font-mono text-emerald-300">₪{savings.toLocaleString()}</span>
+                                <span className="font-mono text-emerald-300">{formatAmount(savings, isStealthMode, CURRENCY_SYMBOL)}</span>
                             </div>
                             <Slider
                                 value={[savings]}

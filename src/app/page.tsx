@@ -265,30 +265,6 @@ export default function Home() {
             <HomeMosaicSkeleton />
           ) : (
             <div className={cn("flex flex-col items-center gap-2 w-full relative z-10 py-2 transition-all duration-500", isPrivacyMode && "blur-xl opacity-50 grayscale")}>
-              {/* Billing Cycle Navigation */}
-              <div className="w-full max-w-md px-4 flex items-center justify-between mb-1">
-                <button
-                  onClick={() => { setViewingDate(prev => subMonths(prev, 1)); }}
-                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 transition-all border border-white/10"
-                >
-                  <ChevronRight className="w-4 h-4 text-white/60" />
-                </button>
-                <div className="flex items-center gap-2">
-                  <CalendarRange className="w-4 h-4 text-blue-400/60" />
-                  <span className="text-sm font-medium text-white/70">
-                    {format(getBillingPeriodForDate(viewingDate).start, 'd.M', { locale: he })}
-                    {' - '}
-                    {format(getBillingPeriodForDate(viewingDate).end, 'd.M', { locale: he })}
-                  </span>
-                </div>
-                <button
-                  onClick={() => { setViewingDate(prev => addMonths(prev, 1)); }}
-                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 transition-all border border-white/10"
-                >
-                  <ChevronLeft className="w-4 h-4 text-white/60" />
-                </button>
-              </div>
-
               {/* Widgets Container - Mosaic Layout */}
               <div className="w-full flex justify-center mb-2">
                 <HomeMosaic
@@ -318,6 +294,8 @@ export default function Home() {
                   selectedFilterCategory={selectedFilterCategory}
                   onCategorySelect={setSelectedFilterCategory}
                   usdToIls={usdToIls}
+                  viewingDate={viewingDate}
+                  onViewingDateChange={setViewingDate}
                 />
               </div>
             </div>

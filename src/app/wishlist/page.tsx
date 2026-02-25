@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { WishlistItem } from "@/types";
 import { Plus, Sparkles, Hourglass, AlertTriangle } from "lucide-react";
+import { useDashboardStore } from "@/stores/dashboardStore";
 import { EmptyState } from "@/components/EmptyState";
 
 import { WishlistCard } from "@/components/WishlistCard";
@@ -26,8 +27,11 @@ import { useAuth } from "@/components/AuthProvider";
 import { SwipeableRow } from "@/components/SwipeableRow";
 import { motion, AnimatePresence } from "framer-motion";
 import { getHebrewError } from "@/lib/utils";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 export default function WishlistPage() {
+    const { features } = useDashboardStore();
+    const { wishlistShowHarvester } = features;
     const [items, setItems] = useState<WishlistItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [newItemName, setNewItemName] = useState("");
@@ -130,7 +134,7 @@ export default function WishlistPage() {
             // Optimistic UI
             setItems(prev => prev.filter(i => i.id !== item.id));
             confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
-            toast.success(`ויתרת והרווחת! ₪${reward} הועברו לחיסכון הכללי 🏆`);
+            toast.success(`ויתרת והרווחת! $${CURRENCY_SYMBOL}${reward} הועברו לחיסכון הכללי 🏆`);
 
             // Find or Create 'General Savings'
             let { data: savings } = await supabase.from('goals').select('*').eq('name', 'General Savings').single();
@@ -231,13 +235,13 @@ export default function WishlistPage() {
 
             // 3. Celebration & Feedback
             if (type === 'deposit') {
-                toast.success(`הפקדת ₪${amount} בהצלחה!`);
+                toast.success(`הפקדת $${CURRENCY_SYMBOL}${amount} בהצלחה!`);
                 if (newSaved >= item.price) {
                     confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
                     toast.success("הגעת ליעד! כל הכבוד! 🎉");
                 }
             } else {
-                toast.success(`משכת ₪${amount} מהחיסכון`);
+                toast.success(`משכת $${CURRENCY_SYMBOL}${amount} מהחיסכון`);
             }
 
             fetchData();
@@ -267,7 +271,7 @@ export default function WishlistPage() {
 
 
             {/* Active Savings / Spare Change Harvester */}
-            {realNumberBalance > 0 && realNumberBalance % 100 > 0 && (
+            {wishlistShowHarvester && realNumberBalance > 0 && realNumberBalance % 100 > 0 && (
                 <div className="mx-2 mb-4">
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
@@ -281,7 +285,7 @@ export default function WishlistPage() {
                             <div>
                                 <h3 className="font-bold text-white text-sm">עיגול לטובה</h3>
                                 <p className="text-[10px] text-purple-200/60">
-                                    יש לך ₪{Math.floor(realNumberBalance % 100)} עודף בארנק.
+                                    יש לך {CURRENCY_SYMBOL}{Math.floor(realNumberBalance % 100)} עודף בארנק.
                                 </p>
                             </div>
                         </div>
@@ -313,7 +317,7 @@ export default function WishlistPage() {
                                     const newSaved = (targetItem.saved_amount || 0) + amount;
                                     await supabase.from('wishlist').update({ saved_amount: newSaved }).eq('id', targetItem.id);
 
-                                    toast.success(`הועברו ₪${amount} ל-${targetItem.name}!`);
+                                    toast.success(`הועברו $${CURRENCY_SYMBOL}${amount} ל-${targetItem.name}!`);
                                     confetti({ particleCount: 150, spread: 60, origin: { y: 0.6 } });
                                     fetchData(); // Refresh
                                 } catch {
@@ -412,7 +416,7 @@ export default function WishlistPage() {
                         </div>
                         <div className="flex gap-4">
                             <div className="relative flex-1">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₪</span>
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">{CURRENCY_SYMBOL}</span>
                                 <Input
                                     type="number"
                                     inputMode="decimal"
@@ -445,7 +449,7 @@ export default function WishlistPage() {
                             {oracleData?.affordable ? "יש אישור! 🚀" : "רגע, בואו נחשוב..."}
                         </DialogTitle>
                         <DialogDescription className="text-center text-white/60">
-                            {selectedItem?.name} - ₪{selectedItem?.price}
+                            {selectedItem?.name} - {CURRENCY_SYMBOL}{selectedItem?.price}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -458,7 +462,7 @@ export default function WishlistPage() {
                             <p className="text-4xl font-black text-blue-200 neon-text">
                                 {oracleData?.hours.toFixed(1)} <span className="text-lg text-white/50">שעות</span>
                             </p>
-                            <p className="text-xs text-white/40">לפי שכר של ₪{profile?.hourly_wage || 60}/שעה</p>
+                            <p className="text-xs text-white/40">לפי שכר של {CURRENCY_SYMBOL}{profile?.hourly_wage || 60}/שעה</p>
                         </div>
 
                         {!oracleData?.affordable && (
@@ -467,7 +471,7 @@ export default function WishlistPage() {
                                 <div>
                                     <p className="font-bold text-red-200">חורג מהתקציב</p>
                                     <p className="text-sm text-red-200/70">
-                                        חסרים לכם ₪{oracleData?.missing.toFixed(0)}.
+                                        חסרים לכם {CURRENCY_SYMBOL}{oracleData?.missing.toFixed(0)}.
                                         {oracleData?.missing && oracleData.missing > 0 && (
                                             <span> נסו לחסוך עוד קצת!</span>
                                         )}

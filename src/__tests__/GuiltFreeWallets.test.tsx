@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { GuiltFreeWallets } from '@/components/GuiltFreeWallets';
 import * as hooks from '@/hooks/useJointFinance';
+import { PAYERS } from "@/lib/constants";
 
 vi.mock('@/hooks/useJointFinance');
 vi.mock('@/utils/supabase/client', () => ({
@@ -28,7 +29,7 @@ describe('GuiltFreeWallets', () => {
         expect(container).toBeEmptyDOMElement();
     });
 
-    it('renders wallets correctly', () => {
+    it('renders wallets correctly', async () => {
         vi.spyOn(hooks, 'useGuiltFreeWallets').mockReturnValue({
             data: {
                 pocketHim: 1000,
@@ -44,12 +45,12 @@ describe('GuiltFreeWallets', () => {
         render(<GuiltFreeWallets />);
 
         expect(screen.getByText(/כסף כיס ללא אשמה/)).toBeInTheDocument();
-        expect(screen.getByText(/שלו/)).toBeInTheDocument();
-        expect(screen.getByText(/שלה/)).toBeInTheDocument();
+        expect(screen.getByText(new RegExp(PAYERS.HIM))).toBeInTheDocument();
+        expect(screen.getByText(new RegExp(PAYERS.HER))).toBeInTheDocument();
 
         // Using regex for numbers to handle CountUp or formatting
-        expect(screen.getByText(/200/)).toBeInTheDocument();
-        expect(screen.getByText(/300/)).toBeInTheDocument();
+        expect(await screen.findByText(/200/)).toBeInTheDocument();
+        expect(await screen.findByText(/300/)).toBeInTheDocument();
         expect(screen.getByText(/800/)).toBeInTheDocument();
         expect(screen.getByText(/900/)).toBeInTheDocument();
         expect(screen.getByText(/1,000/)).toBeInTheDocument();

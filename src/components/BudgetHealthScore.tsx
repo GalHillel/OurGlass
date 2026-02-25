@@ -3,7 +3,9 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Wallet, Target, PiggyBank } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/appStore";
+import { cn, formatAmount } from "@/lib/utils";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface BudgetHealthScoreProps {
     balance: number;           // Current remaining balance (what's left to spend)
@@ -22,6 +24,7 @@ export const BudgetHealthScore = ({
     daysInMonth,
     daysPassed
 }: BudgetHealthScoreProps) => {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     const { score, status, breakdown, insights } = useMemo(() => {
         // Ensure valid values
         const safeBudget = Math.max(1, budget);
@@ -132,8 +135,6 @@ export const BudgetHealthScore = ({
         }
     };
 
-
-
     const getStatusText = () => {
         switch (status) {
             case "excellent": return "מצוין!";
@@ -216,7 +217,7 @@ export const BudgetHealthScore = ({
                             <span className="text-[10px] text-white/50">מותר להוציא היום</span>
                         </div>
                         <span className={cn("text-sm font-bold", insights.safeToSpendDaily > 0 ? "text-white" : "text-red-400")}>
-                            ₪{insights.safeToSpendDaily.toLocaleString()}
+                            {formatAmount(insights.safeToSpendDaily, isStealthMode, CURRENCY_SYMBOL)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -232,7 +233,7 @@ export const BudgetHealthScore = ({
                             <span className="text-[10px] text-white/50">יתרה נוכחית</span>
                         </div>
                         <span className={cn("text-sm font-bold", insights.balance >= 0 ? "text-emerald-400" : "text-red-400")}>
-                            {insights.balance < 0 && "-"}₪{Math.abs(insights.balance).toLocaleString()}
+                            {formatAmount(insights.balance, isStealthMode, CURRENCY_SYMBOL)}
                         </span>
                     </div>
                 </div>

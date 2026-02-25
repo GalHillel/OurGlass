@@ -23,7 +23,7 @@ const TARGET_ALLOCATIONS: Record<string, { target: number; color: string; label:
     stocks: { target: 40, color: "#8b5cf6", label: "מניות" },
     cash: { target: 25, color: "#10b981", label: "מזומן / חסכון" },
     real_estate: { target: 20, color: "#3b82f6", label: "נדל\"ן" },
-    crypto: { target: 10, color: "#f472b6", label: "קריפטו" },
+    foreign_currency: { target: 10, color: "#22c55e", label: "מט\"ח" },
     other: { target: 5, color: "#9ca3af", label: "אחר" },
 };
 
@@ -35,15 +35,15 @@ export function RebalancingCoach({ assets, totalWealth }: RebalancingCoachProps)
             stocks: 0,
             cash: 0,
             real_estate: 0,
-            crypto: 0,
+            foreign_currency: 0,
             other: 0,
         };
 
         assets.forEach((asset) => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const val = Number((asset as any).calculatedValue || asset.current_amount || 0);
+            const val = Number(asset.calculatedValue || asset.current_amount || 0);
 
-            if (asset.investment_type === "crypto") buckets.crypto += val;
+            if (asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency') buckets.foreign_currency += val;
             else if (asset.investment_type === "real_estate") buckets.real_estate += val;
             else if (asset.type === "stock") buckets.stocks += val;
             else if (asset.type === "cash") buckets.cash += val;

@@ -10,6 +10,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 import { hapticSuccess } from "@/utils/haptics";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface OnboardingData {
     name: string;
@@ -155,7 +156,7 @@ export function FinancialOnboarding({ onComplete }: { onComplete: () => void }) 
                                     <Input
                                         value={data.name}
                                         onChange={(e) => setData({ ...data, name: e.target.value })}
-                                        placeholder="למשל: גל"
+                                        placeholder={`למשל: ${PAYERS.HIM}`}
                                         className="mt-1 bg-white/5 border-white/10 text-white"
                                     />
                                 </div>
@@ -166,7 +167,7 @@ export function FinancialOnboarding({ onComplete }: { onComplete: () => void }) 
                                         onChange={(e) =>
                                             setData({ ...data, partnerName: e.target.value })
                                         }
-                                        placeholder="למשל: איריס"
+                                        placeholder={`למשל: ${PAYERS.HER}`}
                                         className="mt-1 bg-white/5 border-white/10 text-white"
                                     />
                                 </div>
@@ -177,7 +178,7 @@ export function FinancialOnboarding({ onComplete }: { onComplete: () => void }) 
                         {step === 2 && (
                             <div className="space-y-4 text-right">
                                 <div>
-                                    <Label className="text-white/80">הכנסה חודשית (₪)</Label>
+                                    <Label className="text-white/80">הכנסה חודשית ({CURRENCY_SYMBOL})</Label>
                                     <Input
                                         type="number"
                                         value={data.monthlyIncome}
@@ -189,7 +190,7 @@ export function FinancialOnboarding({ onComplete }: { onComplete: () => void }) 
                                     />
                                 </div>
                                 <div>
-                                    <Label className="text-white/80">תקציב חודשי להוצאות (₪)</Label>
+                                    <Label className="text-white/80">תקציב חודשי להוצאות ({CURRENCY_SYMBOL})</Label>
                                     <Input
                                         type="number"
                                         value={data.budget}

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -37,11 +38,11 @@ Your job is to analyze their current month's financial data and provide 3 short,
 Each insight must be either a "roast" (if they are doing poorly) or a "praise" (if they are doing well).
 
 Here is their data for the month:
-- Total budget: ₪${budget}
-- Monthly Income: ₪${monthlyIncome}
-- Total spent so far: ₪${totalSpent} (${budgetUsage.toFixed(1)}% of budget)
+- Total budget: ${CURRENCY_SYMBOL}${budget}
+- Monthly Income: ${CURRENCY_SYMBOL}${monthlyIncome}
+- Total spent so far: ${CURRENCY_SYMBOL}${totalSpent} (${budgetUsage.toFixed(1)}% of budget)
 - Savings rate: ${savingsRate.toFixed(1)}%
-- Total fixed expenses (subscriptions + liabilities/loans): ₪${totalFixed} (Subs: ₪${subTotal}, Loans: ₪${liabTotal})
+- Total fixed expenses (subscriptions + liabilities/loans): ${CURRENCY_SYMBOL}${totalFixed} (Subs: ${CURRENCY_SYMBOL}${subTotal}, Loans: $${CURRENCY_SYMBOL}${liabTotal})
 - Spending by category: ${JSON.stringify(categoryTotals)}
 - Number of transactions: ${transactions.length}
 

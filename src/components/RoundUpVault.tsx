@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Transaction } from "@/types";
 import { PiggyBank, ArrowRight, Coins } from "lucide-react";
 import { motion } from "framer-motion";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface RoundUpVaultProps {
     transactions: Transaction[];
@@ -41,17 +42,17 @@ export const RoundUpVault = ({ transactions }: RoundUpVaultProps) => {
                     </div>
                     <div>
                         <h3 className="font-bold text-white text-sm">כספת האגורות</h3>
-                        <p className="text-white/50 text-[10px]">עיגול עסקאות ל-10₪ הקרובים</p>
+                        <p className="text-white/50 text-[10px]">עיגול עסקאות ל-10{CURRENCY_SYMBOL} הקרובים</p>
                     </div>
                 </div>
                 <div className="text-right">
-                    <span className="text-2xl font-black text-yellow-400">₪{roundUpPotential.toFixed(0)}</span>
+                    <span className="text-2xl font-black text-yellow-400">{CURRENCY_SYMBOL}{roundUpPotential.toFixed(0)}</span>
                 </div>
             </div>
 
             <div className="mt-4 flex items-center justify-between">
                 <p className="text-xs text-slate-300 max-w-[200px] leading-relaxed">
-                    אם היית מפעיל את העיגול החכם, היו לך עוד ₪{roundUpPotential.toFixed(0)} בצד החודש!
+                    אם היית מפעיל את העיגול החכם, היו לך עוד {CURRENCY_SYMBOL}{roundUpPotential.toFixed(0)} בצד החודש!
                 </p>
                 <button className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
                     <ArrowRight className="w-4 h-4 text-white/60" />

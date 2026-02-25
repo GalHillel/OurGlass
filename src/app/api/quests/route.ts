@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -24,9 +25,9 @@ Generate exactly 3 personalized financial quests (challenges/achievements) for t
 These should be based on their current spending and budget behavior.
 
 Data context:
-- Monthly Budget: ₪${budget}
-- Current total spent (variable): ₪${xpParams?.totalSpent || 0}
-- Total fixed expenses (subscriptions + loans): ₪${totalFixed} (Subs: ₪${subTotal}, Loans: ₪${liabTotal})
+- Monthly Budget: ${CURRENCY_SYMBOL}${budget}
+- Current total spent (variable): ${CURRENCY_SYMBOL}${xpParams?.totalSpent || 0}
+- Total fixed expenses (subscriptions + loans): ${CURRENCY_SYMBOL}${totalFixed} (Subs: ${CURRENCY_SYMBOL}${subTotal}, Loans: ${CURRENCY_SYMBOL}${liabTotal})
 - Unique days with transactions: ${xpParams?.daysWithTransactions || 0}
 - App recording streak: ${xpParams?.streak || 0} days
 
@@ -38,7 +39,7 @@ Rules:
     {
       "id": "fixed-cost-audit",
       "title": "בלש הוצאות קבועות",
-      "description": "בדוק אם אפשר לקצץ מתוך ה-₪${totalFixed} הקבועים שלכם",
+      "description": "בדוק אם אפשר לקצץ מתוך ה-$${CURRENCY_SYMBOL}${totalFixed} הקבועים שלכם",
       "icon": "Target",
       "progress": 50,
       "completed": false,

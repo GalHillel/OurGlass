@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { he } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 
 interface BenchmarkProps {
@@ -158,7 +159,7 @@ export function SP500Benchmark({ initialWealth }: BenchmarkProps) {
                                         {performance?.alpha && performance.alpha >= 0 ? "+" : ""}{performance?.alpha}%
                                     </p>
                                     <p className="text-[9px] text-white/40 font-mono">
-                                        ₪{Math.abs(performance?.deltaValue || 0).toLocaleString()} {performance?.beating ? "מעל" : "מתחת"} לשוק
+                                        {CURRENCY_SYMBOL}{Math.abs(performance?.deltaValue || 0).toLocaleString()} {performance?.beating ? "מעל" : "מתחת"} לשוק
                                     </p>
                                 </div>
                             </div>
@@ -178,7 +179,7 @@ export function SP500Benchmark({ initialWealth }: BenchmarkProps) {
                                             tick={{ fontSize: 9, fill: "rgba(255,255,255,0.2)" }}
                                             axisLine={false}
                                             tickLine={false}
-                                            tickFormatter={(v: number) => `₪${(v / 1000).toFixed(0)}k`}
+                                            tickFormatter={(v: number) => `${CURRENCY_SYMBOL}${(v / 1000).toFixed(0)}k`}
                                             width={40}
                                         />
                                         <Tooltip
@@ -192,7 +193,7 @@ export function SP500Benchmark({ initialWealth }: BenchmarkProps) {
                                                 boxShadow: "0 10px 40px rgba(0,0,0,0.4)"
                                             }}
                                             formatter={(value: unknown, name: string | undefined) => [
-                                                `₪${Number(value).toLocaleString()}`,
+                                                `${CURRENCY_SYMBOL}${Number(value).toLocaleString()}`,
                                                 name === "yours" ? "אתם" : "S&P 500",
                                             ]}
                                         />

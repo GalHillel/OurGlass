@@ -1,6 +1,7 @@
 import { google } from '@ai-sdk/google';
 import { streamText, convertToModelMessages, type UIMessage } from 'ai';
 import { FinancialContext } from "@/types";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface TransactionSummary {
   [category: string]: {
@@ -88,21 +89,21 @@ export async function POST(req: Request) {
 ${context?.currentRoute ? `\n📍 **המשתמש נמצא כעת במסך:** ${context.currentRoute} - נצל מידע זה כדי לתת תובנות תלויות-הקשר (למשל, אם הוא ב-Vault, דבר על חסכונות והשקעות).` : ''}
 
 💰 Cash & Assets Breakdown
-- Bank Cash: ₪${toSafeNumber(assets?.bankCash).toLocaleString()}
-- Stocks/Investments: ₪${toSafeNumber(assets?.stocksInvestments).toLocaleString()}
-- Money Market/Kaspit: ₪${toSafeNumber(assets?.moneyMarketKaspit).toLocaleString()}
-- USD Cash: $${toSafeNumber(assets?.usdCash?.usdAmount).toLocaleString()} (₪${toSafeNumber(assets?.usdCash?.ilsValue).toLocaleString()})
-- Total Tracked Assets: ₪${toSafeNumber(assets?.totalTrackedAssets).toLocaleString()}
-- LIVE Net Worth (use this over old snapshots): ${liveNetWorth !== null ? '₪' + Number(liveNetWorth).toLocaleString() : 'לא זמין'}
+- Bank Cash: ${CURRENCY_SYMBOL}${toSafeNumber(assets?.bankCash).toLocaleString()}
+- Stocks/Investments: ${CURRENCY_SYMBOL}${toSafeNumber(assets?.stocksInvestments).toLocaleString()}
+- Money Market/Kaspit: ${CURRENCY_SYMBOL}${toSafeNumber(assets?.moneyMarketKaspit).toLocaleString()}
+- USD Cash: $${toSafeNumber(assets?.usdCash?.usdAmount).toLocaleString()} (${CURRENCY_SYMBOL}${toSafeNumber(assets?.usdCash?.ilsValue).toLocaleString()})
+- Total Tracked Assets: ${CURRENCY_SYMBOL}${toSafeNumber(assets?.totalTrackedAssets).toLocaleString()}
+- LIVE Net Worth (use this over old snapshots): ${liveNetWorth !== null ? CURRENCY_SYMBOL + Number(liveNetWorth).toLocaleString() : 'לא זמין'}
 - Last DB Wealth Snapshot (historical reference only): ${JSON.stringify(context?.wealthSnapshot || null)}
 
 📉 Debts & Liabilities
-- Active Debt Payments Total: ₪${activeDebtPaymentsTotal.toLocaleString()}
+- Active Debt Payments Total: ${CURRENCY_SYMBOL}${activeDebtPaymentsTotal.toLocaleString()}
 - Debt Obligations (active): ${JSON.stringify(debtObligations || [])}
 - All Liabilities (full list): ${JSON.stringify(liabilities || [])}
 
 🔄 Fixed Subscriptions
-- Active Subscriptions Total: ₪${activeSubscriptionsTotal.toLocaleString()}
+- Active Subscriptions Total: ${CURRENCY_SYMBOL}${activeSubscriptionsTotal.toLocaleString()}
 - Active Subscriptions: ${JSON.stringify(subscriptions || [])}
 
 💳 Recent Transactions
@@ -111,12 +112,12 @@ ${context?.currentRoute ? `\n📍 **המשתמש נמצא כעת במסך:** ${c
 - Detailed Transaction Feed (description/category/amount/date): ${JSON.stringify(topRecent)}
 
 📊 Current Cashflow
-- Monthly Income (from settings): ₪${monthlyIncome.toLocaleString()}
-- Monthly Budget (from settings): ₪${resolvedBudget.toLocaleString()}
-- Total Spent This Month (actual recorded spending): ₪${totalSpentThisMonth.toLocaleString()}
-- Leftover Income: ₪${currentLeftoverIncome.toLocaleString()}
-- Burn Rate Daily: ₪${toSafeNumber(burnRate.daily).toLocaleString()}
-- Burn Rate Weekly: ₪${toSafeNumber(burnRate.weekly).toLocaleString()}
+- Monthly Income (from settings): ${CURRENCY_SYMBOL}${monthlyIncome.toLocaleString()}
+- Monthly Budget (from settings): ${CURRENCY_SYMBOL}${resolvedBudget.toLocaleString()}
+- Total Spent This Month (actual recorded spending): ${CURRENCY_SYMBOL}${totalSpentThisMonth.toLocaleString()}
+- Leftover Income: ${CURRENCY_SYMBOL}${currentLeftoverIncome.toLocaleString()}
+- Burn Rate Daily: ${CURRENCY_SYMBOL}${toSafeNumber(burnRate.daily).toLocaleString()}
+- Burn Rate Weekly: $${CURRENCY_SYMBOL}${toSafeNumber(burnRate.weekly).toLocaleString()}
 - Burn Rate Month Progress: ${toSafeNumber(burnRate.monthProgressPct)}%
 
 🎯 Wishlist & Goals
@@ -126,7 +127,7 @@ CRITICAL MATH RULE: Do not double-count subscriptions as they are already paid f
 The 'Total Spent This Month' already includes paid subscriptions/recurring bills when they appear in transactions. Use subscriptions as visibility for recurring obligations and future planning only.
 
 כללים:
-1. אם המשתמש שואל "מה מצבי?" "האם אני יכול לקנות משהו?", "כמה הוצאתי?" חשב אך ורק מתוך הנתונים שסופקו כאן.
+1. אם המשתמש שואל "מה מצבי?" "האם ${PAYERS.HIM} יכול לקנות משהו?", "כמה ${PAYERS.HIM} הוציא?" חשב אך ורק מתוך הנתונים שסופקו כאן.
 2. ענה תמיד בעברית בלבד, בלשון דיבור טבעית.
 3. שמור על תשובות קצרות וקולעות (עד 4 משפטים), אלא אם התבקשת לפרט.
 4. השתמש באימוג'י רלוונטיים. אם פנוי כסף - תעודד מהלכים חכמים. אם בחובות או חריגה מהתקציב - תהיה קשוח אבל מעודד.

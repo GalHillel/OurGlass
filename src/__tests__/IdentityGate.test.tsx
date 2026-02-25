@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { IdentityGate } from '@/components/IdentityGate';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 // Mock dependencies
 const mockSetIdentity = vi.fn();
@@ -44,8 +45,8 @@ describe('IdentityGate', () => {
         render(<IdentityGate><div data-testid="child">Safe</div></IdentityGate>);
 
         expect(await screen.findByText('מי משתמש באפליקציה?')).toBeInTheDocument();
-        expect(screen.getByText('גל')).toBeInTheDocument();
-        expect(screen.getByText('איריס')).toBeInTheDocument();
+        expect(screen.getByText(PAYERS.HIM)).toBeInTheDocument();
+        expect(screen.getByText(PAYERS.HER)).toBeInTheDocument();
         expect(screen.queryByTestId('child')).not.toBeInTheDocument();
     });
 
@@ -64,7 +65,7 @@ describe('IdentityGate', () => {
 
         render(<IdentityGate><div data-testid="child">Safe</div></IdentityGate>);
 
-        fireEvent.click(await screen.findByText('גל'));
+        fireEvent.click(await screen.findByText(PAYERS.HIM));
         expect(mockSetIdentity).toHaveBeenCalledWith('him');
     });
 });

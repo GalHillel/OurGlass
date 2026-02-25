@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FinancialContext, Transaction } from "@/types";
 import { useAppStore } from "@/stores/appStore";
 import { hapticConfirm } from "@/utils/haptics";
+import { PAYERS } from "@/lib/constants";
 
 interface ChatInterfaceProps {
     context: FinancialContext;
@@ -37,23 +38,23 @@ function generateSuggestedQuestions(context: FinancialContext): string[] {
     const questions: string[] = [];
 
     // Budget-based questions
-    if (budgetPct >= 80) questions.push("איך אני יכול לחסוך עד סוף החודש?");
-    if (budgetPct <= 30 && totalSpent > 0) questions.push("יש לי חיסכון יפה — מה כדאי לעשות?");
+    if (budgetPct >= 80) questions.push(`איך ${PAYERS.HIM} יכול לחסוך עד סוף החודש?`);
+    if (budgetPct <= 30 && totalSpent > 0) questions.push(`יש ל-${PAYERS.HIM} חיסכון יפה — מה כדאי לעשות?`);
 
     // Category-based
-    if (topCat) questions.push(`נתח את ההוצאות שלי על ${topCat[0]} החודש`);
+    if (topCat) questions.push(`נתח את ההוצאות של ${PAYERS.HIM} על ${topCat[0]} החודש`);
 
     // Subscription insights
-    if (subscriptions?.length > 3) questions.push(`יש לי ${subscriptions.length} מנויים — איפה אפשר לחסוך?`);
+    if (subscriptions?.length > 3) questions.push(`יש ל-${PAYERS.HIM} ${subscriptions.length} מנויים — איפה אפשר לחסוך?`);
 
     // Wishlist dreaming
-    if (wishlist?.length > 0) questions.push("כמה זמן ייקח לי להגשים את המשאלה הראשונה?");
+    if (wishlist?.length > 0) questions.push(`כמה זמן ייקח ל-${PAYERS.HIM} להגשים את המשאלה הראשונה?`);
 
     // Liabilities
-    if (liabilities?.length > 0) questions.push("מתי אסיים לסגור את ההלוואות שלי?");
+    if (liabilities?.length > 0) questions.push(`מתי ${PAYERS.HIM} יסיים לסגור את ההלוואות?`);
 
     // Wealth
-    if (wealthSnapshot) questions.push("תן סיכום של מצב השווי שלי");
+    if (wealthSnapshot) questions.push(`תן סיכום של מצב השווי של ${PAYERS.HIM}`);
 
     // Fallback
     if (questions.length === 0) questions.push("תן לי סיכום פיננסי של החודש");
@@ -223,10 +224,10 @@ export const ChatInterface = ({ context, onClose }: ChatInterfaceProps) => {
                         <div className="w-full relative overflow-hidden mt-2 mb-4">
                             <div className="flex gap-2.5 overflow-x-auto pb-4 scrollbar-hide px-2 -mx-2 snap-x">
                                 {[
-                                    { text: "סכם לי את ההוצאות החודש", icon: PieChart },
-                                    { text: "האם יש לי חריגות בתקציב?", icon: AlertCircle },
-                                    { text: "תמצא לי מנויים שאפשר לבטל", icon: Trash2 },
-                                    { text: "האם אני יכול להרשות לעצמי מסעדה ב-500 ש״ח?", icon: Wallet }
+                                    { text: `סכם ל-${PAYERS.HIM} את ההוצאות החודש`, icon: PieChart },
+                                    { text: `האם יש ל-${PAYERS.HIM} חריגות בתקציב?`, icon: AlertCircle },
+                                    { text: `תמצא ל-${PAYERS.HIM} מנויים שאפשר לבטל`, icon: Trash2 },
+                                    { text: `האם ${PAYERS.HIM} יכול להרשות לעצמי מסעדה ב-500 ש״ח?`, icon: Wallet }
                                 ].map((chip, i) => (
                                     <motion.button
                                         key={i}

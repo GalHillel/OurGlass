@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SwipeableRow } from "@/components/SwipeableRow";
-import { cn } from "@/lib/utils";
+import { cn, formatAmount } from "@/lib/utils";
+import { useAppStore } from "@/stores/appStore";
+import { useDashboardStore } from "@/stores/dashboardStore";
 
 import { useAuth } from "@/components/AuthProvider";
 import { SubscriptionKiller } from "@/components/SubscriptionKiller";
@@ -18,8 +20,12 @@ import { GhostSubscriptions } from "@/components/GhostSubscriptions";
 import { LiabilitiesSection } from "@/components/LiabilitiesSection";
 
 import { AddSubscriptionDialog, CATEGORIES } from "@/components/AddSubscriptionDialog";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 export default function SubscriptionsPage() {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
+    const features = useDashboardStore((s) => s.features);
+    const { subsShowIndicator, subsShowLiabilities, subsShowGhost, subsShowKiller, subsShowSummary } = features;
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -84,7 +90,7 @@ export default function SubscriptionsPage() {
     return (
         <div className="flex flex-col gap-6 w-full mx-auto pt-8 pb-0 px-4">
             {/* Indicator */}
-            {profile?.budget && (
+            {subsShowIndicator && profile?.budget && (
                 (() => {
                     const ratio = (totalMonthly / (profile.budget || 20000)) * 100;
                     const isHigh = ratio > 50;
@@ -99,7 +105,7 @@ export default function SubscriptionsPage() {
                                 </p>
                             </div>
                             <div className={`text-2xl font-black font-mono tracking-tighter ${isHigh ? 'text-orange-400' : 'text-emerald-400'}`}>
-                                {ratio.toFixed(0)}%
+                                {isStealthMode ? "**%" : `${ratio.toFixed(0)}%`}
                             </div>
                         </div>
                     );
@@ -107,26 +113,28 @@ export default function SubscriptionsPage() {
             )}
 
             {/* Total Card */}
-            <div className="grid grid-cols-2 gap-4">
-                <div className="neon-card p-6 rounded-3xl relative overflow-hidden flex flex-col items-center justify-center group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent pointer-events-none group-hover:opacity-100 transition-opacity" />
-                    <span className="text-xs uppercase tracking-widest text-white/60 mb-1 block text-center">
-                        חודשי
-                    </span>
-                    <span className="text-3xl font-black text-white drop-shadow-lg neon-text text-center">
-                        ₪{totalMonthly.toLocaleString()}
-                    </span>
+            {subsShowSummary && (
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="neon-card p-6 rounded-3xl relative overflow-hidden flex flex-col items-center justify-center group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent pointer-events-none group-hover:opacity-100 transition-opacity" />
+                        <span className="text-xs uppercase tracking-widest text-white/60 mb-1 block text-center">
+                            חודשי
+                        </span>
+                        <span className="text-3xl font-black text-white drop-shadow-lg neon-text text-center">
+                            {formatAmount(totalMonthly, isStealthMode, CURRENCY_SYMBOL)}
+                        </span>
+                    </div>
+                    <div className="neon-card p-6 rounded-3xl relative overflow-hidden flex flex-col items-center justify-center border-red-500/20 group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent pointer-events-none" />
+                        <span className="text-xs uppercase tracking-widest text-red-200/60 mb-1 block text-center">
+                            שנתי
+                        </span>
+                        <span className="text-3xl font-black text-red-200 drop-shadow-lg text-center">
+                            {formatAmount(totalMonthly * 12, isStealthMode, CURRENCY_SYMBOL)}
+                        </span>
+                    </div>
                 </div>
-                <div className="neon-card p-6 rounded-3xl relative overflow-hidden flex flex-col items-center justify-center border-red-500/20 group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent pointer-events-none" />
-                    <span className="text-xs uppercase tracking-widest text-red-200/60 mb-1 block text-center">
-                        שנתי
-                    </span>
-                    <span className="text-3xl font-black text-red-200 drop-shadow-lg text-center">
-                        ₪{(totalMonthly * 12).toLocaleString()}
-                    </span>
-                </div>
-            </div>
+            )}
 
             {/* List */}
             <div className="space-y-4">
@@ -186,7 +194,7 @@ export default function SubscriptionsPage() {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3 relative z-10">
-                                                <span className="font-black text-white text-xl tracking-tight">₪{sub.amount}</span>
+                                                <span className="font-black text-white text-xl tracking-tight">{formatAmount(sub.amount, isStealthMode, CURRENCY_SYMBOL)}</span>
                                             </div>
                                         </div>
                                     </SwipeableRow>
@@ -195,7 +203,7 @@ export default function SubscriptionsPage() {
                         )}
 
                         {/* Liabilities (Debt) as Fixed Expenses */}
-                        {activeLiabilities.length > 0 && (
+                        {subsShowLiabilities && activeLiabilities.length > 0 && (
                             <div className="pt-4 space-y-4">
                                 <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest px-1">תשלומי חובות (הוצאה קבועה)</h2>
                                 {activeLiabilities.map((liab: { id: string; name: string; estimated_months_to_payoff: number; monthly_payment: number }) => (
@@ -225,7 +233,7 @@ export default function SubscriptionsPage() {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3 relative z-10">
-                                                <span className="font-black text-white text-xl tracking-tight">₪{liab.monthly_payment}</span>
+                                                <span className="font-black text-white text-xl tracking-tight">{formatAmount(liab.monthly_payment, isStealthMode, CURRENCY_SYMBOL)}</span>
                                             </div>
                                         </div>
                                     </SwipeableRow>
@@ -246,15 +254,17 @@ export default function SubscriptionsPage() {
             </div>
 
             {/* Ghost Subscriptions */}
-            <div className="pt-4 space-y-4">
-                <GhostSubscriptions onAddGhost={(data) => {
-                    setSelectedGhost(data);
-                    setIsDialogOpen(true);
-                }} />
-            </div>
+            {subsShowGhost && (
+                <div className="pt-4 space-y-4">
+                    <GhostSubscriptions onAddGhost={(data) => {
+                        setSelectedGhost(data);
+                        setIsDialogOpen(true);
+                    }} />
+                </div>
+            )}
 
             {/* Subscription Killer Analysis */}
-            {!loading && subscriptions.length > 0 && (
+            {subsShowKiller && !loading && subscriptions.length > 0 && (
                 <SubscriptionKiller
                     subscriptions={subscriptions}
                     onDelete={handleDelete}

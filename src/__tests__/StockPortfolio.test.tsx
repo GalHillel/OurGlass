@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { StockPortfolio } from '@/components/StockPortfolio';
 import * as auth from '@/components/AuthProvider';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 window.HTMLElement.prototype.scrollIntoView = vi.fn();
 
@@ -54,7 +55,7 @@ describe('StockPortfolio', () => {
             expect(screen.getByText('AAPL')).toBeInTheDocument();
             expect(screen.getByText('10 יח׳')).toBeInTheDocument();
             // 160 * 10 * 3.7 = 5920
-            expect(screen.getByText('₪5,920')).toBeInTheDocument();
+            expect(screen.getByText(`${CURRENCY_SYMBOL}5,920`)).toBeInTheDocument();
         });
     });
 

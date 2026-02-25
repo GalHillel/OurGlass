@@ -6,6 +6,7 @@ import { Scissors, Star, StarOff, Trash2, Copy } from "lucide-react";
 import { Subscription } from "@/types";
 import { EmptyState } from "@/components/EmptyState";
 import CountUp from "react-countup";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface SubscriptionKillerProps {
     subscriptions: Subscription[];
@@ -61,7 +62,7 @@ export function SubscriptionKiller({ subscriptions, onDelete }: SubscriptionKill
                 if (!alreadyFound) {
                     const saving = items.slice(1).reduce((sum, i) => sum + i.amount, 0);
                     duplicates.push({
-                        name: `₪${amount} (סכום זהה)`,
+                        name: `$${CURRENCY_SYMBOL}${amount} (סכום זהה)`,
                         items,
                         potentialSaving: saving,
                     });
@@ -107,7 +108,7 @@ export function SubscriptionKiller({ subscriptions, onDelete }: SubscriptionKill
                         <div>
                             <h3 className="text-sm font-bold text-white">קוצץ מנויים</h3>
                             <p className="text-[10px] text-white/40">
-                                {subscriptions.length} מנויים • ₪{subscriptions.reduce((s, sub) => s + sub.amount, 0).toLocaleString()}/חודש
+                                {subscriptions.length} מנויים • {CURRENCY_SYMBOL}{subscriptions.reduce((s, sub) => s + sub.amount, 0).toLocaleString()}/חודש
                             </p>
                         </div>
                     </div>
@@ -115,7 +116,7 @@ export function SubscriptionKiller({ subscriptions, onDelete }: SubscriptionKill
                         <div className="text-left">
                             <p className="text-[9px] text-orange-300/60 uppercase tracking-wider">חיסכון אפשרי</p>
                             <p className="text-lg font-black text-orange-400">
-                                ₪<CountUp end={analysis.totalSaving} separator="," duration={0.8} />/חודש
+                                {CURRENCY_SYMBOL}<CountUp end={analysis.totalSaving} separator="," duration={0.8} />/חודש
                             </p>
                         </div>
                     )}
@@ -135,14 +136,14 @@ export function SubscriptionKiller({ subscriptions, onDelete }: SubscriptionKill
                         <Copy className="w-4 h-4 text-orange-400" />
                         <span className="text-xs font-bold text-orange-300">כפילות אפשרית</span>
                         <span className="text-[10px] text-white/30 mr-auto">
-                            חיסכון: ₪{group.potentialSaving.toLocaleString()}/חודש
+                            חיסכון: {CURRENCY_SYMBOL}{group.potentialSaving.toLocaleString()}/חודש
                         </span>
                     </div>
                     <div className="space-y-2">
                         {group.items.map((sub) => (
                             <div key={sub.id} className="flex items-center justify-between bg-white/5 rounded-xl p-2">
                                 <span className="text-sm text-white/80">{sub.name}</span>
-                                <span className="text-sm font-bold text-white/60">₪{sub.amount}</span>
+                                <span className="text-sm font-bold text-white/60">${CURRENCY_SYMBOL}{sub.amount}</span>
                             </div>
                         ))}
                     </div>
@@ -174,7 +175,7 @@ export function SubscriptionKiller({ subscriptions, onDelete }: SubscriptionKill
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-red-400">₪{sub.amount}/חודש</span>
+                                    <span className="text-sm font-bold text-red-400">{CURRENCY_SYMBOL}{sub.amount}/חודש</span>
                                     {onDelete && (
                                         <button
                                             onClick={() => onDelete(sub.id)}

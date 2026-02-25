@@ -1,3 +1,4 @@
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 /**
  * Smart Haptic Feedback System
  * Maps different financial actions to distinct vibration patterns
@@ -31,7 +32,7 @@ export const hapticSuccess = () => vibrate(PATTERNS.success);
 /** Budget warning, approaching limit */
 export const hapticWarning = () => vibrate(PATTERNS.warning);
 
-/** Large expense (>1000₪), delete action */
+/** Large expense (>1000{CURRENCY_SYMBOL}), delete action */
 export const hapticHeavy = () => vibrate(PATTERNS.heavy);
 
 /** Error, failed action */
@@ -42,7 +43,7 @@ export const hapticConfirm = () => vibrate(PATTERNS.double);
 
 /**
  * Smart haptic based on expense amount.
- * Gentle for small, medium for moderate, heavy for large (>1000₪).
+ * Gentle for small, medium for moderate, heavy for large (>1000{CURRENCY_SYMBOL}).
  */
 export const hapticForAmount = (amount: number) => {
     if (amount >= 1000) {

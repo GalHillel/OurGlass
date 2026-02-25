@@ -1,4 +1,5 @@
 import React from "react";
+import { PAYERS } from "@/lib/constants";
 
 // Here we define a mapping from ID to the actual component it renders.
 // For now, it will be a simple string enum or type since the components are inside HomeMosaic itself.
@@ -32,7 +33,7 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetDefinition> = {
     'vault': { id: 'vault', title: 'מזומן וכספות', description: 'נזילות מיידית' },
     'settlements': { id: 'settlements', title: 'התחשבנויות', description: 'ניהול חובות בין בני זוג' },
     'quick-action': { id: 'quick-action', title: 'פעולה מהירה', description: 'הוספת הוצאות בקליק' },
-    'partner-stats': { id: 'partner-stats', title: 'חלוקה', description: 'אני / את / אנחנו' },
+    'partner-stats': { id: 'partner-stats', title: 'חלוקה', description: `${PAYERS.HIM} / ${PAYERS.HER} / ${PAYERS.JOINT}` },
     'calendar': { id: 'calendar', title: 'לוח הוצאות', description: 'פריסה חודשית של הוצאות' },
     'categories': { id: 'categories', title: 'קטגוריות', description: 'פילוח הוצאות מפורט' },
 };

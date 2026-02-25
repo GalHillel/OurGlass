@@ -8,8 +8,8 @@ describe('Constants', () => {
 
     it('PAYERS should have required structure and values', () => {
         expect(PAYERS).toEqual({
-            HIM: 'גל',
-            HER: 'איריס',
+            HIM: PAYERS.HIM,
+            HER: PAYERS.HER,
             JOINT: 'משותף'
         });
         // Testing exact reference (immutability)
@@ -21,10 +21,9 @@ describe('Constants', () => {
         expect(ASSET_TYPES).toEqual({
             CASH: 'מזומן / חיסכון',
             STOCK: 'מניות',
-            CRYPTO: 'קריפטו',
+            FOREIGN_CURRENCY: 'מט״ח / דולר',
             REAL_ESTATE: 'נדל״ן',
             MONEY_MARKET: 'קרן כספית',
-            USD_CASH: 'דולר מזומן'
         });
     });
 

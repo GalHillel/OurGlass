@@ -3,6 +3,7 @@ import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { createClient } from "@/utils/supabase/server";
 import { subMonths } from "date-fns";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 export const runtime = "edge";
 
@@ -46,10 +47,10 @@ export async function GET() {
         You are a "Ghost Subscription Hunter". Your job is to find recurring payments in transactions that are NOT in the registered subscriptions list.
         
         Registered Subscriptions:
-        ${registeredSubscriptions.map(s => `${s.name} (₪${s.amount})`).join(", ")}
+        ${registeredSubscriptions.map(s => `${s.name} ($${CURRENCY_SYMBOL}${s.amount})`).join(", ")}
         
         Recent Transactions (Last 90 days):
-        ${transactions.map(t => `${t.description}: ₪${t.amount} (${t.date})`).join("\n")}
+        ${transactions.map(t => `${t.description}: $${CURRENCY_SYMBOL}${t.amount} (${t.date})`).join("\n")}
         
         Detect recurring patterns (same merchant, similar amount, monthly frequency).
         If a pattern exists but is NOT in the Registered Subscriptions list, it's a "Ghost Subscription".

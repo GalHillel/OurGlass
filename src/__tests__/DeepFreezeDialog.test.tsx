@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { DeepFreezeDialog } from '@/components/DeepFreezeDialog';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 describe('DeepFreezeDialog', () => {
     it('renders correctly when open', () => {
@@ -15,9 +16,9 @@ describe('DeepFreezeDialog', () => {
             />
         );
 
-        expect(screen.getByText('רגע, זה ₪850! 🥶')).toBeInTheDocument();
+        expect(screen.getByText(`רגע, זה ${CURRENCY_SYMBOL}850! 🥶`)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /כן, תקפיא לי/i })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /לא, אני חייב/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: new RegExp('לא, ' + PAYERS.HIM + ' חייב', 'i') })).toBeInTheDocument();
     });
 
     it('does not render when closed', () => {
@@ -32,7 +33,7 @@ describe('DeepFreezeDialog', () => {
             />
         );
 
-        expect(screen.queryByText(/₪850/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/${CURRENCY_SYMBOL}850/)).not.toBeInTheDocument();
     });
 
     it('calls onFreeze when freeze button clicked', () => {
@@ -65,7 +66,7 @@ describe('DeepFreezeDialog', () => {
             />
         );
 
-        fireEvent.click(screen.getByRole('button', { name: /לא, אני חייב/i }));
+        fireEvent.click(screen.getByRole('button', { name: new RegExp('לא, ' + PAYERS.HIM + ' חייב', 'i') }));
         expect(onBuyAnyway).toHaveBeenCalledTimes(1);
     });
 });

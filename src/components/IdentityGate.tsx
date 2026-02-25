@@ -6,6 +6,7 @@ import { useAppStore } from "@/stores/appStore";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { hapticSuccess } from "@/utils/haptics";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 export const IdentityGate = ({ children }: { children: React.ReactNode }) => {
     const { user, loading } = useAuth();
@@ -69,7 +70,7 @@ export const IdentityGate = ({ children }: { children: React.ReactNode }) => {
                         <div className="w-full aspect-square rounded-3xl bg-blue-500/20 border-2 border-blue-500/30 flex items-center justify-center group-hover:bg-blue-500/30 group-hover:border-blue-400 group-hover:shadow-[0_0_30px_rgba(59,130,246,0.3)] transition-all duration-300">
                             <span className="text-5xl">👨🏻</span>
                         </div>
-                        <span className="text-xl font-bold text-white/80 group-hover:text-white transition-colors">גל</span>
+                        <span className="text-xl font-bold text-white/80 group-hover:text-white transition-colors">{PAYERS.HIM}</span>
                     </motion.button>
 
                     {/* IRIS */}
@@ -82,7 +83,7 @@ export const IdentityGate = ({ children }: { children: React.ReactNode }) => {
                         <div className="w-full aspect-square rounded-3xl bg-pink-500/20 border-2 border-pink-500/30 flex items-center justify-center group-hover:bg-pink-500/30 group-hover:border-pink-400 group-hover:shadow-[0_0_30px_rgba(236,72,153,0.3)] transition-all duration-300">
                             <span className="text-5xl">👩🏻</span>
                         </div>
-                        <span className="text-xl font-bold text-white/80 group-hover:text-white transition-colors">איריס</span>
+                        <span className="text-xl font-bold text-white/80 group-hover:text-white transition-colors">{PAYERS.HER}</span>
                     </motion.button>
                 </div>
             </motion.div>
