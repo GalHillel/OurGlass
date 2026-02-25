@@ -3,6 +3,7 @@
 import { AddTransactionDrawer } from "@/components/AddTransactionDrawer";
 import { TransactionList } from "@/components/TransactionList";
 import { HomeMosaic } from "@/components/HomeMosaic";
+import { HomeMosaicSkeleton } from "@/components/HomeMosaicSkeleton";
 import { normalizeCategory } from "@/components/CategoryBreakdown";
 import { getBillingPeriodForDate } from "@/lib/billing";
 import { calculateBurnRate, cn } from "@/lib/utils";
@@ -261,10 +262,7 @@ export default function Home() {
         {/* Pull to Refresh Wrapper */}
         <PullToRefresh onRefresh={fetchData}>
           {loading || cashflow?.balance === undefined ? (
-            // SKELETONS ...
-            <div className="flex flex-col items-center justify-center py-10 gap-8 animate-in fade-in duration-700">
-              {/* ... */}
-            </div>
+            <HomeMosaicSkeleton />
           ) : (
             <div className={cn("flex flex-col items-center gap-2 w-full relative z-10 py-2 transition-all duration-500", isPrivacyMode && "blur-xl opacity-50 grayscale")}>
               {/* Billing Cycle Navigation */}

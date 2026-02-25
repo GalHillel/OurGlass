@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Send, Sparkles, X, ArrowDown, Trash2, PieChart, AlertCircle, Wallet } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FinancialContext, Transaction } from "@/types";
+import { useAppStore } from "@/stores/appStore";
+import { hapticConfirm } from "@/utils/haptics";
 
 interface ChatInterfaceProps {
     context: FinancialContext;
@@ -60,20 +62,23 @@ function generateSuggestedQuestions(context: FinancialContext): string[] {
 }
 
 export const ChatInterface = ({ context, onClose }: ChatInterfaceProps) => {
+    const { appIdentity, coupleId } = useAppStore();
+    const historyKey = `ai_chat_history_${coupleId || 'no_couple'}_${appIdentity || 'default'}`;
+
     // 1. Unified state for chatId to force fresh AI sessions
-    const [chatId, setChatId] = useState(() => Date.now().toString());
+    const [chatId, setChatId] = useState(() => crypto.randomUUID());
 
     // 2. Load history ONCE on initialization
     const [initialMessages] = useState<UIMessage[]>(() => {
         if (typeof window === 'undefined') return [];
-        const saved = localStorage.getItem('ai_chat_history');
+        const saved = localStorage.getItem(historyKey);
         if (saved) {
             try { return JSON.parse(saved); } catch { return []; }
         }
         return [];
     });
 
-    const { messages, setMessages, sendMessage, status } = useChat({
+    const { messages, setMessages, sendMessage, status, stop } = useChat({
         id: chatId,
     });
 
@@ -106,12 +111,12 @@ export const ChatInterface = ({ context, onClose }: ChatInterfaceProps) => {
     useEffect(() => {
         if (isLoaded) {
             if (messages.length > 0) {
-                localStorage.setItem('ai_chat_history', JSON.stringify(messages));
+                localStorage.setItem(historyKey, JSON.stringify(messages));
             } else {
-                localStorage.removeItem('ai_chat_history');
+                localStorage.removeItem(historyKey);
             }
         }
-    }, [messages, isLoaded]);
+    }, [messages, isLoaded, historyKey]);
 
     // Auto-scroll to bottom
     const scrollToBottom = () => {
@@ -151,9 +156,11 @@ export const ChatInterface = ({ context, onClose }: ChatInterfaceProps) => {
     };
 
     const clearHistory = () => {
+        hapticConfirm();
+        stop();
         setMessages([]);
-        localStorage.removeItem('ai_chat_history');
-        setChatId(Date.now().toString()); // Force new session ID
+        localStorage.removeItem(historyKey);
+        setChatId(crypto.randomUUID()); // Force new session ID
     };
 
     if (!isLoaded) return null;

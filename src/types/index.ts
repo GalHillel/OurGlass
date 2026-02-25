@@ -168,4 +168,5 @@ export interface FinancialContext {
     income: number;
     identityName: string;
     liveNetWorth: number | null;
+    currentRoute?: string;
 }

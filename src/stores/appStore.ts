@@ -56,3 +56,6 @@ export const useAppStore = create<AppState>()(
         }
     )
 );
+
+export const useAppIdentity = () => useAppStore(state => state.appIdentity);
+export const useActiveTab = () => useAppStore(state => state.activeTab);

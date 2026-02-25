@@ -185,6 +185,7 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
                 income: resolvedIncome,
                 identityName,
                 liveNetWorth,
+                currentRoute: pathname,
             };
 
             setContext(ctx);

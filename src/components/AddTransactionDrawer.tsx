@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import {
     Drawer,
     DrawerContent,
@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { hapticForAmount, hapticError } from "@/utils/haptics";
 import {
     Coffee,
     Bus,
@@ -91,6 +92,76 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
+    const saveMutation = useMutation({
+        mutationFn: async (payload: { txs?: any[], txData?: any }) => {
+            if (payload.txs) {
+                const { data, error } = await supabase.from('transactions').insert(payload.txs).select();
+                if (error) throw error;
+                return data;
+            } else if (payload.txData) {
+                if (initialData) {
+                    const { data, error } = await supabase.from('transactions').update(payload.txData).eq('id', initialData.id).select().single();
+                    if (error) throw error;
+                    return data;
+                } else {
+                    const { data, error } = await supabase.from('transactions').insert(payload.txData).select().single();
+                    if (error) throw error;
+                    return data;
+                }
+            }
+            throw new Error("Invalid payload");
+        },
+        onMutate: async (payload) => {
+            await queryClient.cancelQueries({ queryKey: ['transactions'] });
+            await queryClient.cancelQueries({ queryKey: ['global-cashflow'] });
+
+            const previousTransactions = queryClient.getQueryData(['transactions']);
+
+            if (payload.txData && !initialData && !payload.txs) {
+                queryClient.setQueriesData({ queryKey: ['transactions'] }, (old: any) => {
+                    const maxId = Array.isArray(old) ? Math.max(0, ...old.map((t: any) => t.id || 0)) : 0;
+                    const optimisticTx = {
+                        ...payload.txData,
+                        id: maxId + 1,
+                        created_at: new Date().toISOString()
+                    };
+                    return Array.isArray(old) ? [optimisticTx, ...old] : [optimisticTx];
+                });
+            }
+
+            return { previousTransactions };
+        },
+        onError: (err, newTx, context) => {
+            if (context?.previousTransactions) {
+                queryClient.setQueriesData({ queryKey: ['transactions'] }, context.previousTransactions);
+            }
+            const errorMsg = (err as any)?.message || "שגיאה בשמירה";
+            toast.error("שגיאה בשמירה: " + errorMsg);
+            console.error("Save error:", err);
+            hapticError();
+            setLoading(false);
+        },
+        onSuccess: (data, payload) => {
+            const numericAmount = parseFloat(amountStr);
+            hapticForAmount(numericAmount);
+            if (payload.txs) {
+                toast.success(`נוספו ${installments} תשלומים בהצלחה!`);
+                if (onSuccess && Array.isArray(data) && data.length > 0) onSuccess(numericAmount, data[0] as Transaction);
+            } else {
+                toast.success(initialData ? "עודכן בהצלחה" : "הוסף בהצלחה!");
+                if (onSuccess) onSuccess(numericAmount, data as Transaction);
+            }
+
+            queryClient.invalidateQueries({ queryKey: ["transactions"] });
+            queryClient.invalidateQueries({ queryKey: ["global-cashflow"] });
+            queryClient.invalidateQueries({ queryKey: ["settle-up"] });
+            queryClient.invalidateQueries({ queryKey: ["guilt-free"] });
+
+            setLoading(false);
+            onClose();
+        }
+    });
+
     const performSave = async () => {
         const numericAmount = parseFloat(amountStr);
         if (!numericAmount || numericAmount <= 0) {
@@ -101,84 +172,44 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
         triggerHaptic();
         setLoading(true);
 
-        try {
-            let finalDescription = description.trim() || selectedCategory || "הוצאה כללית";
-            if (isImpulse) {
-                finalDescription += " #impulse";
-            }
-            const finalDate = new Date(date);
+        let finalDescription = description.trim() || selectedCategory || "הוצאה כללית";
+        if (isImpulse) {
+            finalDescription += " #impulse";
+        }
+        const finalDate = new Date(date);
 
-            if (installments > 1) {
-                // Installments Logic
-                const totalAmount = numericAmount;
-                const perInstallment = Math.round((totalAmount / installments) * 100) / 100;
-
-                const txs = [];
-                for (let i = 0; i < installments; i++) {
-                    const installmentDate = addMonths(finalDate, i);
-
-                    txs.push({
-                        amount: perInstallment,
-                        user_id: user?.id,
-                        couple_id: profile?.couple_id,
-                        description: `${finalDescription} (תשלום ${i + 1}/${installments})`,
-                        is_surprise: false,
-                        date: installmentDate.toISOString(),
-                        payer: payer,
-                        category: selectedCategory,
-                        mood_rating: moodRating,
-                    });
-                }
-
-                const { data, error } = await supabase.from('transactions').insert(txs).select();
-                if (error) throw error;
-
-                toast.success(`נוספו ${installments} תשלומים בהצלחה!`);
-                if (onSuccess && data && data.length > 0) onSuccess(numericAmount, data[0] as Transaction);
-            } else {
-                // Regular Single Transaction
-                const txData = {
-                    amount: numericAmount,
+        if (installments > 1) {
+            const totalAmount = numericAmount;
+            const perInstallment = Math.round((totalAmount / installments) * 100) / 100;
+            const txs = [];
+            for (let i = 0; i < installments; i++) {
+                const installmentDate = addMonths(finalDate, i);
+                txs.push({
+                    amount: perInstallment,
                     user_id: user?.id,
                     couple_id: profile?.couple_id,
-                    description: finalDescription,
+                    description: `${finalDescription} (תשלום ${i + 1}/${installments})`,
                     is_surprise: false,
-                    date: finalDate.toISOString(),
+                    date: installmentDate.toISOString(),
                     payer: payer,
                     category: selectedCategory,
                     mood_rating: moodRating,
-                };
-
-                let resultTx;
-                if (initialData) {
-                    const { data, error } = await supabase.from('transactions').update(txData).eq('id', initialData.id).select().single();
-                    if (error) throw error;
-                    resultTx = data;
-                    toast.success("עודכן בהצלחה");
-                } else {
-                    const { data, error } = await supabase.from('transactions').insert(txData).select().single();
-                    if (error) throw error;
-                    resultTx = data;
-                    toast.success("הוסף בהצלחה!");
-                }
-
-                const mappedTx = resultTx as Transaction;
-                if (onSuccess) onSuccess(numericAmount, mappedTx);
+                });
             }
-
-            // Global invalidation for all related cashflow components
-            queryClient.invalidateQueries({ queryKey: ["global-cashflow"] });
-            queryClient.invalidateQueries({ queryKey: ["settle-up"] });
-            queryClient.invalidateQueries({ queryKey: ["guilt-free"] });
-
-            onClose();
-
-        } catch (error: unknown) {
-            const err = error as { message?: string };
-            toast.error("שגיאה בשמירה");
-            console.error("Save error:", JSON.stringify({ message: err?.message }, null, 2));
-        } finally {
-            setLoading(false);
+            saveMutation.mutate({ txs });
+        } else {
+            const txData = {
+                amount: numericAmount,
+                user_id: user?.id,
+                couple_id: profile?.couple_id,
+                description: finalDescription,
+                is_surprise: false,
+                date: finalDate.toISOString(),
+                payer: payer,
+                category: selectedCategory,
+                mood_rating: moodRating,
+            };
+            saveMutation.mutate({ txData });
         }
     };
 

@@ -85,6 +85,7 @@ export async function POST(req: Request) {
   const systemMessage = `אתה פסיכולוג/יועץ פיננסי חכם, שנון, מעט קשוח אך אמפתי עבור הזוג.
 אתה מדבר עם ${identityName || 'המשתמש'}. פנה אליו/אליה בשמו/ה.
 אתה מקבל הקשר פיננסי מלא ועדכני. השתמש בו כדי לתת תשובות מדויקות, מותאמות אישית וברות-ביצוע.
+${context?.currentRoute ? `\n📍 **המשתמש נמצא כעת במסך:** ${context.currentRoute} - נצל מידע זה כדי לתת תובנות תלויות-הקשר (למשל, אם הוא ב-Vault, דבר על חסכונות והשקעות).` : ''}
 
 💰 Cash & Assets Breakdown
 - Bank Cash: ₪${toSafeNumber(assets?.bankCash).toLocaleString()}
@@ -139,6 +140,7 @@ The 'Total Spent This Month' already includes paid subscriptions/recurring bills
       model: google('gemini-2.5-flash'), // Primary
       system: systemMessage,
       messages: modelMessages,
+      abortSignal: req.signal,
     });
     return result.toUIMessageStreamResponse();
   } catch (error: unknown) {
@@ -150,6 +152,7 @@ The 'Total Spent This Month' already includes paid subscriptions/recurring bills
         model: backupModel,
         system: systemMessage,
         messages: modelMessages,
+        abortSignal: req.signal,
       });
       return result.toUIMessageStreamResponse();
     }

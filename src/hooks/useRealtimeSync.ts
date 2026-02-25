@@ -15,9 +15,17 @@ export function useRealtimeSync() {
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'transactions' },
-                () => {
-                    console.log("Realtime: Transactions changed");
-                    queryClient.invalidateQueries();
+                (payload) => {
+                    console.log("Realtime: Transactions changed", payload);
+                    if (payload.eventType === 'INSERT') {
+                        queryClient.setQueriesData({ queryKey: ['transactions'] }, (oldData: any) => {
+                            if (!oldData) return oldData;
+                            if (Array.isArray(oldData)) return [payload.new, ...oldData];
+                            return oldData;
+                        });
+                    }
+                    queryClient.invalidateQueries({ queryKey: ['transactions'] });
+                    queryClient.invalidateQueries({ queryKey: ['global-cashflow'] });
                 }
             )
             .on(
@@ -25,7 +33,8 @@ export function useRealtimeSync() {
                 { event: '*', schema: 'public', table: 'subscriptions' },
                 () => {
                     console.log("Realtime: Subscriptions changed");
-                    queryClient.invalidateQueries();
+                    queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+                    queryClient.invalidateQueries({ queryKey: ['global-cashflow'] });
                 }
             )
             .on(
@@ -33,7 +42,8 @@ export function useRealtimeSync() {
                 { event: '*', schema: 'public', table: 'liabilities' },
                 () => {
                     console.log("Realtime: Liabilities changed");
-                    queryClient.invalidateQueries();
+                    queryClient.invalidateQueries({ queryKey: ['liabilities'] });
+                    queryClient.invalidateQueries({ queryKey: ['global-cashflow'] });
                 }
             )
             .on(
@@ -41,7 +51,8 @@ export function useRealtimeSync() {
                 { event: '*', schema: 'public', table: 'assets' },
                 () => {
                     console.log("Realtime: Assets changed");
-                    queryClient.invalidateQueries();
+                    queryClient.invalidateQueries({ queryKey: ['assets'] });
+                    queryClient.invalidateQueries({ queryKey: ['wealth'] });
                 }
             )
             .on(
@@ -49,7 +60,7 @@ export function useRealtimeSync() {
                 { event: '*', schema: 'public', table: 'wishlist' },
                 () => {
                     console.log("Realtime: Wishlist changed");
-                    queryClient.invalidateQueries();
+                    queryClient.invalidateQueries({ queryKey: ['wishlist'] });
                 }
             )
             .subscribe((status) => {
