@@ -1,7 +1,8 @@
 "use client";
 
 import { Home, Gift, Settings, CreditCard, Gem } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { triggerHaptic } from "@/utils/haptics";
 import { cn } from "@/lib/utils";
@@ -16,7 +17,6 @@ const navItems = [
 
 export const BottomNav = () => {
     const pathname = usePathname();
-    const router = useRouter();
 
     // Don't show on login page
     if (pathname === "/login") return null;
@@ -28,11 +28,12 @@ export const BottomNav = () => {
                 {navItems.map((item) => {
                     const isActive = pathname === item.path;
                     return (
-                        <button
+                        <Link
                             key={item.id}
+                            href={item.path}
+                            prefetch={true}
                             onClick={() => {
                                 triggerHaptic();
-                                router.push(item.path);
                             }}
                             className="relative flex flex-col items-center justify-center flex-1 py-1 group"
                         >
@@ -63,7 +64,7 @@ export const BottomNav = () => {
                             )}>
                                 {item.label}
                             </span>
-                        </button>
+                        </Link>
                     );
                 })}
             </nav>
