@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { WishlistActionDrawer } from '@/components/WishlistActionDrawer';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 vi.mock('@/utils/haptics', () => ({ triggerHaptic: vi.fn() }));
 
@@ -25,7 +26,7 @@ describe('WishlistActionDrawer', () => {
         expect(screen.getByText('הפקדה לחלום')).toBeInTheDocument();
         expect(screen.getByText('MacBook')).toBeInTheDocument();
         // missing: 8000
-        expect(screen.getByText('חסרים ₪8,000')).toBeInTheDocument();
+        expect(screen.getByText(`חסרים ${CURRENCY_SYMBOL}8,000`)).toBeInTheDocument();
     });
 
     it('renders withdraw mode correctly', () => {
@@ -34,7 +35,7 @@ describe('WishlistActionDrawer', () => {
 
         expect(screen.getByText('משיכה מהחיסכון')).toBeInTheDocument();
         // available for withdraw: 2000
-        expect(screen.getByText('זמינים למשיכה ₪2,000')).toBeInTheDocument();
+        expect(screen.getByText(`זמינים למשיכה ${CURRENCY_SYMBOL}2,000`)).toBeInTheDocument();
     });
 
     it('allows confirming amount', () => {
@@ -44,7 +45,7 @@ describe('WishlistActionDrawer', () => {
         const input = screen.getByPlaceholderText('0');
         fireEvent.change(input, { target: { value: '150' } });
 
-        fireEvent.click(screen.getByText(/הפקד ₪150/));
+        fireEvent.click(screen.getByText(/הפקד ${CURRENCY_SYMBOL}150/));
 
         expect(onConfirm).toHaveBeenCalledWith(mockItem, 150);
     });

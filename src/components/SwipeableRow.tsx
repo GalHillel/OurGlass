@@ -13,6 +13,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { triggerHaptic, hapticError } from "@/utils/haptics";
 
 interface SwipeableRowProps {
     children: React.ReactNode;
@@ -45,7 +46,7 @@ export const SwipeableRow = ({
             // Swipe Right -> Edit
             setAction('edit');
             // Trigger haptic if available
-            if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10);
+            triggerHaptic();
 
             // Snap back and trigger edit
             await controls.start({ x: 0 });
@@ -54,7 +55,7 @@ export const SwipeableRow = ({
         } else if (offset < deleteThreshold && onDelete) {
             // Swipe Left -> Delete
             setAction('delete');
-            if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10);
+            hapticError();
 
             // Snap back and show dialog
             await controls.start({ x: 0 });
@@ -108,7 +109,7 @@ export const SwipeableRow = ({
             </motion.div>
 
             <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                <AlertDialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 text-white rounded-3xl">
+                <AlertDialogContent className="glass-panel border-white/10 text-white p-6">
                     <AlertDialogHeader>
                         <AlertDialogTitle>מחיקת פריט</AlertDialogTitle>
                         <AlertDialogDescription className="text-white/60">

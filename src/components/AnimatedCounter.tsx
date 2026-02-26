@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { useMotionValue, useSpring, useTransform, motion } from "framer-motion";
 
+import { useAppStore } from "@/stores/appStore";
+
 interface AnimatedCounterProps {
     value: number;
     duration?: number;
@@ -12,21 +14,26 @@ interface AnimatedCounterProps {
     color?: string;
     showPlus?: boolean;
     prefix?: string;
+    currencySymbol?: string;
 }
 
 export function AnimatedCounter({
     value,
     className = "",
-    prefix = ""
+    prefix = "",
+    currencySymbol = ""
 }: AnimatedCounterProps) {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     const motionValue = useMotionValue(0);
     const springValue = useSpring(motionValue, {
         damping: 40,
         stiffness: 100,
     });
-    const displayValue = useTransform(springValue, (latest) =>
-        prefix + Math.round(latest).toLocaleString()
-    );
+
+    const displayValue = useTransform(springValue, (latest) => {
+        if (isStealthMode) return currencySymbol + "***";
+        return prefix + Math.round(latest).toLocaleString();
+    });
 
     useEffect(() => {
         motionValue.set(value);

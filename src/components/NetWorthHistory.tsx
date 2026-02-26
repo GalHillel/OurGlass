@@ -8,6 +8,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { he } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { useAppStore } from "@/stores/appStore";
+import { formatAmount } from "@/lib/utils";
 
 const PERIODS = [
     { label: "30 יום", days: 30 },
@@ -23,6 +26,7 @@ export function NetWorthHistory({ liveNetWorth }: NetWorthHistoryProps) {
     const [period, setPeriod] = useState(90);
     const [isExpanded, setIsExpanded] = useState(false);
     const { data: snapshots = [], isLoading } = useWealthHistory(period);
+    const isStealthMode = useAppStore(s => s.isStealthMode);
 
     const chartData = useMemo(() => {
         const historical = snapshots.map((s) => ({
@@ -93,7 +97,7 @@ export function NetWorthHistory({ liveNetWorth }: NetWorthHistoryProps) {
                     <div className="text-right">
                         <h3 className="text-sm font-bold text-white/80 uppercase tracking-widest">היסטוריית שווי</h3>
                         <div className="text-2xl font-black text-white mt-0.5 tabular-nums">
-                            ₪{displayNetWorth.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            {formatAmount(displayNetWorth, isStealthMode, CURRENCY_SYMBOL)}
                         </div>
                     </div>
                 </div>
@@ -173,7 +177,7 @@ export function NetWorthHistory({ liveNetWorth }: NetWorthHistoryProps) {
                                                 tick={{ fontSize: 10, fill: "rgba(255,255,255,0.3)" }}
                                                 axisLine={false}
                                                 tickLine={false}
-                                                tickFormatter={(v: number) => `₪${(v / 1000).toFixed(0)}k`}
+                                                tickFormatter={(v: number) => `${CURRENCY_SYMBOL}${(v / 1000).toFixed(0)}k`}
                                                 width={50}
                                             />
                                             <Tooltip
@@ -185,7 +189,10 @@ export function NetWorthHistory({ liveNetWorth }: NetWorthHistoryProps) {
                                                     fontSize: "12px",
                                                 }}
                                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                formatter={(value: any) => [`₪${Number(value).toLocaleString()}`, "שווי נקי"]}
+                                                formatter={(value: any) => [
+                                                    isStealthMode ? '***,***' : `${CURRENCY_SYMBOL}${Number(value).toLocaleString()}`,
+                                                    "שווי נקי"
+                                                ]}
                                                 labelFormatter={(label) => String(label)}
                                             />
                                             <Area

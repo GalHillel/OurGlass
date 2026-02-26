@@ -7,6 +7,7 @@ import { Sparkles } from "lucide-react";
 import { Transaction, Subscription, Liability } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface MoodInsight {
     type: "info" | "warning" | "success";
@@ -115,7 +116,7 @@ export function MoodSpendingInsight({ transactions, subscriptions, liabilities }
                             tick={{ fontSize: 9, fill: "rgba(255,255,255,0.2)" }}
                             axisLine={false}
                             tickLine={false}
-                            tickFormatter={(v: number) => `₪${v} `}
+                            tickFormatter={(v: number) => `${CURRENCY_SYMBOL}${v} `}
                             width={40}
                         />
                         <Tooltip
@@ -127,7 +128,7 @@ export function MoodSpendingInsight({ transactions, subscriptions, liabilities }
                                 fontSize: "11px",
                             }}
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            formatter={(value: any) => [`₪${Number(value).toLocaleString()} `, "ממוצע להוצאה"]}
+                            formatter={(value: any) => [`${CURRENCY_SYMBOL}${Number(value).toLocaleString()} `, "ממוצע להוצאה"]}
                             labelFormatter={() => ""}
                         />
                         <Bar dataKey="avgSpend" radius={[6, 6, 0, 0]}>
@@ -165,7 +166,7 @@ export function MoodSpendingInsight({ transactions, subscriptions, liabilities }
                     <div key={d.rating} className="text-center shrink-0 bg-white/5 rounded-lg px-2 py-1.5">
                         <p className="text-sm">{d.mood}</p>
                         <p className="text-[9px] text-white/40">{d.count} הוצאות</p>
-                        <p className="text-[10px] font-bold text-white/70">₪{d.avgSpend}</p>
+                        <p className="text-[10px] font-bold text-white/70">{CURRENCY_SYMBOL}{d.avgSpend}</p>
                     </div>
                 ))}
             </div>

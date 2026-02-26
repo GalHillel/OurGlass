@@ -4,7 +4,7 @@ import { useState, useMemo, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Goal } from "@/types";
 import { useWealth } from "@/hooks/useWealth";
-import { TrendingUp, PieChart, Shield, Rocket, Plus, Edit2, Coins, Building, Trash2, DollarSign } from "lucide-react";
+import { TrendingUp, PieChart, Shield, Rocket, Plus, Edit2, Building, Trash2, DollarSign } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
@@ -23,8 +23,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { TABS } from "@/lib/constants";
-import { StockPortfolio } from "@/components/StockPortfolio";
+import { TABS, CURRENCY_SYMBOL } from "@/lib/constants";
 
 import { getRank } from "@/lib/ranks";
 
@@ -32,10 +31,14 @@ import { getRank } from "@/lib/ranks";
 import { NetWorthHistory } from "@/components/NetWorthHistory";
 import { MonthlyStoryWrap } from "@/components/MonthlyStoryWrap";
 import { RebalancingCoach } from "@/components/RebalancingCoach";
-import { SP500Benchmark } from "@/components/SP500Benchmark";
 import { useLiabilities } from "@/hooks/useWealthData";
+import { useDashboardStore } from "@/stores/dashboardStore";
+import { useAppStore } from "@/stores/appStore";
+import { cn, formatAmount } from "@/lib/utils";
+import { triggerHaptic } from "@/utils/haptics";
 
 export default function WealthPage() {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     // Use the centralized wealth hook
     const {
         netWorth,
@@ -46,6 +49,21 @@ export default function WealthPage() {
         loading,
         refetch
     } = useWealth();
+
+    const features = useDashboardStore((s) => s.features);
+    const {
+        showSP500Benchmark,
+        showDividendForecast,
+        showRebalancingCoach,
+        wealthShowHistory,
+        wealthShowInsights,
+        wealthShowAssets,
+        wealthShowPortfolio,
+        wealthShowSummaryCards
+    } = features;
+
+    // Check if all wealth micro-features are off
+    const isMinimalMode = !showSP500Benchmark && !showDividendForecast && !showRebalancingCoach && !wealthShowHistory && !wealthShowInsights && !wealthShowAssets && !wealthShowPortfolio && !wealthShowSummaryCards;
 
     useLiabilities();
     const trueNetWorth = netWorth; // Gross Assets view per user request
@@ -70,12 +88,11 @@ export default function WealthPage() {
 
             // 1. Chart Filter (High Priority)
             if (chartFilter) {
-                if (chartFilter === 'crypto') return asset.investment_type === 'crypto';
                 if (chartFilter === 'real_estate') return asset.investment_type === 'real_estate';
-                if (chartFilter === 'stock') return asset.type === 'stock' && asset.investment_type !== 'crypto'; // Ensure distinction
+                if (chartFilter === 'stock') return asset.type === 'stock';
                 if (chartFilter === 'cash') return asset.type === 'cash';
-                if (chartFilter === 'usd_cash') return asset.investment_type === 'usd_cash' || asset.type === 'usd_cash';
-                if (chartFilter === 'other') return asset.type !== 'stock' && asset.type !== 'cash' && asset.type !== 'usd_cash' && !asset.investment_type;
+                if (chartFilter === 'foreign_currency') return asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency';
+                if (chartFilter === 'other') return asset.type !== 'stock' && asset.type !== 'cash' && asset.type !== 'foreign_currency' && !asset.investment_type;
                 // Fallback
                 return true;
             }
@@ -83,15 +100,31 @@ export default function WealthPage() {
             // 2. Tab Filter (Standard)
             if (activeTab === TABS.ALL) return true;
 
-            const isInvestment = asset.type === 'stock' ||
-                asset.investment_type === 'crypto' ||
-                asset.investment_type === 'real_estate';
+            if (activeTab === TABS.CASH) return asset.investment_type === 'cash' || (asset.type === 'cash' && !asset.investment_type && !asset.interest_rate);
+            if (activeTab === TABS.SAVINGS) return asset.investment_type === 'savings' || (asset.type === 'cash' && (asset.interest_rate || 0) > 0);
+            if (activeTab === TABS.FOREIGN_CURRENCY) return asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency';
+            if (activeTab === TABS.REAL_ESTATE) return asset.investment_type === 'real_estate';
+            if (activeTab === TABS.INVESTMENTS) return asset.type === 'stock' || asset.investment_type === 'real_estate' || asset.type === 'money_market' || asset.investment_type === 'money_market';
 
-            if (activeTab === TABS.INVESTMENTS) return isInvestment;
-            if (activeTab === TABS.LIQUID) return !isInvestment;
             return true;
         });
     }, [assets, activeTab, chartFilter]);
+
+    const visibleTabs = useMemo(() => {
+        const hasData = (tab: string) => {
+            if (tab === TABS.ALL) return true;
+            return assets.some(asset => {
+                if (asset.type === 'stock' && asset.symbol) return false;
+                if (tab === TABS.CASH) return asset.investment_type === 'cash' || (asset.type === 'cash' && !asset.investment_type && !asset.interest_rate);
+                if (tab === TABS.SAVINGS) return asset.investment_type === 'savings' || (asset.type === 'cash' && (asset.interest_rate || 0) > 0);
+                if (tab === TABS.FOREIGN_CURRENCY) return asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency';
+                if (tab === TABS.REAL_ESTATE) return asset.investment_type === 'real_estate';
+                if (tab === TABS.INVESTMENTS) return asset.type === 'stock' || asset.investment_type === 'real_estate' || asset.type === 'money_market' || asset.investment_type === 'money_market';
+                return false;
+            });
+        };
+        return Object.values(TABS).filter(hasData);
+    }, [assets]);
 
 
 
@@ -121,8 +154,7 @@ export default function WealthPage() {
                     <Skeleton className="h-12 w-48 bg-white/10" />
                 ) : (
                     <div className="text-5xl font-black text-white neon-text relative z-10 flex items-center gap-1">
-                        <span>₪</span>
-                        <AnimatedCounter value={trueNetWorth} />
+                        <AnimatedCounter value={trueNetWorth} currencySymbol={CURRENCY_SYMBOL} />
                     </div>
                 )}
 
@@ -132,179 +164,224 @@ export default function WealthPage() {
             </div>
 
             {/* Row 2: SIDE BY SIDE Cards */}
-            <div className="grid grid-cols-2 gap-4">
-                <div className="neon-card p-4 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
-                    <div className="absolute -right-4 -top-4 w-20 h-20 bg-purple-500/20 rounded-full blur-xl group-hover:bg-purple-500/30 transition-all" />
-                    <span className="text-purple-300 text-[10px] font-bold tracking-widest uppercase mb-1">השקעות וחסכונות</span>
-                    {loading ? (
-                        <Skeleton className="h-7 w-24 bg-white/10" />
-                    ) : (
-                        <div className="text-2xl font-bold text-white flex items-center gap-1">
-                            <span>₪</span>
-                            <AnimatedCounter value={investmentsValue} />
-                        </div>
-                    )}
-                </div>
-                <div className="neon-card p-4 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
-                    <div className="absolute -right-4 -top-4 w-20 h-20 bg-emerald-500/20 rounded-full blur-xl group-hover:bg-emerald-500/30 transition-all" />
-                    <span className="text-emerald-300 text-[10px] font-bold tracking-widest uppercase mb-1">פקדונות ומזומן</span>
-                    {loading ? (
-                        <Skeleton className="h-7 w-24 bg-white/10" />
-                    ) : (
-                        <div className="text-2xl font-bold text-white flex items-center gap-1">
-                            <span>₪</span>
-                            <AnimatedCounter value={cashValue} />
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Row 3: History & Coach */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <NetWorthHistory liveNetWorth={trueNetWorth} />
-                <RebalancingCoach assets={assets} totalWealth={trueNetWorth} />
-            </div>
-
-            {/* Row 4: SP500 & Assets */}
-            <SP500Benchmark initialWealth={trueNetWorth} />
-
-            {/* Live Portfolio */}
-            {(!chartFilter || chartFilter === 'stock') && (
-                <div className="mx-0">
-                    <StockPortfolio assets={assets} usdToIls={usdToIls} />
+            {wealthShowSummaryCards && (
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="neon-card p-4 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                        <div className="absolute -right-4 -top-4 w-20 h-20 bg-purple-500/20 rounded-full blur-xl group-hover:bg-purple-500/30 transition-all" />
+                        <span className="text-purple-300 text-[10px] font-bold tracking-widest uppercase mb-1">השקעות וחסכונות</span>
+                        {loading ? (
+                            <Skeleton className="h-7 w-24 bg-white/10" />
+                        ) : (
+                            <div className="text-2xl font-bold text-white flex items-center gap-1">
+                                <AnimatedCounter value={investmentsValue} currencySymbol={CURRENCY_SYMBOL} />
+                            </div>
+                        )}
+                    </div>
+                    <div className="neon-card p-4 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                        <div className="absolute -right-4 -top-4 w-20 h-20 bg-emerald-500/20 rounded-full blur-xl group-hover:bg-emerald-500/30 transition-all" />
+                        <span className="text-emerald-300 text-[10px] font-bold tracking-widest uppercase mb-1">פקדונות ומזומן</span>
+                        {loading ? (
+                            <Skeleton className="h-7 w-24 bg-white/10" />
+                        ) : (
+                            <div className="text-2xl font-bold text-white flex items-center gap-1">
+                                <AnimatedCounter value={cashValue} currencySymbol={CURRENCY_SYMBOL} />
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
+            {/* Row 3: History & Coach */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {wealthShowHistory && <NetWorthHistory liveNetWorth={trueNetWorth} />}
+                <AnimatePresence>
+                    {showRebalancingCoach && wealthShowInsights && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden"
+                        >
+                            <RebalancingCoach assets={assets} totalWealth={trueNetWorth} />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+
+            {/* Row 4: SP500 & Dividend Forecast - REMOVED (Moved to Stocks Page) */}
+
+            {/* Minimal Mode Fallback */}
+            {isMinimalMode && (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="mx-2 p-8 border-2 border-dashed border-white/10 rounded-[2rem] text-center space-y-4"
+                >
+                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto">
+                        <Shield className="w-8 h-8 text-white/20" />
+                    </div>
+                    <div>
+                        <h3 className="text-white font-bold">מצב מינימליסטי</h3>
+                        <p className="text-slate-500 text-xs mt-1">כל הפיצ׳רים המתקדמים כבויים. ניתן להפעילם בהגדרות.</p>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => window.location.href = '/settings'}
+                        className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                    >
+                        עבור להגדרות
+                    </Button>
+                </motion.div>
+            )}
+
+            {/* Live Portfolio - REMOVED (Moved to Stocks Page) */}
+
             {/* Filter Tabs */}
-            <div className="flex gap-2 p-1 bg-white/5 rounded-2xl mx-2">
-                {Object.values(TABS).map((tab) => (
+            <div className="mx-2 mb-2 p-1.5 bg-slate-900/50 backdrop-blur-xl rounded-[2rem] border border-white/5 flex gap-1 items-center justify-center">
+                {visibleTabs.map((tab) => (
                     <button
                         key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all duration-300 ${activeTab === tab
-                            ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.5)] scale-105"
-                            : "text-white/40 hover:bg-white/5 hover:text-white"
-                            }`}
+                        onClick={() => {
+                            setActiveTab(tab);
+                            triggerHaptic();
+                        }}
+                        className={cn(
+                            "flex-1 min-w-[70px] py-3 text-xs font-bold rounded-[1.5rem] transition-all duration-300 relative",
+                            activeTab === tab
+                                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20 scale-105"
+                                : "text-white/40 hover:bg-white/5 hover:text-white"
+                        )}
                     >
                         {tab}
+                        {activeTab === tab && (
+                            <motion.div
+                                layoutId="activeTabGlow"
+                                className="absolute inset-0 bg-blue-400/5 blur-xl pointer-events-none rounded-full"
+                            />
+                        )}
                     </button>
                 ))}
             </div>
 
             {/* Assets List (Non-Stock) */}
-            <div className="space-y-4">
-                <div className="flex justify-between items-end px-2">
-                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        <PieChart className="w-4 h-4" /> נכסים אחרים
-                    </h2>
-                    <Button
-                        size="sm"
-                        onClick={() => { setEditingAsset(null); setIsDialogOpen(true); }}
-                        className="bg-blue-600 hover:bg-blue-500 text-white rounded-full text-xs font-bold"
-                    >
-                        <Plus className="w-4 h-4 ml-1" /> הוסף נכס
-                    </Button>
-                </div>
-
+            {wealthShowAssets && (
                 <div className="space-y-4">
-                    {loading && assets.length === 0 ? (
-                        <>
-                            <Skeleton className="h-24 w-full rounded-2xl bg-white/5" />
-                            <Skeleton className="h-24 w-full rounded-2xl bg-white/5" />
-                        </>
-                    ) : (
-                        <AnimatePresence mode="popLayout">
-                            {filteredAssets.map((asset, i) => (
-                                <motion.div
-                                    key={asset.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: i * 0.1 }}
-                                    className="neon-card p-4 rounded-2xl flex items-center justify-between group relative overflow-hidden"
-                                >
-                                    <div className="flex items-center gap-4 relative z-10 w-full">
-                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border border-white/5 ${(asset.type === 'stock' || asset.investment_type === 'crypto') ? 'bg-purple-500/20 text-purple-400'
-                                            : (asset.investment_type === 'usd_cash' || asset.type === 'usd_cash') ? 'bg-green-500/20 text-green-400'
-                                                : 'bg-emerald-500/20 text-emerald-400'
-                                            }`}>
-                                            {asset.investment_type === 'crypto' ? <Coins className="w-6 h-6" /> :
-                                                asset.investment_type === 'real_estate' ? <Building className="w-6 h-6" /> :
-                                                    (asset.investment_type === 'usd_cash' || asset.type === 'usd_cash') ? <DollarSign className="w-6 h-6" /> :
+                    <div className="flex justify-between items-end px-2">
+                        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <PieChart className="w-4 h-4" /> נכסים אחרים
+                        </h2>
+                        <Button
+                            size="sm"
+                            onClick={() => { setEditingAsset(null); setIsDialogOpen(true); }}
+                            className="bg-blue-600 hover:bg-blue-500 text-white rounded-full text-xs font-bold"
+                        >
+                            <Plus className="w-4 h-4 ml-1" /> הוסף נכס
+                        </Button>
+                    </div>
+
+                    <div className="space-y-4">
+                        {loading && assets.length === 0 ? (
+                            <>
+                                <Skeleton className="h-24 w-full rounded-2xl bg-white/5" />
+                                <Skeleton className="h-24 w-full rounded-2xl bg-white/5" />
+                            </>
+                        ) : (
+                            <AnimatePresence mode="popLayout">
+                                {filteredAssets.map((asset, i) => (
+                                    <motion.div
+                                        key={asset.id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: i * 0.1 }}
+                                        className="neon-card p-4 rounded-2xl flex items-center justify-between group relative overflow-hidden"
+                                    >
+                                        <div className="flex items-center gap-4 relative z-10 w-full">
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border border-white/5 ${asset.type === 'stock' ? 'bg-purple-500/20 text-purple-400'
+                                                : (asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency') ? 'bg-green-500/20 text-green-400'
+                                                    : 'bg-emerald-500/20 text-emerald-400'
+                                                }`}>
+                                                {asset.investment_type === 'real_estate' ? <Building className="w-6 h-6" /> :
+                                                    (asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency') ? <DollarSign className="w-6 h-6" /> :
                                                         asset.type === 'stock' ? <Rocket className="w-6 h-6" /> : <Shield className="w-6 h-6" />}
-                                        </div>
+                                            </div>
 
-                                        <div className="flex-1">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <h3 className="font-bold text-white text-lg">{asset.name}</h3>
-                                                    {(asset.type === 'stock' || asset.investment_type === 'crypto') && asset.symbol && (
-                                                        <span className="text-xs text-slate-400 font-mono tracking-wider">{asset.symbol} • {asset.quantity} יח׳</span>
-                                                    )}
-                                                </div>
-                                                <div className="text-left">
-                                                    <div className="font-black text-xl tracking-tight neon-text">
-                                                        ₪{Number(asset.calculatedValue || asset.current_amount).toLocaleString()}
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <h3 className="font-bold text-white text-lg">{asset.name}</h3>
+                                                        {asset.type === 'stock' && asset.symbol && (
+                                                            <span className="text-xs text-slate-400 font-mono tracking-wider">{asset.symbol} • {asset.quantity} יח׳</span>
+                                                        )}
                                                     </div>
-                                                    {(asset.investment_type === 'usd_cash' || asset.type === 'usd_cash') && (
-                                                        <div className="flex justify-end gap-1">
-                                                            <span className="text-[10px] bg-green-500/20 text-green-200 px-1.5 py-0.5 rounded border border-green-500/30">${Number(asset.current_amount).toLocaleString()}</span>
+                                                    <div className="text-left">
+                                                        <div className="font-black text-xl tracking-tight neon-text">
+                                                            {formatAmount(asset.calculatedValue || asset.current_amount, isStealthMode, CURRENCY_SYMBOL)}
                                                         </div>
-                                                    )}
-                                                    {(asset.type === 'stock' || asset.investment_type === 'crypto') && (
-                                                        <div className="flex justify-end">
-                                                            <span className="text-[10px] bg-purple-500/20 text-purple-200 px-1.5 py-0.5 rounded border border-purple-500/30">חי</span>
-                                                        </div>
-                                                    )}
+                                                        {(asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency') && (
+                                                            <div className="flex justify-end gap-1">
+                                                                <span className="text-[10px] bg-green-500/20 text-green-200 px-1.5 py-0.5 rounded border border-green-500/30">
+                                                                    {formatAmount(asset.current_amount, isStealthMode, '$')}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {asset.type === 'stock' && (
+                                                            <div className="flex justify-end">
+                                                                <span className="text-[10px] bg-purple-500/20 text-purple-200 px-1.5 py-0.5 rounded border border-purple-500/30">חי</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Action Buttons (Always Visible) */}
+                                                <div className="flex gap-2 mt-2 justify-end">
+                                                    <button
+                                                        onClick={() => { setEditingAsset(asset); setIsDialogOpen(true); }}
+                                                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <button className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-white/50 hover:text-red-400 transition-colors">
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent className="bg-slate-900 border-white/10 text-white">
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>למחוק נכס זה?</AlertDialogTitle>
+                                                                <AlertDialogDescription>פעולה זו אינה הפיכה.</AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel className="bg-white/5 border-white/10 text-white">ביטול</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleDelete(asset.id)} className="bg-red-600">מחק</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
                                                 </div>
                                             </div>
-
-                                            {/* Action Buttons (Always Visible) */}
-                                            <div className="flex gap-2 mt-2 justify-end">
-                                                <button
-                                                    onClick={() => { setEditingAsset(asset); setIsDialogOpen(true); }}
-                                                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
-                                                >
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <button className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-white/50 hover:text-red-400 transition-colors">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent className="bg-slate-900 border-white/10 text-white">
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>למחוק נכס זה?</AlertDialogTitle>
-                                                            <AlertDialogDescription>פעולה זו אינה הפיכה.</AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel className="bg-white/5 border-white/10 text-white">ביטול</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDelete(asset.id)} className="bg-red-600">מחק</AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            </div>
                                         </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    )}
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        )}
 
-                    {!loading && filteredAssets.length === 0 && (
-                        <div className="text-center py-10 text-slate-500 text-sm bg-white/5 rounded-3xl border border-white/5 border-dashed">
-                            אין נכסים עדיין. זה הזמן להתחיל!
-                        </div>
-                    )}
+                        {!loading && filteredAssets.length === 0 && (
+                            <div className="text-center py-10 text-slate-500 text-sm bg-white/5 rounded-3xl border border-white/5 border-dashed">
+                                אין נכסים עדיין. זה הזמן להתחיל!
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
 
             <AddAssetDialog
                 isOpen={isDialogOpen}
                 onClose={() => setIsDialogOpen(false)}
                 onSuccess={refetch}
                 initialData={editingAsset}
+                usdToIls={usdToIls}
             />
 
             {/* Final bottom spacer for edge-to-edge layout accessibility */}

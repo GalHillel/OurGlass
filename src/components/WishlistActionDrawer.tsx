@@ -8,6 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Banknote, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/utils/haptics";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface WishlistActionDrawerProps {
     isOpen: boolean;
@@ -83,7 +84,7 @@ export const WishlistActionDrawer = ({ isOpen, onClose, item, mode, onConfirm }:
                         {/* Big Number Input */}
                         <div className="flex flex-col items-center justify-center py-4 relative z-10">
                             <div className="flex items-center gap-1">
-                                <span className="text-4xl text-white/40">₪</span>
+                                <span className="text-4xl text-white/40">{CURRENCY_SYMBOL}</span>
                                 <input
                                     type="number"
                                     value={amount === 0 ? '' : amount}
@@ -99,7 +100,7 @@ export const WishlistActionDrawer = ({ isOpen, onClose, item, mode, onConfirm }:
                                 />
                             </div>
                             <p className="text-sm text-white/40 mt-2">
-                                {isDeposit ? `חסרים ₪${remaining.toLocaleString()}` : `זמינים למשיכה ₪${saved.toLocaleString()}`}
+                                {isDeposit ? `חסרים $${CURRENCY_SYMBOL}${remaining.toLocaleString()}` : `זמינים למשיכה $${CURRENCY_SYMBOL}${saved.toLocaleString()}`}
                             </p>
                         </div>
 
@@ -124,7 +125,7 @@ export const WishlistActionDrawer = ({ isOpen, onClose, item, mode, onConfirm }:
                                     disabled={amount + val > maxAmount}
                                     className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-white font-bold border border-white/5 disabled:opacity-30 transition-all active:scale-95"
                                 >
-                                    +₪{val}
+                                    +{CURRENCY_SYMBOL}{val}
                                 </button>
                             ))}
                             <button
@@ -176,12 +177,12 @@ export const WishlistActionDrawer = ({ isOpen, onClose, item, mode, onConfirm }:
                                 {isDeposit ? (
                                     <>
                                         <Sparkles className="w-6 h-6 mr-2 animate-pulse" />
-                                        הפקד ₪{amount}
+                                        הפקד {CURRENCY_SYMBOL}{amount}
                                     </>
                                 ) : (
                                     <>
                                         <Banknote className="w-6 h-6 mr-2" />
-                                        משוך ₪{amount}
+                                        משוך {CURRENCY_SYMBOL}{amount}
                                     </>
                                 )}
                             </Button>

@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { PartnerStats } from '@/components/PartnerStats';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 describe('PartnerStats', () => {
     it('returns null if total is 0', () => {
@@ -26,13 +27,13 @@ describe('PartnerStats', () => {
         // joint = 200 + 150 = 350
         // her = 300 + 0 = 300
 
-        expect(screen.getByText('גל')).toBeInTheDocument();
-        expect(screen.getByText('₪150')).toBeInTheDocument();
+        expect(screen.getByText(PAYERS.HIM)).toBeInTheDocument();
+        expect(screen.getByText(`${CURRENCY_SYMBOL}150`)).toBeInTheDocument();
 
         expect(screen.getByText('משותף')).toBeInTheDocument();
-        expect(screen.getByText('₪350')).toBeInTheDocument();
+        expect(screen.getByText(`${CURRENCY_SYMBOL}350`)).toBeInTheDocument();
 
-        expect(screen.getByText('איריס')).toBeInTheDocument();
-        expect(screen.getByText('₪300')).toBeInTheDocument();
+        expect(screen.getByText(PAYERS.HER)).toBeInTheDocument();
+        expect(screen.getByText(`${CURRENCY_SYMBOL}300`)).toBeInTheDocument();
     });
 });

@@ -6,6 +6,8 @@ import { LucideIcon, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useGlobalCashflow } from "@/hooks/useJointFinance";
+import { Sparkles } from "lucide-react";
+import { WeeklyMoneyDate } from "./WeeklyMoneyDate";
 
 interface AppHeaderProps {
     title: string;
@@ -32,6 +34,14 @@ export const AppHeader = memo(({ title, subtitle, icon: Icon, iconColor = "text-
         }
         return false;
     });
+
+    const [isMoneyDateOpen, setIsMoneyDateOpen] = useState(false);
+
+    // Mock data for the ritual - in a real app this would come from an API/hook
+    const ritualData = useMemo(() => ({
+        win: { category: "בילויים", amount: 450, diff: 120 },
+        drift: { category: "קניות ברשת", amount: 890, diff: 210 }
+    }), []);
 
 
 
@@ -113,8 +123,24 @@ export const AppHeader = memo(({ title, subtitle, icon: Icon, iconColor = "text-
                             <Eye className="w-5 h-5" />
                         )}
                     </button>
+
+                    {/* Weekly Money Date Trigger */}
+                    <button
+                        onClick={() => setIsMoneyDateOpen(true)}
+                        className="relative p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-all active:scale-90 group"
+                    >
+                        <Sparkles className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-400 rounded-full animate-ping" />
+                    </button>
                 </div>
             </header >
+
+            <WeeklyMoneyDate
+                isOpen={isMoneyDateOpen}
+                onClose={() => setIsMoneyDateOpen(false)}
+                win={ritualData.win}
+                drift={ritualData.drift}
+            />
         </>
     );
 });

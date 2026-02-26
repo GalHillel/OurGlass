@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/AuthProvider";
 import { useQueryClient } from "@tanstack/react-query";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 export const CATEGORIES = [
     { id: 'אוכל', label: 'אוכל', icon: Utensils, color: 'text-orange-400', bg: 'bg-orange-500/20', border: 'border-orange-500/30' },
@@ -168,7 +169,7 @@ export function AddSubscriptionDialog({
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label>סכום חודשי (₪)</Label>
+                        <Label>סכום חודשי ({CURRENCY_SYMBOL})</Label>
                         <Input
                             type="number"
                             inputMode="decimal"
@@ -231,13 +232,13 @@ export function AddSubscriptionDialog({
                                 onClick={() => setOwner('her')}
                                 className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${owner === 'her' ? 'bg-pink-600 text-white' : 'text-slate-400 hover:text-white'}`}
                             >
-                                איריס
+                                {PAYERS.HER}
                             </button>
                             <button
                                 onClick={() => setOwner('him')}
                                 className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${owner === 'him' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
                             >
-                                גל
+                                {PAYERS.HIM}
                             </button>
                         </div>
                     </div>

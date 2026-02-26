@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { MonthlyCalendar } from '@/components/MonthlyCalendar';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 describe('MonthlyCalendar', () => {
     const transactions = [
@@ -32,6 +33,6 @@ describe('MonthlyCalendar', () => {
         render(<MonthlyCalendar transactions={transactions} selectedDate={selectedDate} onDateSelect={vi.fn()} />);
 
         expect(screen.getByText('Grocery')).toBeInTheDocument();
-        expect(screen.getAllByText('₪150').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText(`${CURRENCY_SYMBOL}150`).length).toBeGreaterThanOrEqual(1);
     });
 });

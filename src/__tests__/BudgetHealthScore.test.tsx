@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { BudgetHealthScore } from '@/components/BudgetHealthScore';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 // Mock framer-motion to simplify testing
 vi.mock('framer-motion', () => ({
@@ -27,7 +28,7 @@ describe('BudgetHealthScore', () => {
         expect(screen.getByText('בריאות פיננסית')).toBeInTheDocument();
         // Since we are exactly on track (50% budget over 50% time), score should be high.
         expect(screen.getByText('מצוין!')).toBeInTheDocument();
-        expect(screen.getByText('₪333')).toBeInTheDocument(); // 5000 / 15 days = 333
+        expect(screen.getByText(`${CURRENCY_SYMBOL}333`)).toBeInTheDocument(); // 5000 / 15 days = 333
         expect(screen.getByText('15')).toBeInTheDocument(); // 30 - 15 = 15 days remaining
     });
 
@@ -36,7 +37,7 @@ describe('BudgetHealthScore', () => {
         render(<BudgetHealthScore {...defaultProps} totalExpenses={8000} balance={2000} />);
 
         expect(screen.getByText('שים לב')).toBeInTheDocument(); // Score lower
-        expect(screen.getByText('₪133')).toBeInTheDocument(); // 2000 / 15
+        expect(screen.getByText(`${CURRENCY_SYMBOL}133`)).toBeInTheDocument(); // 2000 / 15
     });
 
     it('shows critical status when balance is negative', () => {
@@ -44,13 +45,13 @@ describe('BudgetHealthScore', () => {
         render(<BudgetHealthScore {...defaultProps} totalExpenses={11000} balance={-1000} />);
 
         expect(screen.getByText('בעייתי')).toBeInTheDocument(); // critical
-        expect(screen.getByText('₪0')).toBeInTheDocument(); // Safe to spend is 0
-        expect(screen.getByText('-₪1,000')).toBeInTheDocument();
+        expect(screen.getByText(`${CURRENCY_SYMBOL}0`)).toBeInTheDocument(); // Safe to spend is 0
+        expect(screen.getByText(`-${CURRENCY_SYMBOL}1,000`)).toBeInTheDocument();
     });
 
     it('handles zero days remaining edge case', () => {
         render(<BudgetHealthScore {...defaultProps} daysPassed={30} balance={100} />);
         expect(screen.getByText('מצוין!')).toBeInTheDocument(); // Finished month positive
-        expect(screen.getByText('₪0')).toBeInTheDocument(); // 0 safe to spend because 0 days left
+        expect(screen.getByText(`${CURRENCY_SYMBOL}0`)).toBeInTheDocument(); // 0 safe to spend because 0 days left
     });
 });

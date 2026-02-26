@@ -2,8 +2,10 @@
 
 import { motion } from "framer-motion";
 import { Flame, Target } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/appStore";
+import { cn, formatAmount } from "@/lib/utils";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 interface BudgetGaugesProps {
     balance: number;
@@ -12,6 +14,7 @@ interface BudgetGaugesProps {
 }
 
 export const BudgetGauges = ({ balance, budget, daysRemaining }: BudgetGaugesProps) => {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     // 1. Daily Safe Spend
     // If we have balance, divide by days. If negative, 0.
     const safeDaily = balance > 0 ? balance / Math.max(1, daysRemaining) : 0;
@@ -32,8 +35,8 @@ export const BudgetGauges = ({ balance, budget, daysRemaining }: BudgetGaugesPro
                 </div>
                 <span className="text-[10px] text-white/40 uppercase tracking-wider mb-1">מותר להיום</span>
                 <div className="text-2xl font-black text-white flex items-baseline gap-1">
-                    <span className="text-sm text-white/30">₪</span>
-                    <AnimatedCounter value={safeDaily} />
+                    {!isStealthMode && <span className="text-sm text-white/30">{CURRENCY_SYMBOL}</span>}
+                    {isStealthMode ? '***' : <AnimatedCounter value={safeDaily} />}
                 </div>
                 <div className="w-full h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
                     <motion.div
@@ -51,7 +54,7 @@ export const BudgetGauges = ({ balance, budget, daysRemaining }: BudgetGaugesPro
                 </div>
                 <span className="text-[10px] text-white/40 uppercase tracking-wider mb-1">קצב שריפה</span>
                 <div className="text-2xl font-black text-white flex items-baseline gap-1">
-                    {Math.round(encodedBurn)}%
+                    {isStealthMode ? '**%' : `${Math.round(encodedBurn)}%`}
                 </div>
                 <div className="w-full h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
                     <motion.div

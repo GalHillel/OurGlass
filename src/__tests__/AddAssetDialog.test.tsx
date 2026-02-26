@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AddAssetDialog } from '@/components/AddAssetDialog';
 import { useAuth } from '@/components/AuthProvider';
 import { Asset } from '@/types';
@@ -33,7 +34,12 @@ describe('AddAssetDialog', () => {
     });
 
     it('renders the dialog when open', () => {
-        render(<AddAssetDialog isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />);
+        const queryClient = new QueryClient();
+        render(
+            <QueryClientProvider client={queryClient}>
+                <AddAssetDialog isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
+            </QueryClientProvider>
+        );
 
         expect(screen.getByText('הוספת נכס חדש')).toBeInTheDocument();
         expect(screen.getByText('סוג הנכס')).toBeInTheDocument();
@@ -41,7 +47,12 @@ describe('AddAssetDialog', () => {
     });
 
     it('handles saving a new cash asset', async () => {
-        render(<AddAssetDialog isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />);
+        const queryClient = new QueryClient();
+        render(
+            <QueryClientProvider client={queryClient}>
+                <AddAssetDialog isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
+            </QueryClientProvider>
+        );
 
         const nameInput = screen.getByPlaceholderText('לדוגמה: קרן השתלמות, טסלה...');
         const amountInputs = screen.getAllByRole('spinbutton'); // Number inputs
@@ -69,7 +80,12 @@ describe('AddAssetDialog', () => {
             investment_type: 'cash',
         };
 
-        render(<AddAssetDialog isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} initialData={initialData as Asset} />);
+        const queryClient = new QueryClient();
+        render(
+            <QueryClientProvider client={queryClient}>
+                <AddAssetDialog isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} initialData={initialData as Asset} />
+            </QueryClientProvider>
+        );
 
         expect(screen.getByText('עריכת נכס')).toBeInTheDocument();
         expect(screen.getByDisplayValue('Existing Asset')).toBeInTheDocument();

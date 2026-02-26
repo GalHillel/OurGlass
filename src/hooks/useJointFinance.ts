@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
-import { Transaction, Liability } from "@/types";
+import { Transaction, Subscription, Liability } from "@/types";
 import { getBillingPeriodForDate } from "@/lib/billing";
 import { useTotalLiabilities } from "@/hooks/useWealthData";
 
@@ -74,6 +74,70 @@ export function useGlobalCashflow(viewingDate: Date = new Date()) {
         },
         enabled: !!coupleId,
         staleTime: 2 * 60 * 1000,
+    });
+}
+
+export function useTransactions(viewingDate: Date) {
+    const { profile } = useAuth();
+    const coupleId = profile?.couple_id;
+    const { start, end } = getBillingPeriodForDate(viewingDate);
+
+    return useQuery<Transaction[]>({
+        queryKey: ["transactions", coupleId, viewingDate.toISOString().slice(0, 7)],
+        queryFn: async () => {
+            if (!coupleId) return [];
+            const { data, error } = await supabase
+                .from('transactions')
+                .select('id, amount, date, description, category, payer, is_surprise, created_at, mood_rating')
+                .eq('couple_id', coupleId)
+                .gte('date', start.toISOString())
+                .lt('date', end.toISOString())
+                .order('date', { ascending: false });
+
+            if (error) throw error;
+            return data as Transaction[];
+        },
+        enabled: !!coupleId,
+    });
+}
+
+export function useSubscriptions() {
+    const { profile } = useAuth();
+    const coupleId = profile?.couple_id;
+
+    return useQuery<Subscription[]>({
+        queryKey: ["subscriptions", coupleId],
+        queryFn: async () => {
+            if (!coupleId) return [];
+            const { data, error } = await supabase
+                .from('subscriptions')
+                .select('*')
+                .eq('couple_id', coupleId);
+
+            if (error) throw error;
+            return data as Subscription[];
+        },
+        enabled: !!coupleId,
+    });
+}
+
+export function useLiabilities() {
+    const { profile } = useAuth();
+    const coupleId = profile?.couple_id;
+
+    return useQuery<Liability[]>({
+        queryKey: ["liabilities", coupleId],
+        queryFn: async () => {
+            if (!coupleId) return [];
+            const { data, error } = await supabase
+                .from('liabilities')
+                .select('*')
+                .eq('couple_id', coupleId);
+
+            if (error) throw error;
+            return data as Liability[];
+        },
+        enabled: !!coupleId,
     });
 }
 

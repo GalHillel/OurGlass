@@ -3,10 +3,12 @@ import { Check, Sparkles, Plus, Minus, ThumbsDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WishlistItem } from "@/types";
 import { triggerHaptic } from "@/utils/haptics";
-import { cn } from "@/lib/utils";
+import { cn, formatAmount } from "@/lib/utils";
 import CountUp from 'react-countup';
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { differenceInHours } from 'date-fns';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { useAppStore } from "@/stores/appStore";
 
 interface WishlistCardProps {
     item: WishlistItem;
@@ -15,6 +17,7 @@ interface WishlistCardProps {
 }
 
 export const WishlistCard = ({ item, onAction, onClick }: WishlistCardProps) => {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     // 3D Tilt Logic
     const x = useMotionValue(0);
     const y = useMotionValue(0);
@@ -62,54 +65,89 @@ export const WishlistCard = ({ item, onAction, onClick }: WishlistCardProps) => 
                 onClick?.();
             }}
             className={cn(
-                "relative w-full overflow-hidden rounded-[2rem] border transition-all duration-300 cursor-pointer group select-none",
-                "bg-slate-900/60 backdrop-blur-md border-white/10 hover:border-purple-500/30",
-                "hover:shadow-[0_20px_50px_rgba(168,85,247,0.15)] active:scale-[0.98]"
+                "relative w-full overflow-hidden rounded-[2.5rem] border transition-all duration-300 cursor-pointer group select-none h-28",
+                "bg-slate-900/40 backdrop-blur-xl border-white/10 hover:border-purple-500/30",
+                "hover:shadow-[0_20px_60px_rgba(0,0,0,0.4)] active:scale-[0.98]"
             )}
         >
-            {/* Shimmering Progress Bar Background (Bottom) */}
-            <div className="absolute bottom-0 left-0 h-3 w-full bg-slate-800/50 overflow-hidden">
+            {/* Background Image / Placeholder with Gradient Blur */}
+            <div className="absolute inset-0 z-0">
+                {item.link ? (
+                    <>
+                        <img
+                            src={item.link}
+                            alt=""
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-40 group-hover:opacity-60"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+                    </>
+                ) : (
+                    <div className="w-full h-full bg-slate-900" />
+                )}
+                <div className="absolute inset-0 backdrop-blur-[2px]" />
+            </div>
+
+            {/* Shimmering Progress Bar (Floating Thin Line) */}
+            <div className="absolute bottom-0 left-0 h-1.5 w-full bg-white/5 overflow-hidden z-20">
                 <div
                     className={cn(
-                        "h-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(236,72,153,0.5)] relative overflow-hidden",
-                        isFullyFunded ? "bg-gradient-to-r from-emerald-400 to-green-500" : "bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500"
+                        "h-full transition-all duration-1000 ease-out relative overflow-hidden",
+                        isFullyFunded ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-purple-500"
                     )}
                     style={{ width: `${progress}% ` }}
                 >
-                    {/* Shimmer Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-[200%] animate-[shimmer_2s_infinite] translate-x-[-100%]" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[200%] animate-[shimmer_2s_infinite] translate-x-[-100%]" />
                 </div>
             </div>
 
-            <div className="flex items-center p-6 gap-5 h-full relative z-10 w-full transform-gpu" style={{ transform: "translateZ(20px)" }}>
-                {/* 1. Left: Icon / Image */}
+            <div className="flex items-center p-6 gap-5 h-full relative z-10 w-full transform-gpu" style={{ transform: "translateZ(30px)" }}>
+                {/* 1. Left: Image Portal */}
                 <div className={cn(
-                    "w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg border border-white/5 transition-colors",
+                    "w-20 h-20 rounded-[1.5rem] flex items-center justify-center shrink-0 shadow-2xl border border-white/20 transition-all duration-500 overflow-hidden relative",
                     isFullyFunded
-                        ? "bg-emerald-500/20 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
-                        : "bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20"
+                        ? "shadow-emerald-500/20"
+                        : "group-hover:scale-105 group-hover:rotate-2"
                 )}>
-                    {isFullyFunded ? <Check className="w-8 h-8" /> : <Sparkles className="w-8 h-8" />}
+                    {item.link ? (
+                        <img src={item.link} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
+                    ) : (
+                        <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                            {isFullyFunded ? <Check className="w-8 h-8 text-emerald-400" /> : <Sparkles className="w-7 h-7 text-purple-400" />}
+                        </div>
+                    )}
+                    {isFullyFunded && (
+                        <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
+                            <Check className="w-10 h-10 text-white drop-shadow-lg" />
+                        </div>
+                    )}
                 </div>
 
                 {/* 2. Center: Details */}
-                <div className="flex flex-col flex-1 overflow-hidden gap-1">
-                    <h3 className="font-bold text-white text-xl truncate leading-tight group-hover:text-purple-200 transition-colors">
+                <div className="flex flex-col flex-1 overflow-hidden gap-1 text-right" dir="rtl">
+                    <h3 className="font-black text-white text-lg truncate leading-tight group-hover:text-purple-300 transition-colors tracking-tighter">
                         {item.name}
                     </h3>
 
                     <div className="flex flex-col">
-                        {/* Status Text: Saved of Total */}
-                        <div className="flex items-baseline gap-1.5 align-bottom">
+                        <div className="flex items-baseline gap-2">
                             <span className={cn(
-                                "text-lg font-bold font-mono tracking-tight",
-                                isFullyFunded ? "text-emerald-400" : "text-white/90"
+                                "text-xl font-black font-mono tracking-tighter tabular-nums",
+                                isFullyFunded ? "text-emerald-400" : "text-white"
                             )}>
-                                ₪<CountUp end={saved} separator="," duration={1.5} />
+                                {isStealthMode ? (
+                                    <span>{CURRENCY_SYMBOL}***</span>
+                                ) : (
+                                    <><span className="text-xs mr-1 opacity-40 font-sans">{CURRENCY_SYMBOL}</span>{saved.toLocaleString()}</>
+                                )}
                             </span>
-                            <span className="text-xs text-white/40 font-medium uppercase tracking-wide mb-0.5">
-                                מתוך ₪{item.price.toLocaleString()}
+                            <span className="text-[9px] text-white/30 font-black uppercase tracking-[0.2em] mb-1">
+                                מתוך {formatAmount(item.price, isStealthMode, CURRENCY_SYMBOL)}
                             </span>
+                        </div>
+
+                        {/* Progress Label */}
+                        <div className="text-[9px] font-black uppercase tracking-widest text-purple-400/80">
+                            {progress.toFixed(0)}% הושלם
                         </div>
                     </div>
                 </div>
@@ -136,7 +174,7 @@ export const WishlistCard = ({ item, onAction, onClick }: WishlistCardProps) => 
                                 }}
                                 className="text-[10px] text-white/20 hover:text-red-400 underline decoration-red-500/30 transition-colors"
                             >
-                                אני באמת חייב את זה
+                                {PAYERS.HIM} באמת חייב את זה
                             </button>
                         </div>
                     ) : !isFullyFunded ? (
@@ -160,7 +198,7 @@ export const WishlistCard = ({ item, onAction, onClick }: WishlistCardProps) => 
                             <Button
                                 size="icon"
                                 variant="outline"
-                                className="w-10 h-10 rounded-full border-white/10 bg-white/5 hover:bg-emerald-500/20 hover:border-emerald-500/30 text-white/50 hover:text-emerald-400 transition-all"
+                                className="w-9 h-9 rounded-full border-white/10 bg-white/5 hover:bg-emerald-500/20 hover:border-emerald-500/30 text-white/50 hover:text-emerald-400 transition-all font-black text-xs"
                                 title="ויתרתי על זה (הוסף לחיסכון)"
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -168,19 +206,19 @@ export const WishlistCard = ({ item, onAction, onClick }: WishlistCardProps) => 
                                     onAction(item, 'didnt_buy');
                                 }}
                             >
-                                <ThumbsDown className="w-4 h-4" />
+                                -
                             </Button>
 
                             <Button
                                 size="icon"
-                                className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg shadow-purple-900/40 border border-white/10 hover:scale-110 transition-all"
+                                className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg shadow-purple-900/40 border border-white/10 hover:scale-110 transition-all"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     triggerHaptic();
                                     onAction(item, 'deposit');
                                 }}
                             >
-                                <Plus className="w-6 h-6" />
+                                <Plus className="w-5 h-5" />
                             </Button>
                         </>
                     ) : (

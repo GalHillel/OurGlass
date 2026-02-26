@@ -10,6 +10,7 @@ import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { LiquidBackground } from "@/components/LiquidBackground";
 import { IdentityGate } from "@/components/IdentityGate";
 import { AIChatButton } from "@/components/AIChatButton";
+import { GlobalStealthHandler } from "@/components/GlobalStealthHandler";
 
 const heebo = Heebo({
   subsets: ["hebrew", "latin"],
@@ -48,11 +49,27 @@ export default function RootLayout({
     <html lang="he" dir="rtl" className="dark">
       <body className={`${heebo.variable} text-white antialiased font-sans h-full overflow-x-hidden overflow-y-auto`}>
         <LiquidBackground />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                  }, function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                  });
+                });
+              }
+            `,
+          }}
+        />
         <QueryProvider>
           <AuthProvider>
             <ErrorBoundary>
               <IdentityGate>
                 <main className="native-scroll touch-scroll relative z-10 w-full p-4 pt-[env(safe-area-inset-top)] pb-0">
+                  <GlobalStealthHandler />
                   <AIChatButton />
                   {children}
                 </main>

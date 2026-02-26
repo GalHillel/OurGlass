@@ -93,3 +93,11 @@ export function calculateFutureWealth(currentWealth: number, monthlySavings: num
 
   return Math.round(fvLumpSum + fvSeries);
 }
+
+/**
+ * Formats a currency amount, respecting stealth mode.
+ */
+export function formatAmount(amount: number, isStealth: boolean, currency: string = '₪', placeholder = '***,***') {
+  if (isStealth) return placeholder;
+  return `${currency}${amount.toLocaleString()}`;
+}

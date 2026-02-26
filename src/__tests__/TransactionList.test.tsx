@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { TransactionList } from '@/components/TransactionList';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 vi.mock('@/utils/supabase/client', () => ({
     createClient: () => ({
@@ -31,9 +32,9 @@ describe('TransactionList', () => {
         render(<TransactionList transactions={txs as never} onRefresh={vi.fn()} />);
 
         expect(screen.getByText('קפה ומאפה')).toBeInTheDocument();
-        expect(screen.getByText('₪35')).toBeInTheDocument();
+        expect(screen.getByText(`${CURRENCY_SYMBOL}35`)).toBeInTheDocument();
         expect(screen.getByText('סופרמרקט')).toBeInTheDocument();
-        expect(screen.getByText('₪450')).toBeInTheDocument();
+        expect(screen.getByText(`${CURRENCY_SYMBOL}450`)).toBeInTheDocument();
     });
 
     it.skip('detects recurring subscriptions', () => {

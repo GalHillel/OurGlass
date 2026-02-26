@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { WishlistItem } from "@/types";
 import { Plus, Sparkles, Hourglass, AlertTriangle } from "lucide-react";
+import { useDashboardStore } from "@/stores/dashboardStore";
 import { EmptyState } from "@/components/EmptyState";
 
 import { WishlistCard } from "@/components/WishlistCard";
@@ -26,8 +27,11 @@ import { useAuth } from "@/components/AuthProvider";
 import { SwipeableRow } from "@/components/SwipeableRow";
 import { motion, AnimatePresence } from "framer-motion";
 import { getHebrewError } from "@/lib/utils";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 export default function WishlistPage() {
+    const { features } = useDashboardStore();
+    const { wishlistShowHarvester } = features;
     const [items, setItems] = useState<WishlistItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [newItemName, setNewItemName] = useState("");
@@ -44,8 +48,7 @@ export default function WishlistPage() {
     const [actionType, setActionType] = useState<'deposit' | 'withdraw'>('deposit');
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-    const supabaseRef = useRef(createClient());
-    const supabase = supabaseRef.current;
+    const supabase = useRef(createClient()).current;
     const { profile } = useAuth();
 
     const fetchData = useCallback(async () => {
@@ -130,7 +133,7 @@ export default function WishlistPage() {
             // Optimistic UI
             setItems(prev => prev.filter(i => i.id !== item.id));
             confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
-            toast.success(`ויתרת והרווחת! ₪${reward} הועברו לחיסכון הכללי 🏆`);
+            toast.success(`ויתרת והרווחת! $${CURRENCY_SYMBOL}${reward} הועברו לחיסכון הכללי 🏆`);
 
             // Find or Create 'General Savings'
             let { data: savings } = await supabase.from('goals').select('*').eq('name', 'General Savings').single();
@@ -231,13 +234,13 @@ export default function WishlistPage() {
 
             // 3. Celebration & Feedback
             if (type === 'deposit') {
-                toast.success(`הפקדת ₪${amount} בהצלחה!`);
+                toast.success(`הפקדת $${CURRENCY_SYMBOL}${amount} בהצלחה!`);
                 if (newSaved >= item.price) {
                     confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
                     toast.success("הגעת ליעד! כל הכבוד! 🎉");
                 }
             } else {
-                toast.success(`משכת ₪${amount} מהחיסכון`);
+                toast.success(`משכת $${CURRENCY_SYMBOL}${amount} מהחיסכון`);
             }
 
             fetchData();
@@ -263,11 +266,11 @@ export default function WishlistPage() {
     };
 
     return (
-        <div className="flex flex-col gap-6 w-full mx-auto pt-8 pb-0 px-4 shadow-none">
+        <div className="flex flex-col gap-6 w-full mx-auto pt-8 pb-0 px-4 shadow-none" dir="rtl">
 
 
             {/* Active Savings / Spare Change Harvester */}
-            {realNumberBalance > 0 && realNumberBalance % 100 > 0 && (
+            {wishlistShowHarvester && realNumberBalance > 0 && realNumberBalance % 100 > 0 && (
                 <div className="mx-2 mb-4">
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
@@ -281,7 +284,7 @@ export default function WishlistPage() {
                             <div>
                                 <h3 className="font-bold text-white text-sm">עיגול לטובה</h3>
                                 <p className="text-[10px] text-purple-200/60">
-                                    יש לך ₪{Math.floor(realNumberBalance % 100)} עודף בארנק.
+                                    יש לך {CURRENCY_SYMBOL}{Math.floor(realNumberBalance % 100)} עודף בארנק.
                                 </p>
                             </div>
                         </div>
@@ -313,7 +316,7 @@ export default function WishlistPage() {
                                     const newSaved = (targetItem.saved_amount || 0) + amount;
                                     await supabase.from('wishlist').update({ saved_amount: newSaved }).eq('id', targetItem.id);
 
-                                    toast.success(`הועברו ₪${amount} ל-${targetItem.name}!`);
+                                    toast.success(`הועברו $${CURRENCY_SYMBOL}${amount} ל-${targetItem.name}!`);
                                     confetti({ particleCount: 150, spread: 60, origin: { y: 0.6 } });
                                     fetchData(); // Refresh
                                 } catch {
@@ -329,7 +332,125 @@ export default function WishlistPage() {
             )}
 
             {/* Smart Prioritization Controls */}
-            <div className="flex justify-end px-2 mb-2 gap-2">
+            <div className="flex justify-between items-center px-2 mb-2 gap-2">
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button
+                            size="icon"
+                            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-purple-400 shadow-lg transition-all active:scale-95"
+                        >
+                            <Plus className="w-5 h-5" />
+                        </Button>
+                    </DialogTrigger>
+
+                    <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 text-white sm:max-w-md top-[20%] translate-y-0 text-right" dir="rtl">
+                        <DialogHeader>
+                            <DialogTitle className="text-center text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                                חלום חדש
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-5 py-4">
+                            <div className="space-y-2">
+                                <Input
+                                    placeholder="מה בא לך לקנות?"
+                                    value={newItemName}
+                                    onChange={(e) => setNewItemName(e.target.value)}
+                                    className="bg-slate-950/50 border-white/10 text-white h-12 text-lg text-center focus:border-purple-500/50 transition-colors"
+                                />
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="relative flex-1">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">{CURRENCY_SYMBOL}</span>
+                                    <Input
+                                        type="number"
+                                        inputMode="decimal"
+                                        placeholder="מחיר"
+                                        value={newItemPrice}
+                                        onChange={(e) => setNewItemPrice(e.target.value)}
+                                        className="bg-slate-950/50 border-white/10 text-white h-12 text-lg pl-8 focus:border-purple-500/50 transition-colors text-left"
+                                        dir="ltr"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mr-2">תמונה</label>
+
+                                <div className="flex flex-col gap-3">
+                                    {/* URL Input */}
+                                    <Input
+                                        placeholder="קישור לתמונה (URL)..."
+                                        value={newItemLink}
+                                        onChange={(e) => setNewItemLink(e.target.value)}
+                                        className="bg-slate-950/50 border-white/10 text-white h-10 text-sm focus:border-purple-500/50 transition-colors"
+                                    />
+
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-[1px] flex-1 bg-white/5" />
+                                        <span className="text-[10px] font-bold text-white/20 uppercase">או</span>
+                                        <div className="h-[1px] flex-1 bg-white/5" />
+                                    </div>
+
+                                    {/* File Picker */}
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="file"
+                                            id="wish-image-upload"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        setNewItemLink(reader.result as string);
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                        />
+                                        <Button
+                                            asChild
+                                            variant="outline"
+                                            className="flex-1 bg-white/5 border-white/10 hover:bg-white/10 hover:border-purple-500/30 text-xs h-10 rounded-xl gap-2"
+                                        >
+                                            <label htmlFor="wish-image-upload" className="cursor-pointer flex items-center justify-center gap-2">
+                                                <Sparkles className="w-4 h-4 text-purple-400" />
+                                                העלאת תמונה מהגלריה
+                                            </label>
+                                        </Button>
+
+                                        {newItemLink && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setNewItemLink("")}
+                                                className="text-white/40 hover:text-red-400 p-2"
+                                            >
+                                                מחק
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {newItemLink && (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="mt-2 rounded-[1.5rem] overflow-hidden h-40 border border-white/10 relative group"
+                                    >
+                                        <img src={newItemLink} alt="תצוגה מקדימה" className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                        <span className="absolute bottom-2 right-3 text-[10px] font-black text-white/60 uppercase tracking-widest">תצוגה מקדימה</span>
+                                    </motion.div>
+                                )}
+                            </div>
+                            <Button onClick={handleAdd} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold h-12 text-lg shadow-lg hover:shadow-purple-500/25 transition-all">
+                                שמור לרשימה
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
                 <select
                     className="bg-slate-900/50 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white/60 focus:outline-none focus:border-purple-500/50"
                     onChange={(e) => {
@@ -384,59 +505,6 @@ export default function WishlistPage() {
                 )}
             </div>
 
-            {/* Floating Action Button (FAB) */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-purple-600 text-white shadow-[0_0_30px_rgba(147,51,234,0.5)] flex items-center justify-center z-50 border border-white/20"
-                    >
-                        <Plus className="w-8 h-8" />
-                    </motion.button>
-                </DialogTrigger>
-                <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 text-white sm:max-w-md top-[20%] translate-y-0 text-right" dir="rtl">
-                    <DialogHeader>
-                        <DialogTitle className="text-center text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                            חלום חדש
-                        </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-5 py-4">
-                        <div className="space-y-2">
-                            <Input
-                                placeholder="מה בא לך לקנות?"
-                                value={newItemName}
-                                onChange={(e) => setNewItemName(e.target.value)}
-                                className="bg-slate-950/50 border-white/10 text-white h-12 text-lg text-center focus:border-purple-500/50 transition-colors"
-                            />
-                        </div>
-                        <div className="flex gap-4">
-                            <div className="relative flex-1">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₪</span>
-                                <Input
-                                    type="number"
-                                    inputMode="decimal"
-                                    placeholder="מחיר"
-                                    value={newItemPrice}
-                                    onChange={(e) => setNewItemPrice(e.target.value)}
-                                    className="bg-slate-950/50 border-white/10 text-white h-12 text-lg pl-8 focus:border-purple-500/50 transition-colors text-left"
-                                    dir="ltr"
-                                />
-                            </div>
-                        </div>
-                        <Input
-                            placeholder="לינק (אופציונלי)"
-                            value={newItemLink}
-                            onChange={(e) => setNewItemLink(e.target.value)}
-                            className="bg-slate-950/50 border-white/10 text-white h-10 text-sm focus:border-purple-500/50 transition-colors"
-                        />
-                        <Button onClick={handleAdd} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold h-12 text-lg shadow-lg hover:shadow-purple-500/25 transition-all">
-                            שמור לרשימה
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
             {/* Oracle Dialog */}
             <Dialog open={isOracleOpen} onOpenChange={setIsOracleOpen}>
                 <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 text-white max-w-sm rounded-[2rem] text-right" dir="rtl">
@@ -445,7 +513,7 @@ export default function WishlistPage() {
                             {oracleData?.affordable ? "יש אישור! 🚀" : "רגע, בואו נחשוב..."}
                         </DialogTitle>
                         <DialogDescription className="text-center text-white/60">
-                            {selectedItem?.name} - ₪{selectedItem?.price}
+                            {selectedItem?.name} - {CURRENCY_SYMBOL}{selectedItem?.price}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -458,7 +526,7 @@ export default function WishlistPage() {
                             <p className="text-4xl font-black text-blue-200 neon-text">
                                 {oracleData?.hours.toFixed(1)} <span className="text-lg text-white/50">שעות</span>
                             </p>
-                            <p className="text-xs text-white/40">לפי שכר של ₪{profile?.hourly_wage || 60}/שעה</p>
+                            <p className="text-xs text-white/40">לפי שכר של {CURRENCY_SYMBOL}{profile?.hourly_wage || 60}/שעה</p>
                         </div>
 
                         {!oracleData?.affordable && (
@@ -467,7 +535,7 @@ export default function WishlistPage() {
                                 <div>
                                     <p className="font-bold text-red-200">חורג מהתקציב</p>
                                     <p className="text-sm text-red-200/70">
-                                        חסרים לכם ₪{oracleData?.missing.toFixed(0)}.
+                                        חסרים לכם {CURRENCY_SYMBOL}{oracleData?.missing.toFixed(0)}.
                                         {oracleData?.missing && oracleData.missing > 0 && (
                                             <span> נסו לחסוך עוד קצת!</span>
                                         )}
@@ -497,7 +565,7 @@ export default function WishlistPage() {
 
             {/* Final bottom spacer for edge-to-edge layout accessibility */}
             <div className="h-32 w-full" />
-        </div >
+        </div>
     );
 }
 

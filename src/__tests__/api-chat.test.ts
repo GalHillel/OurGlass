@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { POST } from '@/app/api/chat/route';
 import * as ai from 'ai';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 vi.mock('@ai-sdk/google', () => ({
     google: vi.fn().mockReturnValue('mock-gemini')
@@ -32,9 +33,9 @@ describe('Chat API', () => {
         expect(res).toBeInstanceOf(Response);
         expect(ai.streamText).toHaveBeenCalled();
         const callArgs = vi.mocked(ai.streamText).mock.calls[0][0];
-        expect(callArgs.system).toContain('₪10,000');
+        expect(callArgs.system).toContain(`${CURRENCY_SYMBOL}10,000`);
         expect(callArgs.system).toContain("CRITICAL MATH RULE: Do not double-count subscriptions");
-        expect(callArgs.system).toContain('Monthly Budget (from settings): ₪10,000');
+        expect(callArgs.system).toContain(`Monthly Budget (from settings): ${CURRENCY_SYMBOL}10,000`);
         expect(callArgs.system).toContain('Food');
     });
 });

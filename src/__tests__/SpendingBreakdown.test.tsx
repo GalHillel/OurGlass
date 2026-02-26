@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { SpendingBreakdown } from '@/components/SpendingBreakdown';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 describe('SpendingBreakdown', () => {
     it('shows empty state if no transactions', () => {
@@ -18,10 +19,10 @@ describe('SpendingBreakdown', () => {
         render(<SpendingBreakdown transactions={transactions as never} />);
 
         expect(screen.getByText('אוכל')).toBeInTheDocument();
-        expect(screen.getByText('₪500')).toBeInTheDocument();
+        expect(screen.getByText(`${CURRENCY_SYMBOL}500`)).toBeInTheDocument();
 
         expect(screen.getByText('תחבורה')).toBeInTheDocument();
-        expect(screen.getByText('₪50')).toBeInTheDocument();
+        expect(screen.getByText(`${CURRENCY_SYMBOL}50`)).toBeInTheDocument();
 
         // Food text should appear before transportation because they are sorted manually descending
         const textElements = screen.getAllByText(/אוכל|תחבורה/);

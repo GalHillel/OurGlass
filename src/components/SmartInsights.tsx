@@ -2,14 +2,17 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lightbulb, X, AlertTriangle, PiggyBank, Calendar, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Transaction } from '@/types';
+import { Transaction, Subscription } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface SmartInsightsProps {
     transactions?: Transaction[];
+    subscriptions?: Subscription[];
+    liabilities?: any[];
     monthlyIncome?: number;
     hourlyWage?: number;
+    isInline?: boolean;
 }
 
 interface InsightData {
@@ -18,50 +21,75 @@ interface InsightData {
     action?: string;
 }
 
-export const SmartInsights = ({ transactions = [], monthlyIncome = 0, hourlyWage = 0 }: SmartInsightsProps) => {
+export const SmartInsights = ({ transactions = [], subscriptions = [], liabilities = [], monthlyIncome = 0, hourlyWage = 0, isInline = false }: SmartInsightsProps) => {
     const [isVisible, setIsVisible] = useState(false);
     const STORAGE_KEY = 'last_smart_insight_date';
 
     // Fetch the insight using React Query
     const { data: insight, isLoading, isError } = useQuery<InsightData | null>({
-        queryKey: ['smart-insight', transactions.length, monthlyIncome],
+        queryKey: ['smart-insight', transactions.length, monthlyIncome, subscriptions.length, liabilities.length],
         queryFn: async () => {
             const todayString = new Date().toDateString();
-            const lastSeen = localStorage.getItem(STORAGE_KEY);
+            const lastSeenDate = localStorage.getItem(STORAGE_KEY + '_date');
+            const cachedInsight = localStorage.getItem(STORAGE_KEY + '_data');
 
-            // Only fetch once per day to avoid spamming the user and the API
-            if (lastSeen === todayString || transactions.length === 0) return null;
+            // Hard check: If we have a cached insight from today, return it immediately
+            if (lastSeenDate === todayString && cachedInsight && !isError) {
+                try {
+                    return JSON.parse(cachedInsight);
+                } catch (e) {
+                    console.error("Failed to parse cached insight", e);
+                }
+            }
+
+            if (transactions.length === 0) return null;
 
             const res = await fetch('/api/smart-insight', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ transactions, monthlyIncome, hourlyWage })
+                body: JSON.stringify({ transactions, monthlyIncome, hourlyWage, subscriptions, liabilities })
             });
 
             if (!res.ok) return null;
-            return res.json();
+            const data = await res.json();
+
+            // Cache it
+            if (data) {
+                localStorage.setItem(STORAGE_KEY + '_date', todayString);
+                localStorage.setItem(STORAGE_KEY + '_data', JSON.stringify(data));
+            }
+
+            return data;
         },
         staleTime: 1000 * 60 * 60 * 24, // 24 hours
         retry: 1
     });
 
     useEffect(() => {
-        if (insight && !isLoading) {
-            // Delay the pop-in slightly for a premium feel when the app loads
-            const timer = setTimeout(() => setIsVisible(true), 2500);
-            return () => clearTimeout(timer);
+        const todayString = new Date().toDateString();
+        const dismissedDate = localStorage.getItem(STORAGE_KEY + '_dismissed');
+
+        if (insight && !isLoading && dismissedDate !== todayString) {
+            if (isInline) {
+                setIsVisible(true);
+            } else {
+                const timer = setTimeout(() => setIsVisible(true), 2500);
+                return () => clearTimeout(timer);
+            }
         }
-    }, [insight, isLoading]);
+    }, [insight, isLoading, isInline]);
 
     const handleDismiss = () => {
         setIsVisible(false);
-        localStorage.setItem(STORAGE_KEY, new Date().toDateString());
+        // We don't clear the data, just hide it for today
+        localStorage.setItem(STORAGE_KEY + '_dismissed', new Date().toDateString());
     };
 
     if (isError || transactions.length === 0) return null;
+    if (isInline && (!insight || isError)) return null; // Don't show skeleton or errors inline for now
 
     // Loading State
-    if (isLoading) {
+    if (isLoading && !isInline) {
         return (
             <div className="fixed top-24 left-4 right-4 z-40 md:w-96 md:left-1/2 md:-translate-x-1/2 rounded-3xl p-4 border flex items-start gap-4 bg-slate-900/60 backdrop-blur-xl shadow-2xl ring-1 ring-white/5 opacity-80 scale-95 transition-all">
                 <div className="p-2 rounded-2xl shrink-0 bg-white/5">
@@ -76,7 +104,7 @@ export const SmartInsights = ({ transactions = [], monthlyIncome = 0, hourlyWage
         );
     }
 
-    if (!insight || !isVisible) return null;
+    if (!insight || (!isVisible && !isInline)) return null;
 
     const colors: Record<string, string> = {
         tip: "bg-blue-500/10 border-blue-500/20 text-blue-100",
@@ -98,14 +126,18 @@ export const SmartInsights = ({ transactions = [], monthlyIncome = 0, hourlyWage
         <AnimatePresence>
             {isVisible && (
                 <motion.div
-                    initial={{ opacity: 0, y: -100, scale: 0.95 }}
+                    initial={isInline ? { opacity: 0, scale: 0.95 } : { opacity: 0, y: -100, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -100, scale: 0.95 }}
+                    exit={isInline ? { opacity: 0, scale: 0.95 } : { opacity: 0, y: -100, scale: 0.95 }}
                     transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                    drag="y"
+                    drag={isInline ? false : "y"}
                     dragConstraints={{ top: 0, bottom: 0 }}
-                    onDragEnd={(e, i) => { if (i.offset.y < -50) handleDismiss() }}
-                    className="fixed top-24 left-4 right-4 z-40 md:w-96 md:left-1/2 md:-translate-x-1/2 cursor-grab active:cursor-grabbing"
+                    onDragEnd={(e, i) => { if (!isInline && i.offset.y < -50) handleDismiss() }}
+                    className={cn(
+                        isInline
+                            ? "w-full cursor-default"
+                            : "fixed top-24 left-4 right-4 z-40 md:w-96 md:left-1/2 md:-translate-x-1/2 cursor-grab active:cursor-grabbing"
+                    )}
                 >
                     <div className={cn(
                         "rounded-3xl p-4 border flex items-start gap-4 relative overflow-hidden backdrop-blur-xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] ring-1 ring-white/5",
@@ -135,14 +167,16 @@ export const SmartInsights = ({ transactions = [], monthlyIncome = 0, hourlyWage
                         </div>
 
                         {/* Dismiss action */}
-                        <div className="absolute top-2 right-2 z-20">
-                            <button
-                                onClick={handleDismiss}
-                                className="p-2 text-white/30 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
+                        {!isInline && (
+                            <div className="absolute top-2 right-2 z-20">
+                                <button
+                                    onClick={handleDismiss}
+                                    className="p-2 text-white/30 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </motion.div>
             )}

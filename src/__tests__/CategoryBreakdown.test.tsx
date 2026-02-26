@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { CategoryBreakdown, normalizeCategory } from '@/components/CategoryBreakdown';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 describe('CategoryBreakdown', () => {
     it('normalizes categories properly', () => {
@@ -25,15 +26,15 @@ describe('CategoryBreakdown', () => {
         render(<CategoryBreakdown transactions={txs as never} />);
 
         // Total should be 350
-        expect(screen.getByText('סה״כ ₪350')).toBeInTheDocument();
+        expect(screen.getByText(`סה״כ ${CURRENCY_SYMBOL}350`)).toBeInTheDocument();
 
         // Categories should appear
         expect(screen.getByText('אוכל')).toBeInTheDocument();
         expect(screen.getByText('דלק')).toBeInTheDocument();
 
         // Amounts
-        expect(screen.getByText('₪150')).toBeInTheDocument(); // Food
-        expect(screen.getByText('₪200')).toBeInTheDocument(); // Gas
+        expect(screen.getByText(`${CURRENCY_SYMBOL}150`)).toBeInTheDocument(); // Food
+        expect(screen.getByText(`${CURRENCY_SYMBOL}200`)).toBeInTheDocument(); // Gas
     });
 
     it('calls onCategorySelect when a category is clicked', () => {
@@ -53,6 +54,6 @@ describe('CategoryBreakdown', () => {
 
         expect(screen.getByText('הוצאות בקטגוריית אוכל (1)')).toBeInTheDocument();
         expect(screen.getByText('AmPm')).toBeInTheDocument();
-        expect(screen.getByText('₪100')).toBeInTheDocument();
+        expect(screen.getByText(`${CURRENCY_SYMBOL}100`)).toBeInTheDocument();
     });
 });

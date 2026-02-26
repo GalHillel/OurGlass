@@ -3,10 +3,12 @@
 import { AddTransactionDrawer } from "@/components/AddTransactionDrawer";
 import { TransactionList } from "@/components/TransactionList";
 import { HomeMosaic } from "@/components/HomeMosaic";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { HomeMosaicSkeleton } from "@/components/HomeMosaicSkeleton";
 import { normalizeCategory } from "@/components/CategoryBreakdown";
 import { getBillingPeriodForDate } from "@/lib/billing";
 import { calculateBurnRate, cn } from "@/lib/utils";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 
 import { createClient } from "@/utils/supabase/client";
@@ -19,6 +21,8 @@ import { isSameDay, addMonths, subMonths, format, differenceInDays, addDays } fr
 import { he } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, CalendarRange, Calendar, X } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useTransactions, useSubscriptions, useLiabilities } from "@/hooks/useJointFinance";
 
 import { motion, LayoutGroup } from "framer-motion";
 import { Loader2 } from "lucide-react";
@@ -51,158 +55,93 @@ export default function Home() {
   // Removed local balance state to avoid sync issues. Use cashflow.balance directly in UI.
   // comparisonDiff removed as it was unused
 
-  // const [goals, setGoals] = useState<Goal[]>([]); // Removed: Using assets from useWealth
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [liabilities, setLiabilities] = useState<Liability[]>([]);
+  const [viewingDate, setViewingDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedFilterCategory, setSelectedFilterCategory] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [viewingDate, setViewingDate] = useState(new Date());
-  const [isPrivacyMode] = useState(false); // Manual Privacy Mode
+  const [isPrivacyMode] = useState(false);
 
-  const supabaseRef = useRef(createClient());
-  const supabase = supabaseRef.current;
   const { user, profile, loading: authLoading } = useAuth();
   const { assets, usdToIls } = useWealth();
   const { appIdentity } = useAppStore();
+  const queryClient = useQueryClient();
 
-  const [burnRateData, setBurnRateData] = useState<{ status: 'safe' | 'warning' | 'critical', projectedDate: Date | null }>({ status: 'safe', projectedDate: null });
+  const { data: cashflow, isLoading: cashflowLoading } = useGlobalCashflow(viewingDate);
+  const { data: transactions = [], isLoading: txLoading } = useTransactions(viewingDate);
+  const { data: subscriptions = [], isLoading: subsLoading } = useSubscriptions();
+  const { data: liabilities = [], isLoading: liabLoading } = useLiabilities();
 
-  const { data: cashflow, isLoading: cashflowLoading, refetch: refetchCashflow } = useGlobalCashflow(viewingDate);
+  const loading = cashflowLoading || txLoading || subsLoading || liabLoading;
 
-  const fetchData = useCallback(async () => {
-    if (authLoading) return;
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+  const burnRateData = useMemo(() => {
+    const { start, end } = getBillingPeriodForDate(viewingDate);
+    const isCurrentMonth = viewingDate.getMonth() === new Date().getMonth() && viewingDate.getFullYear() === new Date().getFullYear();
+    if (!isCurrentMonth || !cashflow) return { status: 'safe' as const, projectedDate: null };
 
+    const daysIntoPeriod = Math.max(1, differenceInDays(new Date(), start) + 1);
+    const currentBalance = cashflow.balance;
+
+    const fixedAmounts = new Set([
+      ...subscriptions.map(s => Number(s.amount)),
+      ...liabilities.map(l => Number(l.monthly_payment))
+    ]);
+
+    const variableTransactions = transactions.filter(tx => {
+      const amount = Number(tx.amount);
+      if (fixedAmounts.has(amount) && amount > 100) return false;
+      return true;
+    });
+
+    const totalVariableExpenses = variableTransactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
+    const avgDaily = totalVariableExpenses / daysIntoPeriod;
+    const daysRemaining = Math.max(0, differenceInDays(end, new Date()));
+
+    return calculateBurnRate(currentBalance, daysRemaining, avgDaily);
+  }, [viewingDate, cashflow, transactions, subscriptions, liabilities]);
+
+  const handleTransactionAdded = () => {
+    setIsDrawerOpen(false);
+    setEditingTransaction(null);
+    queryClient.invalidateQueries({ queryKey: ['transactions', profile?.couple_id] });
+    queryClient.invalidateQueries({ queryKey: ['global-cashflow', profile?.couple_id] });
+  };
+
+  const handleUpdateSubscriptionStatus = async (id: string, status: Subscription['status']) => {
     try {
-      if (cashflow?.balance === undefined && !cashflowLoading) setLoading(true);
-
-      // Validate viewingDate
-      if (isNaN(viewingDate.getTime())) {
-        console.error("Invalid viewingDate:", viewingDate);
-        throw new Error("Invalid viewingDate");
-      }
-
-      const { start, end } = getBillingPeriodForDate(viewingDate);
-      // console.log("Fetching for range:", start.toISOString(), "to", end.toISOString());
-
-      const controller = new AbortController();
-      const signal = controller.signal;
-
-      // OPTIMIZATION: Select only needed columns
-      const [txResult, subsResult, liabResult] = await Promise.all([
-        supabase
-          .from('transactions')
-          .select('id, amount, date, description, category, payer, is_surprise, created_at, mood_rating')
-          .gte('date', start.toISOString())
-          .lt('date', end.toISOString())
-          .order('date', { ascending: false })
-          .abortSignal(signal),
-        supabase.from('subscriptions').select('*').abortSignal(signal),
-        supabase.from('liabilities').select('*').abortSignal(signal),
-      ]);
-
-      const { data: txData, error: txError } = txResult;
-      const { data: subsData, error: subsError } = subsResult;
-      const { data: liabData } = liabResult;
-
-      if (txError) {
-        console.error("Supabase Transaction Error:", txError);
-        throw new Error(`Transaction Fetch Error: ${txError.message || JSON.stringify(txError)}`);
-      }
-      if (subsError) {
-        console.error("Supabase Subscription Error:", subsError);
-        // We might not want to throw on subs error, but good to know
-      }
-
-      // Cast to Transaction[] as we are selecting a subset that matches the shape we need
-      const transactionsData = (txData || []) as unknown as Transaction[];
-      setTransactions(transactionsData);
-      setSubscriptions(subsData || []);
-      setLiabilities(liabData || []);
-
-      // MANDATE 1: UNIFY GLOBAL MONTHLY SPEND MATH
-      // We consume the live value from our centralized hook
-      const currentBalance = cashflow?.balance ?? 0;
-
-      // Burn Rate Logic: "Variable Only"
-      // User request: "without the fixed ones"
-      // Strategy: Filter out transactions that match known subscription amounts (Fixed Expenses)
-      // and calculate average daily spend based on the remaining "Variable" transactions.
-      const isCurrentMonth = viewingDate.getMonth() === new Date().getMonth() && viewingDate.getFullYear() === new Date().getFullYear();
-      if (isCurrentMonth) {
-        const daysIntoPeriod = differenceInDays(new Date(), start) + 1;
-
-        // 1. Identify Fixed Amounts from Subscriptions & Liabilities (Debt)
-        const fixedAmounts = new Set([
-          ...(subsData?.map((s: Subscription) => Number(s.amount)) || []),
-          ...(liabData?.map((l: Liability) => Number(l.monthly_payment)) || [])
-        ]);
-
-        // 2. Filter Transactions: Exclude matches (Fixed)
-        // We use a small tolerance or exact match. Exact is safer to avoid excluding common prices like 50.
-        // But rent/bills are usually unique. Let's use strict match for now.
-        // Also helps if we exclude "Rent", "Bills" categories if we had them.
-        const variableTransactions = transactionsData.filter(tx => {
-          const amount = Number(tx.amount);
-          // If amount exists in subscriptions, likely a fixed bill. 
-          // BUT, common amounts (like 30, 50) might be coincidental.
-          // Heuristic: If amount > 200 and matches specific subscription, exclude it.
-          // Or just exclude if it matches ANY subscription?
-          // Let's exclude if it matches any subscription amount > 100.
-          if (fixedAmounts.has(amount) && amount > 100) return false;
-          return true;
-        });
-
-        const totalVariableExpenses = variableTransactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
-        const avgDaily = daysIntoPeriod > 0 ? totalVariableExpenses / daysIntoPeriod : 0;
-
-        const daysRemaining = differenceInDays(end, new Date());
-        const { status, projectedDate } = calculateBurnRate(currentBalance, daysRemaining, avgDaily);
-        setBurnRateData({ status, projectedDate });
-      } else {
-        setBurnRateData({ status: 'safe', projectedDate: null });
-      }
-
-      // Comparison Logic
-      const now = new Date();
-      let limitDate = end;
-      if (viewingDate.getMonth() === now.getMonth() && viewingDate.getFullYear() === now.getFullYear()) {
-        limitDate = now;
-      }
-      const daysIntoPeriod = differenceInDays(limitDate, start);
-      const prevStart = subMonths(start, 1);
-      const prevLimit = addDays(prevStart, daysIntoPeriod);
-
-      const { error: prevError } = await supabase
-        .from('transactions')
-        .select('amount')
-        .gte('date', prevStart.toISOString())
-        .lte('date', prevLimit.toISOString());
-
-      if (prevError) console.error("Prev Data Error:", prevError);
-
-      // setComparisonDiff(currentExpensesSoFar - prevExpenses); // Removed as comparisonDiff is unused
-    } catch (error: unknown) {
-      console.error("API Error Detailed:", error);
-      toast.error(`שגיאה בטעינת הנתונים: ${error instanceof Error ? error.message : "Unknown error"}`);
-    } finally {
-      setLoading(false);
+      const { error } = await createClient().from('subscriptions').update({ status }).eq('id', id);
+      if (error) throw error;
+      toast.success("סטטוס המנוי עודכן");
+      queryClient.invalidateQueries({ queryKey: ['subscriptions', profile?.couple_id] });
+      queryClient.invalidateQueries({ queryKey: ['global-cashflow', profile?.couple_id] });
+    } catch (error: any) {
+      toast.error("שגיאה בעדכון הסטטוס");
     }
-  }, [user, supabase, authLoading, viewingDate, cashflow?.balance, cashflowLoading]);
+  };
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchData();
+  const handleDeleteSubscription = async (id: string) => {
+    try {
+      const { error } = await createClient().from('subscriptions').delete().eq('id', id);
+      if (error) throw error;
+      toast.success("המנוי נמחק");
+      queryClient.invalidateQueries({ queryKey: ['subscriptions', profile?.couple_id] });
+      queryClient.invalidateQueries({ queryKey: ['global-cashflow', profile?.couple_id] });
+    } catch (error: any) {
+      toast.error("שגיאה במחיקה");
     }
-  }, [authLoading, user, fetchData]);
+  };
+
+  const filteredTransactions = useMemo(() => {
+    let result = transactions;
+    if (selectedDate) {
+      result = result.filter(tx => isSameDay(new Date(tx.date), selectedDate));
+    }
+    if (selectedFilterCategory) {
+      result = result.filter(tx => normalizeCategory(tx.category) === selectedFilterCategory);
+    }
+    return result;
+  }, [transactions, selectedDate, selectedFilterCategory]);
 
   // Render Failsafe
   if (authLoading) {
@@ -212,36 +151,6 @@ export default function Home() {
       </div>
     );
   }
-
-
-
-  const handleTransactionAdded = (amount: number, newTx?: Transaction) => {
-    // We let the centralized hook handle the balance math.
-    // We just need to trigger a refetch of all data.
-    if (newTx) {
-      setTransactions(prev => {
-        const exists = prev.some(t => t.id === newTx.id);
-        if (exists) {
-          return prev.map(t => t.id === newTx.id ? newTx : t);
-        }
-        return [newTx, ...prev];
-      });
-    }
-    setIsDrawerOpen(false);
-    refetchCashflow();
-    fetchData();
-  };
-
-  // Filter transactions (simple variable, not a hook)
-  let filteredTransactions = transactions;
-  if (selectedDate) {
-    filteredTransactions = filteredTransactions.filter(tx => isSameDay(new Date(tx.date), selectedDate));
-  }
-  if (selectedFilterCategory) {
-    filteredTransactions = filteredTransactions.filter(tx => normalizeCategory(tx.category) === selectedFilterCategory);
-  }
-
-
 
 
 
@@ -259,68 +168,46 @@ export default function Home() {
         className="flex-1 flex flex-col items-center gap-6 w-full mx-auto"
       >
         {/* Pull to Refresh Wrapper */}
-        <PullToRefresh onRefresh={fetchData}>
+        <PullToRefresh onRefresh={async () => handleTransactionAdded()}>
           {loading || cashflow?.balance === undefined ? (
-            // SKELETONS ...
-            <div className="flex flex-col items-center justify-center py-10 gap-8 animate-in fade-in duration-700">
-              {/* ... */}
-            </div>
+            <HomeMosaicSkeleton />
           ) : (
             <div className={cn("flex flex-col items-center gap-2 w-full relative z-10 py-2 transition-all duration-500", isPrivacyMode && "blur-xl opacity-50 grayscale")}>
-              {/* Billing Cycle Navigation */}
-              <div className="w-full max-w-md px-4 flex items-center justify-between mb-1">
-                <button
-                  onClick={() => { setViewingDate(prev => subMonths(prev, 1)); }}
-                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 transition-all border border-white/10"
-                >
-                  <ChevronRight className="w-4 h-4 text-white/60" />
-                </button>
-                <div className="flex items-center gap-2">
-                  <CalendarRange className="w-4 h-4 text-blue-400/60" />
-                  <span className="text-sm font-medium text-white/70">
-                    {format(getBillingPeriodForDate(viewingDate).start, 'd.M', { locale: he })}
-                    {' - '}
-                    {format(getBillingPeriodForDate(viewingDate).end, 'd.M', { locale: he })}
-                  </span>
-                </div>
-                <button
-                  onClick={() => { setViewingDate(prev => addMonths(prev, 1)); }}
-                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 transition-all border border-white/10"
-                >
-                  <ChevronLeft className="w-4 h-4 text-white/60" />
-                </button>
-              </div>
-
               {/* Widgets Container - Mosaic Layout */}
               <div className="w-full flex justify-center mb-2">
-                <HomeMosaic
-                  balance={cashflow?.balance ?? 0}
-                  budget={cashflow?.budget ?? 20000}
-                  monthlyIncome={profile?.monthly_income || cashflow?.budget || 20000}
-                  totalExpenses={(cashflow?.budget || 20000) - (cashflow?.balance ?? 0)}
-                  daysInMonth={differenceInDays(getBillingPeriodForDate(viewingDate).end, getBillingPeriodForDate(viewingDate).start)}
-                  daysPassed={Math.max(1, differenceInDays(new Date(), getBillingPeriodForDate(viewingDate).start))}
-                  assets={assets}
-                  transactions={transactions}
-                  subscriptions={subscriptions}
-                  liabilities={liabilities}
-                  onRefresh={fetchData}
-                  // Reactor Props
-                  burnRateStatus={burnRateData.status}
-                  cycleStart={getBillingPeriodForDate(viewingDate).start}
-                  cycleEnd={getBillingPeriodForDate(viewingDate).end}
-                  // Quick Actions
-                  onQuickAdd={(label) => {
-                    setSelectedCategory(label);
-                    setIsDrawerOpen(true);
-                  }}
-                  // Calendar & Categories
-                  selectedDate={selectedDate}
-                  onDateSelect={setSelectedDate}
-                  selectedFilterCategory={selectedFilterCategory}
-                  onCategorySelect={setSelectedFilterCategory}
-                  usdToIls={usdToIls}
-                />
+                <ErrorBoundary fallback={<div className="p-8 text-center glass-panel">שגיאה בטעינת הדשבורד</div>}>
+                  <HomeMosaic
+                    balance={cashflow?.balance ?? 0}
+                    budget={cashflow?.budget ?? 20000}
+                    monthlyIncome={profile?.monthly_income || cashflow?.budget || 20000}
+                    totalExpenses={(cashflow?.budget || 20000) - (cashflow?.balance ?? 0)}
+                    daysInMonth={differenceInDays(getBillingPeriodForDate(viewingDate).end, getBillingPeriodForDate(viewingDate).start)}
+                    daysPassed={Math.max(1, differenceInDays(new Date(), getBillingPeriodForDate(viewingDate).start))}
+                    assets={assets}
+                    transactions={transactions}
+                    subscriptions={subscriptions}
+                    liabilities={liabilities}
+                    onUpdateStatus={handleUpdateSubscriptionStatus}
+                    onDeleteSubscription={handleDeleteSubscription}
+                    // Reactor Props
+                    burnRateStatus={burnRateData.status}
+                    cycleStart={getBillingPeriodForDate(viewingDate).start}
+                    cycleEnd={getBillingPeriodForDate(viewingDate).end}
+                    // Quick Actions
+                    onQuickAdd={(label) => {
+                      setSelectedCategory(label);
+                      setIsDrawerOpen(true);
+                    }}
+                    // Calendar & Categories
+                    selectedDate={selectedDate}
+                    onDateSelect={setSelectedDate}
+                    selectedFilterCategory={selectedFilterCategory}
+                    onCategorySelect={setSelectedFilterCategory}
+                    usdToIls={usdToIls}
+                    viewingDate={viewingDate}
+                    onViewingDateChange={setViewingDate}
+                  />
+                </ErrorBoundary>
               </div>
             </div>
           )}
@@ -359,7 +246,7 @@ export default function Home() {
             key={selectedFilterCategory ?? 'all'}
             transactions={filteredTransactions}
             subscriptions={subscriptions}
-            onRefresh={fetchData}
+            onRefresh={handleTransactionAdded}
             activeFilter={selectedFilterCategory}
             activeDateFilter={selectedDate} // Pass date filter
             currentPayer={appIdentity ?? undefined}

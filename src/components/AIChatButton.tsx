@@ -10,11 +10,12 @@ import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useAppStore } from "@/stores/appStore";
 import { useWealth } from "@/hooks/useWealth";
-import { PAYERS } from "@/lib/constants";
-import { motion } from "framer-motion";
+import { PAYERS, CURRENCY_SYMBOL } from "@/lib/constants";
+import { motion, AnimatePresence } from "framer-motion";
 import { FinancialContext, Goal, Liability, Transaction, Subscription, WishlistItem, WealthSnapshot } from "@/types";
 import { isLiabilityActive } from "@/hooks/useWealthData";
 import { getBillingPeriodForDate } from "@/lib/billing";
+import { triggerHaptic } from "@/utils/haptics";
 
 const toSafeNumber = (value: unknown): number => {
     const parsed = Number(value);
@@ -42,11 +43,11 @@ function generateDynamicInsight(context: FinancialContext | null, firstName: str
 
     // Pick the most relevant insight
     if (budgetUsedPct >= 90) return `${firstName}, ניצלת ${budgetUsedPct}% מהתקציב — בוא נראה איפה לחסוך`;
-    if (budgetUsedPct >= 70) return `${firstName}, נשארו לך ₪${remaining.toLocaleString()} — מעקב חכם?`;
+    if (budgetUsedPct >= 70) return `${firstName}, נשארו לך $${CURRENCY_SYMBOL}${remaining.toLocaleString()} — מעקב חכם?`;
     if (budgetUsedPct <= 20 && totalSpent > 0) return `${firstName}, חיסכון מדהים! רק ${budgetUsedPct}% מהתקציב 🎯`;
-    if (topCat && topCat[1] > budget * 0.25) return `${firstName}, הוצאת ₪${topCat[1].toLocaleString()} על ${topCat[0]} — ננתח?`;
+    if (topCat && topCat[1] > budget * 0.25) return `${firstName}, הוצאת $${CURRENCY_SYMBOL}${topCat[1].toLocaleString()} על ${topCat[0]} — ננתח?`;
     if (subscriptions?.length > 5) return `${firstName}, יש לך ${subscriptions.length} מנויים — אפשר לחסוך?`;
-    if (remaining > 2000) return `${firstName}, יש ₪${remaining.toLocaleString()} פנויים — מה עושים איתם?`;
+    if (remaining > 2000) return `${firstName}, יש $${CURRENCY_SYMBOL}${remaining.toLocaleString()} פנויים — מה עושים איתם?`;
 
     return `${firstName}, רוצה סיכום חכם של החודש? ✨`;
 }
@@ -57,7 +58,7 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
     const [error, setError] = useState(false);
     const [loading, setLoading] = useState(false);
     const [bubbleMessage, setBubbleMessage] = useState<string | null>(null);
-    const [bubbleDismissed] = useState(false);
+    const [bubbleDismissed, setBubbleDismissed] = useState(false);
     const pathname = usePathname();
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
@@ -134,9 +135,9 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
 
             const assetsSummary = (wealthAssets || []).reduce((acc, asset: Goal) => {
                 const valueInIls = toSafeNumber(asset.calculatedValue ?? asset.current_amount);
-                if (asset.type === 'stock' || asset.investment_type === 'crypto' || asset.investment_type === 'real_estate') {
+                if (asset.type === 'stock' || asset.investment_type === 'real_estate') {
                     acc.stocksInvestments += valueInIls;
-                } else if (asset.investment_type === 'usd_cash' || asset.type === 'usd_cash') {
+                } else if (asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency') {
                     acc.usdCash.usdAmount += toSafeNumber(asset.current_amount);
                     acc.usdCash.ilsValue += valueInIls;
                 } else if (asset.type === 'money_market') {
@@ -185,6 +186,7 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
                 income: resolvedIncome,
                 identityName,
                 liveNetWorth,
+                currentRoute: pathname,
             };
 
             setContext(ctx);
@@ -208,7 +210,7 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
                 const msg = generateDynamicInsight(ctx, firstName);
                 if (msg) setBubbleMessage(msg);
             }
-        }, 4000);
+        }, 10000); // 10s instead of 4s to be less intrusive
 
         return () => clearTimeout(timer);
     }, [bubbleDismissed, isOpen, firstName, fetchContext]);
@@ -224,6 +226,7 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
     const handleOpen = async () => {
         setIsOpen(true);
         setBubbleMessage(null);
+        setBubbleDismissed(true);
         if (!context) await fetchContext();
     };
 
@@ -232,49 +235,82 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
     return (
         <>
             <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="sticky top-[70px] z-40 mx-4 mt-4 mb-6"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="fixed bottom-28 left-6 z-50"
                 dir="rtl"
             >
-                <div className="absolute -inset-1.5 bg-gradient-to-r from-violet-600/20 via-blue-500/20 to-cyan-400/20 rounded-[2.2rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                {/* Notification Bubble - Premium Redesign */}
+                <AnimatePresence>
+                    {bubbleMessage && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 10, filter: "blur(10px)" }}
+                            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+                            exit={{ opacity: 0, scale: 0.9, y: 10, filter: "blur(10px)" }}
+                            className="absolute bottom-full left-0 mb-6 w-56 p-4 bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] group/bubble"
+                        >
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setBubbleMessage(null);
+                                    setBubbleDismissed(true);
+                                    triggerHaptic();
+                                }}
+                                className="absolute -top-2 -right-2 w-6 h-6 bg-slate-800 border border-white/10 rounded-full flex items-center justify-center text-white/40 hover:text-white transition-all shadow-lg z-20 active:scale-90"
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
 
-                <motion.button
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.98 }}
+                            <div className="flex flex-col gap-2 text-right">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Sparkles className="w-3 h-3 text-violet-400" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-white/30">תובנה חכמה</span>
+                                </div>
+                                <p className="text-[12px] font-bold text-white/90 leading-relaxed">
+                                    {bubbleMessage}
+                                </p>
+                            </div>
+
+                            {/* Decorative Glow */}
+                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/5 to-transparent pointer-events-none" />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <button
                     onClick={handleOpen}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#0c0f1a]/80 backdrop-blur-2xl border border-white/[0.12] shadow-[0_8px_32px_rgba(0,0,0,0.5)] relative overflow-hidden group transition-all duration-300 ring-1 ring-white/5 active:ring-violet-500/30"
+                    className="relative w-14 h-14 rounded-full glass-panel shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex items-center justify-center overflow-hidden group"
                 >
-                    {/* Siri-style Animated Multi-Gradient Glow */}
+                    {/* Quantum Orb Effect */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-950" />
                     <motion.div
                         animate={{
-                            opacity: [0.15, 0.35, 0.15],
-                            scale: [1, 1.05, 1],
+                            scale: [1, 1.2, 0.9, 1.1, 1],
+                            opacity: [0.3, 0.6, 0.2, 0.5, 0.3],
                         }}
                         transition={{
                             duration: 5,
                             repeat: Infinity,
                             ease: "easeInOut"
                         }}
-                        className="absolute inset-0 bg-gradient-to-r from-violet-600/20 via-blue-500/20 to-cyan-400/20 pointer-events-none filter blur-2xl"
+                        className="absolute inset-0 bg-violet-500/30 blur-2xl"
                     />
-
-                    {/* Sophisticated inner border light */}
-                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50" />
-
-                    <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 via-blue-600 to-cyan-500 flex items-center justify-center shrink-0 shadow-[0_2px_12px_rgba(124,58,237,0.4)] ring-1 ring-white/20">
-                        <Sparkles className="w-4 h-4 text-white drop-shadow-[0_1px_4px_rgba(255,255,255,0.4)]" />
-                    </div>
-
-                    <span className="text-white/60 text-[13px] font-semibold flex-1 text-right tracking-tight">
-                        {bubbleMessage || "שאל את רועי, היועץ הפיננסי שלך..."}
-                    </span>
-
-                    <div className="hidden sm:flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
-                        <kbd className="px-2 py-0.5 rounded-md border border-white/10 bg-white/5 text-[10px] text-white/40 font-mono shadow-inner">⌘</kbd>
-                        <kbd className="px-2 py-0.5 rounded-md border border-white/10 bg-white/5 text-[10px] text-white/40 font-mono shadow-inner">K</kbd>
-                    </div>
-                </motion.button>
+                    <motion.div
+                        animate={{
+                            scale: [1.2, 1, 1.3, 0.8, 1.2],
+                            opacity: [0.2, 0.4, 0.1, 0.3, 0.2],
+                        }}
+                        transition={{
+                            duration: 7,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                        className="absolute inset-0 bg-cyan-500/20 blur-2xl translate-x-1"
+                    />
+                    <Sparkles className="w-6 h-6 text-white relative z-10 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
+                </button>
             </motion.div>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>

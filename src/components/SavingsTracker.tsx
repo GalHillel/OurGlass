@@ -1,8 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useAppStore } from "@/stores/appStore";
 import { TrendingDown, Wallet, PiggyBank, Target, AlertTriangle, CheckCircle, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatAmount } from "@/lib/utils";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface SavingsTrackerProps {
     monthlyIncome: number;    // Total income this month
@@ -11,6 +13,7 @@ interface SavingsTrackerProps {
 }
 
 export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTrackerProps) => {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     // Calculations
     const actualSavings = monthlyIncome - totalSpent;
     const targetSavings = monthlyIncome - budget;
@@ -34,7 +37,7 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
         statusIcon = <CheckCircle className="w-4 h-4" />;
     } else if (actualSavings > 0 && isOverBudget) {
         status = "warning";
-        statusMessage = `חרגתם ב-₪${overBudgetAmount.toLocaleString()} אך עדיין חוסכים`;
+        statusMessage = isStealthMode ? `חרגתם אך עדיין חוסכים` : `חרגתם ב-${CURRENCY_SYMBOL}${overBudgetAmount.toLocaleString()} אך עדיין חוסכים`;
         statusIcon = <AlertTriangle className="w-4 h-4" />;
     } else {
         status = "overspent";
@@ -61,60 +64,59 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="rounded-2xl p-4 border border-white/10 bg-slate-950/50 backdrop-blur-xl shadow-lg relative overflow-hidden"
+            className="rounded-[2.5rem] p-8 border border-white/10 bg-slate-900/40 backdrop-blur-xl shadow-2xl relative overflow-hidden group"
         >
-            <div className="absolute inset-0 bg-blue-500/5 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-blue-500/5 opacity-50" />
             {/* Header with Status */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-8 relative z-10">
                 <div className="flex items-center gap-2">
-                    <PiggyBank className="w-5 h-5 text-white/60" />
-                    <h3 className="text-sm font-bold text-white">מעקב חיסכון</h3>
+                    <PiggyBank className="w-5 h-5 text-emerald-400" />
+                    <h3 className="text-sm font-black text-white/40 uppercase tracking-[0.2em]">קצב חיסכון חודשי</h3>
                 </div>
-                <div className={cn("flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full bg-white/10", getStatusColor())}>
-                    {statusIcon}
-                    <span className="hidden sm:inline">{savingsRate > 0 ? `${Math.round(savingsRate)}% חיסכון` : "אין חיסכון"}</span>
+                <div className={cn("flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border", getStatusColor().replace('text-', 'border-').replace('400', '400/30') + " " + getStatusColor().replace('text-', 'bg-').replace('400', '400/10'))}>
+                    <span className={getStatusColor()}>{savingsRate > 0 ? `${Math.round(savingsRate)}% חיסכון` : "אין חיסכון"}</span>
                 </div>
             </div>
 
             {/* Main Numbers Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
                 {/* Income */}
-                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <div className="bg-white/5 rounded-[1.5rem] p-4 border border-white/5 group-hover:bg-white/10 transition-colors">
                     <div className="flex items-center gap-1.5 mb-1">
-                        <Wallet className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-[10px] text-white/50">הכנסות</span>
+                        <Wallet className="w-3 h-3 text-emerald-400" />
+                        <span className="text-[10px] text-white/30 font-black uppercase tracking-[0.1em]">הכנסות</span>
                     </div>
-                    <span className="text-lg font-bold text-white">₪{monthlyIncome.toLocaleString()}</span>
+                    <span className="text-2xl font-black text-white font-mono tracking-tighter tabular-nums">{formatAmount(monthlyIncome, isStealthMode, CURRENCY_SYMBOL, '***')}</span>
                 </div>
 
                 {/* Budget */}
-                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <div className="bg-white/5 rounded-[1.5rem] p-4 border border-white/5 group-hover:bg-white/10 transition-colors">
                     <div className="flex items-center gap-1.5 mb-1">
-                        <Target className="w-3.5 h-3.5 text-blue-400" />
-                        <span className="text-[10px] text-white/50">תקציב</span>
+                        <Target className="w-3 h-3 text-blue-400" />
+                        <span className="text-[10px] text-white/30 font-black uppercase tracking-[0.1em]">תקציב</span>
                     </div>
-                    <span className="text-lg font-bold text-white">₪{budget.toLocaleString()}</span>
+                    <span className="text-2xl font-black text-white font-mono tracking-tighter tabular-nums">{formatAmount(budget, isStealthMode, CURRENCY_SYMBOL, '***')}</span>
                 </div>
 
                 {/* Spent */}
-                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <div className="bg-white/5 rounded-[1.5rem] p-4 border border-white/5 group-hover:bg-white/10 transition-colors">
                     <div className="flex items-center gap-1.5 mb-1">
-                        <TrendingDown className="w-3.5 h-3.5 text-orange-400" />
-                        <span className="text-[10px] text-white/50">הוצאות</span>
+                        <TrendingDown className="w-3 h-3 text-orange-400" />
+                        <span className="text-[10px] text-white/30 font-black uppercase tracking-[0.1em]">בוזבז</span>
                     </div>
-                    <span className={cn("text-lg font-bold", isOverBudget ? "text-red-400" : "text-white")}>
-                        ₪{totalSpent.toLocaleString()}
+                    <span className={cn("text-2xl font-black font-mono tracking-tighter tabular-nums", isOverBudget ? "text-red-400" : "text-white")}>
+                        {formatAmount(totalSpent, isStealthMode, CURRENCY_SYMBOL, '***')}
                     </span>
                 </div>
 
                 {/* Savings */}
-                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <div className="bg-white/5 rounded-[1.5rem] p-4 border border-white/5 group-hover:bg-white/10 transition-colors">
                     <div className="flex items-center gap-1.5 mb-1">
-                        <PiggyBank className="w-3.5 h-3.5 text-purple-400" />
-                        <span className="text-[10px] text-white/50">חיסכון</span>
+                        <PiggyBank className="w-3 h-3 text-purple-400" />
+                        <span className="text-[10px] text-white/30 font-black uppercase tracking-[0.1em]">חיסכון</span>
                     </div>
-                    <span className={cn("text-lg font-bold", actualSavings >= 0 ? "text-emerald-400" : "text-red-400")}>
-                        {actualSavings < 0 && "-"}₪{Math.abs(actualSavings).toLocaleString()}
+                    <span className={cn("text-2xl font-black font-mono tracking-tighter tabular-nums", actualSavings >= 0 ? "text-emerald-400" : "text-red-400")}>
+                        {actualSavings < 0 && !isStealthMode && "-"}{formatAmount(Math.abs(actualSavings), isStealthMode, CURRENCY_SYMBOL, '***')}
                     </span>
                 </div>
             </div>
@@ -124,8 +126,8 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
                 <div className="flex justify-between text-[10px] mb-1">
                     <span className="text-white/50">ניצול תקציב</span>
                     <span className={cn(isOverBudget ? "text-red-400" : "text-white/70")}>
-                        {Math.round(budgetUsagePercent)}%
-                        {isOverBudget && ` (חריגה של ₪${overBudgetAmount.toLocaleString()})`}
+                        {isStealthMode ? '**%' : `${Math.round(budgetUsagePercent)}%`}
+                        {isOverBudget && !isStealthMode && ` (חריגה של ${CURRENCY_SYMBOL}${overBudgetAmount.toLocaleString()})`}
                     </span>
                 </div>
                 <div className="h-2 bg-white/10 rounded-full overflow-hidden">
@@ -154,13 +156,13 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
                 <div className="mt-3 pt-3 border-t border-white/10">
                     <div className="flex justify-between text-[10px]">
                         <span className="text-white/50">יעד חיסכון:</span>
-                        <span className="text-white/70">₪{targetSavings.toLocaleString()}</span>
+                        <span className="text-white/70">{formatAmount(targetSavings, isStealthMode, CURRENCY_SYMBOL, '***')}</span>
                     </div>
                     <div className="flex justify-between text-[10px] mt-1">
                         <span className="text-white/50">חיסכון בפועל:</span>
                         <span className={cn("font-medium", actualSavings >= targetSavings ? "text-emerald-400" : "text-amber-400")}>
-                            ₪{actualSavings.toLocaleString()}
-                            {actualSavings >= targetSavings ? " ✓" : ` (חסרים ₪${(targetSavings - actualSavings).toLocaleString()})`}
+                            {formatAmount(actualSavings, isStealthMode, CURRENCY_SYMBOL, '***')}
+                            {actualSavings >= targetSavings ? " ✓" : !isStealthMode ? ` (חסרים ${CURRENCY_SYMBOL}${(targetSavings - actualSavings).toLocaleString()})` : ""}
                         </span>
                     </div>
                 </div>

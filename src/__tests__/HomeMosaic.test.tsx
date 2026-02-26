@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { HomeMosaic, type HomeMosaicProps } from '@/components/HomeMosaic';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 vi.mock('@/utils/supabase/client', () => ({
     createClient: () => ({
@@ -61,7 +62,7 @@ describe('HomeMosaic', () => {
         expect(screen.getByText('חיסכון חודשי')).toBeInTheDocument();
 
         // Ensure calculations are rendered on tiles
-        expect(screen.getByText('₪10,000')).toBeInTheDocument(); // actual savings (15k - 5k)
+        expect(screen.getByText(`${CURRENCY_SYMBOL}10,000`)).toBeInTheDocument(); // actual savings (15k - 5k)
         expect(screen.getByText('67% מההכנסה')).toBeInTheDocument(); // 10k/15k
     });
 });

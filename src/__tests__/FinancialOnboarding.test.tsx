@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FinancialOnboarding } from '@/components/FinancialOnboarding';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 // Mock dependencies
 const mockUpdateProfile = vi.fn();
@@ -48,7 +49,7 @@ describe('FinancialOnboarding', () => {
 
         // Step 2: Profile
         expect(screen.getByText('מי אתם?')).toBeInTheDocument();
-        const nameInput = screen.getByPlaceholderText('למשל: גל');
+        const nameInput = screen.getByPlaceholderText('למשל: {PAYERS.HIM}');
         fireEvent.change(nameInput, { target: { value: 'Gal' } });
 
         fireEvent.click(screen.getByRole('button', { name: /הבא/i }));

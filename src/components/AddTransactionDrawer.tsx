@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import {
     Drawer,
     DrawerContent,
@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { hapticForAmount, hapticError } from "@/utils/haptics";
 import {
     Coffee,
     Bus,
@@ -44,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { NumericKeypad } from "./NumericKeypad";
 import confetti from "canvas-confetti";
 import { useAppStore } from "@/stores/appStore";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface AddTransactionDrawerProps {
     isOpen: boolean;
@@ -80,6 +82,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
     const [moodRating, setMoodRating] = useState<number | null>(null);
     const [payer, setPayer] = useState<'him' | 'her' | 'joint'>('him');
     const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [time, setTime] = useState<string>(new Date().toLocaleTimeString('he-IL', { hour12: false, hour: '2-digit', minute: '2-digit' }));
     const [installments, setInstallments] = useState<number>(1);
     const [loading, setLoading] = useState(false);
 
@@ -91,6 +94,75 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
+    const saveMutation = useMutation({
+        mutationFn: async (payload: { txs?: any[], txData?: any }) => {
+            if (payload.txs) {
+                const { data, error } = await supabase.from('transactions').insert(payload.txs).select();
+                if (error) throw error;
+                return data;
+            } else if (payload.txData) {
+                if (initialData) {
+                    const { data, error } = await supabase.from('transactions').update(payload.txData).eq('id', initialData.id).select().single();
+                    if (error) throw error;
+                    return data;
+                } else {
+                    const { data, error } = await supabase.from('transactions').insert(payload.txData).select().single();
+                    if (error) throw error;
+                    return data;
+                }
+            }
+            throw new Error("Invalid payload");
+        },
+        onMutate: async (payload) => {
+            await queryClient.cancelQueries({ queryKey: ['transactions'] });
+            await queryClient.cancelQueries({ queryKey: ['global-cashflow'] });
+
+            const previousTransactions = queryClient.getQueryData(['transactions']);
+
+            if (payload.txData && !initialData && !payload.txs) {
+                queryClient.setQueriesData({ queryKey: ['transactions', profile?.couple_id] }, (old: any) => {
+                    const optimisticTx = {
+                        ...payload.txData,
+                        id: crypto.randomUUID(),
+                        created_at: new Date().toISOString()
+                    };
+                    return Array.isArray(old) ? [optimisticTx, ...old] : [optimisticTx];
+                });
+            }
+
+            return { previousTransactions };
+        },
+        onError: (err, newTx, context) => {
+            if (context?.previousTransactions) {
+                queryClient.setQueriesData({ queryKey: ['transactions'] }, context.previousTransactions);
+            }
+            const errorMsg = err instanceof Error ? err.message : "שגיאה בשמירה";
+            toast.error("שגיאה בשמירה: " + errorMsg);
+            console.error("Save error:", err);
+            hapticError();
+            setLoading(false);
+        },
+        onSuccess: (data, payload) => {
+            const numericAmount = parseFloat(amountStr);
+            hapticForAmount(numericAmount);
+            if (payload.txs) {
+                toast.success(`נוספו ${installments} תשלומים בהצלחה!`);
+                if (onSuccess && Array.isArray(data) && data.length > 0) onSuccess(numericAmount, data[0] as Transaction);
+            } else {
+                toast.success(initialData ? "עודכן בהצלחה" : "הוסף בהצלחה!");
+                if (onSuccess) onSuccess(numericAmount, data as Transaction);
+            }
+
+            queryClient.invalidateQueries({ queryKey: ["transactions"] });
+            queryClient.invalidateQueries({ queryKey: ["global-cashflow"] });
+            queryClient.invalidateQueries({ queryKey: ["settle-up"] });
+            queryClient.invalidateQueries({ queryKey: ["guilt-free"] });
+
+            setLoading(false);
+            onClose();
+        }
+    });
+
     const performSave = async () => {
         const numericAmount = parseFloat(amountStr);
         if (!numericAmount || numericAmount <= 0) {
@@ -101,84 +173,48 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
         triggerHaptic();
         setLoading(true);
 
-        try {
-            let finalDescription = description.trim() || selectedCategory || "הוצאה כללית";
-            if (isImpulse) {
-                finalDescription += " #impulse";
-            }
-            const finalDate = new Date(date);
+        let finalDescription = description.trim() || selectedCategory || "הוצאה כללית";
+        if (isImpulse) {
+            finalDescription += " #impulse";
+        }
 
-            if (installments > 1) {
-                // Installments Logic
-                const totalAmount = numericAmount;
-                const perInstallment = Math.round((totalAmount / installments) * 100) / 100;
+        // Combine date and time for absolute precision
+        const [year, month, day] = date.split('-').map(Number);
+        const [hours, minutes] = time.split(':').map(Number);
+        const finalDate = new Date(year, month - 1, day, hours, minutes);
 
-                const txs = [];
-                for (let i = 0; i < installments; i++) {
-                    const installmentDate = addMonths(finalDate, i);
-
-                    txs.push({
-                        amount: perInstallment,
-                        user_id: user?.id,
-                        couple_id: profile?.couple_id,
-                        description: `${finalDescription} (תשלום ${i + 1}/${installments})`,
-                        is_surprise: false,
-                        date: installmentDate.toISOString(),
-                        payer: payer,
-                        category: selectedCategory,
-                        mood_rating: moodRating,
-                    });
-                }
-
-                const { data, error } = await supabase.from('transactions').insert(txs).select();
-                if (error) throw error;
-
-                toast.success(`נוספו ${installments} תשלומים בהצלחה!`);
-                if (onSuccess && data && data.length > 0) onSuccess(numericAmount, data[0] as Transaction);
-            } else {
-                // Regular Single Transaction
-                const txData = {
-                    amount: numericAmount,
+        if (installments > 1) {
+            const totalAmount = numericAmount;
+            const perInstallment = Math.round((totalAmount / installments) * 100) / 100;
+            const txs = [];
+            for (let i = 0; i < installments; i++) {
+                const installmentDate = addMonths(finalDate, i);
+                txs.push({
+                    amount: perInstallment,
                     user_id: user?.id,
                     couple_id: profile?.couple_id,
-                    description: finalDescription,
+                    description: `${finalDescription} (תשלום ${i + 1}/${installments})`,
                     is_surprise: false,
-                    date: finalDate.toISOString(),
+                    date: installmentDate.toISOString(),
                     payer: payer,
                     category: selectedCategory,
                     mood_rating: moodRating,
-                };
-
-                let resultTx;
-                if (initialData) {
-                    const { data, error } = await supabase.from('transactions').update(txData).eq('id', initialData.id).select().single();
-                    if (error) throw error;
-                    resultTx = data;
-                    toast.success("עודכן בהצלחה");
-                } else {
-                    const { data, error } = await supabase.from('transactions').insert(txData).select().single();
-                    if (error) throw error;
-                    resultTx = data;
-                    toast.success("הוסף בהצלחה!");
-                }
-
-                const mappedTx = resultTx as Transaction;
-                if (onSuccess) onSuccess(numericAmount, mappedTx);
+                });
             }
-
-            // Global invalidation for all related cashflow components
-            queryClient.invalidateQueries({ queryKey: ["global-cashflow"] });
-            queryClient.invalidateQueries({ queryKey: ["settle-up"] });
-            queryClient.invalidateQueries({ queryKey: ["guilt-free"] });
-
-            onClose();
-
-        } catch (error: unknown) {
-            const err = error as { message?: string };
-            toast.error("שגיאה בשמירה");
-            console.error("Save error:", JSON.stringify({ message: err?.message }, null, 2));
-        } finally {
-            setLoading(false);
+            saveMutation.mutate({ txs });
+        } else {
+            const txData = {
+                amount: numericAmount,
+                user_id: user?.id,
+                couple_id: profile?.couple_id,
+                description: finalDescription,
+                is_surprise: false,
+                date: finalDate.toISOString(),
+                payer: payer,
+                category: selectedCategory,
+                mood_rating: moodRating,
+            };
+            saveMutation.mutate({ txData });
         }
     };
 
@@ -241,7 +277,9 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                 setDescription(initialData.description || "");
                 setSelectedCategory(initialData.category || "אחר");
                 setPayer(initialData.payer || 'him');
-                setDate(new Date(initialData.date).toISOString().split('T')[0]);
+                const dt = new Date(initialData.date);
+                setDate(dt.toISOString().split('T')[0]);
+                setTime(dt.toLocaleTimeString('he-IL', { hour12: false, hour: '2-digit', minute: '2-digit' }));
                 setMoodRating(initialData.mood_rating || null);
             } else {
                 setAmountStr("");
@@ -257,7 +295,9 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                 // Set default payer to the active app identity, or fallback to 'him'
                 setPayer(appIdentity || "him");
 
-                setDate(new Date().toISOString().split("T")[0]);
+                const now = new Date();
+                setDate(now.toISOString().split("T")[0]);
+                setTime(now.toLocaleTimeString('he-IL', { hour12: false, hour: '2-digit', minute: '2-digit' }));
                 setInstallments(1);
             }
         }
@@ -276,7 +316,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
     };
 
     return (
-        <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()} dismissible={false}>
+        <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()} dismissible={true}>
             <DrawerContent className="bg-slate-950/95 backdrop-blur-3xl border-t border-white/10 h-[95dvh] flex flex-col outline-none">
 
                 {/* Header Actions */}
@@ -298,7 +338,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                         <div className="absolute inset-0 bg-blue-500/5 blur-3xl" />
                         <span className="text-white/40 text-xs mb-1 relative z-10">סכום ההוצאה</span>
                         <div className="flex items-baseline relative z-10 rtl:flex-row-reverse gap-1">
-                            <span className="text-3xl text-blue-400">₪</span>
+                            <span className="text-3xl text-blue-400">{CURRENCY_SYMBOL}</span>
                             <span className={cn("font-black text-white tracking-tighter transition-all", amountStr.length > 5 ? "text-5xl" : "text-6xl")}>
                                 {amountStr || "0"}
                             </span>
@@ -350,24 +390,34 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                         <div className="flex gap-3">
                             {/* Payer Toggle */}
                             <div className="flex bg-slate-900 rounded-xl p-1 border border-white/5 flex-1">
-                                <button type="button" onClick={() => { triggerHaptic(); setPayer("him"); }} className={cn("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all", payer === "him" ? "bg-blue-600 shadow-md text-white" : "text-white/30")}>אני</button>
+                                <button type="button" onClick={() => { triggerHaptic(); setPayer("him"); }} className={cn("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all", payer === "him" ? "bg-blue-600 shadow-md text-white" : "text-white/30")}>{PAYERS.HIM}</button>
                                 <button type="button" onClick={() => { triggerHaptic(); setPayer("joint"); }} className={cn("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all", payer === "joint" ? "bg-purple-600 shadow-md text-white" : "text-white/30")}>משותף</button>
-                                <button type="button" onClick={() => { triggerHaptic(); setPayer("her"); }} className={cn("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all", payer === "her" ? "bg-pink-600 shadow-md text-white" : "text-white/30")}>בת זוג</button>
+                                <button type="button" onClick={() => { triggerHaptic(); setPayer("her"); }} className={cn("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all", payer === "her" ? "bg-pink-600 shadow-md text-white" : "text-white/30")}>{PAYERS.HER}</button>
                             </div>
 
-                            {/* Date Picker - NATIVE */}
-                            <div className="relative flex-1">
-                                <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none text-white/40">
-                                    <ChevronDown className="w-4 h-4" />
+                            {/* Date & Time Pickers - NATIVE */}
+                            <div className="flex flex-[2] gap-2">
+                                <div className="relative flex-[1.5]">
+                                    <input
+                                        type="date"
+                                        value={date}
+                                        onChange={(e) => setDate(e.target.value)}
+                                        className="w-full h-11 bg-slate-900 border border-white/5 rounded-xl px-2 text-white text-[13px] text-right font-medium appearance-none focus:border-blue-500 focus:outline-none"
+                                    />
+                                    <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-blue-400">
+                                        <CalendarIcon className="w-3.5 h-3.5" />
+                                    </div>
                                 </div>
-                                <input
-                                    type="date"
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                    className="w-full h-full bg-slate-900 border border-white/5 rounded-xl px-3 text-white text-sm text-right font-medium appearance-none focus:border-blue-500 focus:outline-none"
-                                />
-                                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-blue-400">
-                                    <CalendarIcon className="w-4 h-4" />
+                                <div className="relative flex-1">
+                                    <input
+                                        type="time"
+                                        value={time}
+                                        onChange={(e) => setTime(e.target.value)}
+                                        className="w-full h-11 bg-slate-900 border border-white/5 rounded-xl px-2 text-white text-[13px] text-right font-medium appearance-none focus:border-blue-500 focus:outline-none"
+                                    />
+                                    <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-purple-400">
+                                        <Repeat className="w-3.5 h-3.5 rotate-90" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -408,7 +458,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                             </div>
                             {installments > 1 && (
                                 <div className="text-center text-xs text-blue-300/60 font-mono">
-                                    {installments} תשלומים של ₪{(parseFloat(amountStr || "0") / installments).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                    {installments} תשלומים של {CURRENCY_SYMBOL}{(parseFloat(amountStr || "0") / installments).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                 </div>
                             )}
                         </div>

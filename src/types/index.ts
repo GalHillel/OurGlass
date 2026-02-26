@@ -59,6 +59,7 @@ export interface Subscription {
     category_id?: string | null;
     category?: string;
     active: boolean;
+    status?: 'active' | 'to_cancel' | 'processing' | 'saved';
     usage_rating: number | null;
     last_auto_transaction: string | null;
     created_at: string;
@@ -70,7 +71,7 @@ export interface Goal {
     target_amount: number;
     current_amount: number;
     brick_color: string | null;
-    type: 'cash' | 'stock' | 'pocket_him' | 'pocket_her' | 'money_market' | 'usd_cash' | 'crypto';
+    type: 'cash' | 'stock' | 'pocket_him' | 'pocket_her' | 'money_market' | 'foreign_currency' | 'wish';
     growth_rate: number;
     couple_id: string | null;
     deep_freeze: boolean;
@@ -168,4 +169,5 @@ export interface FinancialContext {
     income: number;
     identityName: string;
     liveNetWorth: number | null;
+    currentRoute?: string;
 }

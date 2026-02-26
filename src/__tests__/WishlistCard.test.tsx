@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { WishlistCard } from '@/components/WishlistCard';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 
 vi.mock('@/utils/haptics', () => ({ triggerHaptic: vi.fn() }));
@@ -14,8 +15,8 @@ describe('WishlistCard', () => {
         render(<WishlistCard item={standardItem as never} onAction={onAction} />);
 
         expect(screen.getByText('Camera')).toBeInTheDocument();
-        expect(screen.getByText('₪300')).toBeInTheDocument();
-        expect(screen.getByText('מתוך ₪900')).toBeInTheDocument();
+        expect(screen.getByText(`${CURRENCY_SYMBOL}300`)).toBeInTheDocument();
+        expect(screen.getByText(`מתוך ${CURRENCY_SYMBOL}900`)).toBeInTheDocument();
     });
 
     it('displays fully funded state', () => {
@@ -30,7 +31,7 @@ describe('WishlistCard', () => {
         render(<WishlistCard item={impulseItem as never} onAction={onAction} />);
 
         expect(screen.getByText(/ש׳ להירגעות/)).toBeInTheDocument();
-        expect(screen.getByText('אני באמת חייב את זה')).toBeInTheDocument();
+        expect(screen.getByText(new RegExp(PAYERS.HIM + ' באמת חייב את זה'))).toBeInTheDocument();
     });
 
     it('triggers actions correctly', () => {

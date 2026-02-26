@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { DeepFreezeApproval, DeepFreezeToggle } from '@/components/DeepFreezeApproval';
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 vi.mock('sonner', () => ({
     toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() })
@@ -35,7 +36,7 @@ describe('DeepFreezeApproval', () => {
         expect(screen.getByText('בקשת שחרור מהקפאה')).toBeInTheDocument();
         expect(screen.getByText('Vacation')).toBeInTheDocument();
         expect(screen.getByText('Gal')).toBeInTheDocument();
-        expect(screen.getByText('₪5,000')).toBeInTheDocument();
+        expect(screen.getByText(`${CURRENCY_SYMBOL}5,000`)).toBeInTheDocument();
     });
 
     it('calls onApprove on approval', async () => {

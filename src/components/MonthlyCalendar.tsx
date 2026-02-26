@@ -4,8 +4,10 @@ import { useState } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isToday } from "date-fns";
 import { he } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/appStore";
+import { cn, formatAmount } from "@/lib/utils";
 import { Transaction } from "@/types";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 interface CalendarProps {
     transactions: Transaction[];
@@ -14,6 +16,7 @@ interface CalendarProps {
 }
 
 export const MonthlyCalendar = ({ transactions, selectedDate, onDateSelect }: CalendarProps) => {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
     const startDate = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 }); // Sunday start
@@ -101,11 +104,7 @@ export const MonthlyCalendar = ({ transactions, selectedDate, onDateSelect }: Ca
                                 {hasActivity && !isSelected && (
                                     <div className={cn(
                                         "w-1.5 h-1.5 rounded-full mt-1",
-                                        total > 0 ? "bg-red-400" : "bg-emerald-400" // Red for expenses (positive in DB?), Green for income
-                                        // Wait, typical DB: Expense = Positive, Income = Negative? Or vice versa?
-                                        // Usually Expense is Positive number in simple trackers, or Negative. 
-                                        // Assuming Expense = Positive based on previous Real Number calc (Budget - Expenses).
-                                        // So Positive = Red (Expense). Negative = Green (Income/Refund).
+                                        total > 0 ? "bg-red-400" : "bg-emerald-400"
                                     )} />
                                 )}
                             </button>
@@ -121,7 +120,7 @@ export const MonthlyCalendar = ({ transactions, selectedDate, onDateSelect }: Ca
                     <div className="mt-4 animate-in fade-in slide-in-from-top-4 space-y-3">
                         <div className="glass p-4 rounded-2xl border border-white/10 flex justify-between items-center bg-blue-500/10">
                             <span className="text-white/60 text-sm">סה״כ ל-{format(selectedDate, 'd.M', { locale: he })}:</span>
-                            <span className="text-xl font-black text-white">₪{selectedTotal.toLocaleString()}</span>
+                            <span className="text-xl font-black text-white">{formatAmount(selectedTotal, isStealthMode, CURRENCY_SYMBOL)}</span>
                         </div>
 
                         {dayTransactions.length > 0 ? (
@@ -137,7 +136,7 @@ export const MonthlyCalendar = ({ transactions, selectedDate, onDateSelect }: Ca
                                             )}
                                         </div>
                                         <span className="text-sm font-bold text-red-400 shrink-0 mr-3">
-                                            ₪{Number(tx.amount).toLocaleString()}
+                                            {formatAmount(tx.amount, isStealthMode, CURRENCY_SYMBOL)}
                                         </span>
                                     </div>
                                 ))}

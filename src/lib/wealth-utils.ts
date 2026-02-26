@@ -1,3 +1,4 @@
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 /**
  * Wealth Utilities — Money Market Fund & Compound Interest Calculations
  *
@@ -15,7 +16,7 @@
  *   r = annual rate (decimal)
  *   d = days elapsed since investment
  *
- * @param initialAmount  The original investment amount in ₪
+ * @param initialAmount  The original investment amount in {CURRENCY_SYMBOL}
  * @param investmentDate The date the investment was made (ISO string or Date)
  * @param annualRate     Annual interest rate in percent (default 4.5%)
  * @returns              Current calculated value
@@ -62,8 +63,8 @@ export function calculateTotalProfit(
 }
 
 /**
- * Format ₪ currency with proper locale
+ * Format {CURRENCY_SYMBOL} currency with proper locale
  */
 export function formatILS(amount: number, decimals: number = 0): string {
-    return `₪${amount.toLocaleString('he-IL', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+    return `$${CURRENCY_SYMBOL}${amount.toLocaleString(LOCALE, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
 }

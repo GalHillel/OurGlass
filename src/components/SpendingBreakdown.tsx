@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useAppStore } from "@/stores/appStore";
 import { Transaction, Subscription, Liability } from "@/types";
 import { motion } from "framer-motion";
 import {
@@ -19,8 +20,9 @@ import {
     CreditCard,
     RefreshCw
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatAmount } from "@/lib/utils";
 import { isLiabilityActive } from "@/hooks/useWealthData";
+import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 // Combined icon map from various sources for consistency
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -53,6 +55,7 @@ interface SpendingBreakdownProps {
 }
 
 export const SpendingBreakdown = ({ transactions, subscriptions, liabilities, viewingDate = new Date() }: SpendingBreakdownProps) => {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     const { total, items } = useMemo(() => {
         const grouped = new Map<string, number>();
 
@@ -95,15 +98,15 @@ export const SpendingBreakdown = ({ transactions, subscriptions, liabilities, vi
 
     if (items.length === 0) {
         return (
-            <div className="w-full px-6 mt-6 min-h-[100px] flex items-center justify-center border border-white/5 rounded-2xl bg-white/5 backdrop-blur-sm">
-                <p className="text-white/40 text-sm">אין נתונים להצגה</p>
+            <div className="w-full px-6 mt-6 min-h-[100px] flex items-center justify-center border border-white/5 rounded-[2rem] bg-slate-900/40 backdrop-blur-xl">
+                <p className="text-white/20 text-[10px] font-black uppercase tracking-widest">אין נתונים זמינים</p>
             </div>
         );
     }
 
     return (
         <div className="w-full px-6 mt-8">
-            <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-4 px-1">פירוט הוצאות</h3>
+            <h3 className="text-sm font-black text-white/40 uppercase tracking-[0.2em] mb-4 px-1">פירוט הוצאות</h3>
             <div className="flex flex-col gap-3">
                 {items.map((item, index) => {
                     const Icon = getIconForCategory(item.name);
@@ -115,18 +118,18 @@ export const SpendingBreakdown = ({ transactions, subscriptions, liabilities, vi
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.05 }}
-                            className="flex items-center gap-3 w-full"
+                            className="flex items-center gap-4 w-full group"
                         >
                             {/* Icon */}
-                            <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center shrink-0">
-                                <Icon className="w-4 h-4 text-white/70" />
+                            <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center shrink-0 group-hover:bg-white/10 transition-colors">
+                                <Icon className="w-4 h-4 text-white/50 group-hover:text-white transition-colors" />
                             </div>
 
                             {/* Bar & Text */}
                             <div className="flex-1 flex flex-col justify-center gap-1.5">
                                 <div className="flex justify-between items-end w-full">
-                                    <span className="text-sm font-medium text-white/90 leading-none">{item.name}</span>
-                                    <span className="text-sm font-bold text-white leading-none">₪{item.value.toLocaleString()}</span>
+                                    <span className="text-xs font-black text-white/50 leading-none uppercase tracking-widest">{item.name}</span>
+                                    <span className="text-xs font-black text-white leading-none font-mono tabular-nums">{formatAmount(item.value, isStealthMode, CURRENCY_SYMBOL, '***')}</span>
                                 </div>
 
                                 {/* Progress Bar Container */}
