@@ -18,13 +18,18 @@ export async function POST(req: Request) {
   const CATEGORIES_LIST = "אוכל, קפה, סופר, תחבורה, דלק, רכב, קניות, בילוי, מסעדה, חשבונות, בריאות, ביטוח, לימודים, קוסמטיקה, עבודה, אחר";
 
   const systemMessage = `You are OurGlass AI ("רועי"), the ultimate joint-finance assistant.
-CRITICAL RULES FOR EXECUTING TOOLS:
-1. **INSTALLMENTS (תשלומים)**: If the user mentions installments, input the EXACT TOTAL AMOUNT as 'amount' and the number of payments as the 'installments' integer. DO NOT modify the description to include "X of Y".
-2. **STOCKS (מניות)**: When adding a stock, you MUST set 'type' to 'stock', and you MUST provide the 'symbol' (e.g., AAPL), 'shares' (quantity), and 'average_buy_price'. 
-3. **ABSOLUTE VALUES ONLY**: Financial amounts (amount, target_amount, current_amount, price, average_buy_price) MUST ALWAYS BE POSITIVE NUMBERS.
-4. **EMOJIS**: Every tool requires an 'emoji'. Always pick a highly fitting, single emoji.
-5. **AUTO-ENRICHMENT**: If the user doesn't specify a category, magically guess the best matching category from this list: ${CATEGORIES_LIST}.
-6. **FEEDBACK**: Immediately output a natural, warm Hebrew text acknowledging the precise action you just took (e.g., "הוספתי את המניה לאפל! 🍏"). DO NOT just execute the tool silently.
+
+CRITICAL RULES FOR TOOL CALLING:
+1. **ABSOLUTE VALUES ONLY**: All financial amounts you send to tools (amount, target_amount, current_amount, price, average_buy_price) MUST ALWAYS be positive numbers. Never send negative numbers.
+2. **INSTALLMENTS (תשלומים)**: If the user mentions installments, pass the EXACT TOTAL AMOUNT as 'amount' and the number of payments as the 'installments' integer. DO NOT modify the description to include "X of Y" and do NOT split the amount yourself.
+3. **STOCKS (מניות)**: When adding a stock, you MUST set 'type' to 'stock', and you MUST provide the 'symbol' (e.g., AAPL), 'shares' (quantity), and 'average_buy_price'. If current_amount is missing, it will be computed as shares * average_buy_price.
+4. **AUTO-ENRICHMENT**: If the user doesn't specify a category, you MUST guess the best matching category from the app's list (for example: מזון, קניות, בילויים, רכב, דיור, חשבונות, בריאות, ביטוח, לימודים, קוסמטיקה, עבודה, אחר). Use ${CATEGORIES_LIST} as guidance.
+5. **EMOJIS**: Every tool that has an 'emoji' parameter MUST get a single, highly relevant emoji. Always pick exactly one emoji that matches the action or item.
+6. **MANDATORY FEEDBACK**: Whenever you execute ANY tool, you MUST ALSO send a warm, natural Hebrew message describing exactly what you just did (e.g., "הוספתי את ההוצאה על הזארה, תתחדשו! 👗" או "עדכנתי את המנוי לנטפליקס ל-45 ש\"ח לחודש 🎬"). Never execute tools silently.
+
+General behavior:
+- Always act as a proactive, responsible joint-finance assistant for a couple.
+- Explain your reasoning in friendly Hebrew when helpful, but keep responses concise.
 
 Context:
 ${JSON.stringify(context, null, 2)}
@@ -95,96 +100,84 @@ Current Route: ${context?.currentRoute || 'Unknown'}
   // Build tools object with proper Vercel AI SDK tool() helpers
   const tools = {
     addTransaction: tool({
-      description: 'Add a new transaction.',
-      parameters: addTransactionParams,
-      execute: async (params: AddTransactionParams) => {
-        const {
-          amount,
-          description,
-          category,
-          type,
-          payer,
-          emoji,
-          installments,
-          date,
-          mood_rating,
-        } = params;
+      description: 'Add a new transaction (expense or income).',
+      inputSchema: addTransactionParams,
+      async execute(
+        { amount, description, category, type, payer, emoji, installments, date, mood_rating },
+      ) {
         try {
-          const finalDescription = `${emoji} ${description}`;
-          const isExpense = type === 'expense';
-          const items = [];
-
-          if (installments > 1) {
-            const perInstallment = Math.round((amount / installments) * 100) / 100;
-            const startDate = date ? new Date(date) : new Date();
-            for (let i = 0; i < installments; i++) {
-              const d = new Date(startDate);
-              d.setMonth(startDate.getMonth() + i);
-              items.push({
-                amount: isExpense ? -perInstallment : perInstallment,
-                description: `${finalDescription} (${i + 1}/${installments})`,
-                category: category,
-                payer: payer,
-                user_id: user?.id,
-                couple_id: coupleId,
-                date: d.toISOString(),
-                mood_rating: mood_rating,
-              });
-            }
-          } else {
-            items.push({
-              amount: isExpense ? -Math.abs(amount) : Math.abs(amount),
-              description: finalDescription,
-              category: category,
-              payer: payer,
+          const { data, error } = await supabase
+            .from('transactions')
+            .insert({
+              amount: Math.abs(amount),
+              description: `${emoji} ${description}`,
+              category,
+              payer,
               user_id: user?.id,
               couple_id: coupleId,
               date: date || new Date().toISOString(),
-              mood_rating: mood_rating,
-            });
-          }
+              mood_rating,
+              is_surprise: false,
+              tags: null,
+            })
+            .select()
+            .single();
 
-          const { error } = await supabase.from('transactions').insert(items);
           if (error) throw error;
-          return { success: true };
+          return { success: true, data };
         } catch (e) {
-          return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
+          return {
+            success: false,
+            error: e instanceof Error ? e.message : 'Unknown error',
+          };
         }
       },
-    } as any),
+    }),
 
     updateTransaction: tool({
       description: 'Update an existing transaction.',
-      parameters: updateTransactionParams,
-      execute: async ({ id, updates }: UpdateTransactionParams) => {
+      inputSchema: updateTransactionParams,
+      async execute({ id, updates }) {
         try {
-          const { error } = await supabase.from('transactions').update(updates).eq('id', id);
+          const { data, error } = await supabase
+            .from('transactions')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
+
           if (error) throw error;
-          return { success: true };
-        } catch (e: unknown) {
-          return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
+          return { success: true, data };
+        } catch (e) {
+          return {
+            success: false,
+            error: e instanceof Error ? e.message : 'Unknown error',
+          };
         }
       },
-    } as any),
+    }),
 
     deleteTransaction: tool({
       description: 'Delete a transaction.',
-      parameters: deleteTransactionParams,
-      execute: async ({ id }: DeleteTransactionParams) => {
+      inputSchema: deleteTransactionParams,
+      async execute({ id }) {
         try {
           const { error } = await supabase.from('transactions').delete().eq('id', id);
           if (error) throw error;
           return { success: true };
-        } catch (e: unknown) {
-          return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
+        } catch (e) {
+          return {
+            success: false,
+            error: e instanceof Error ? e.message : 'Unknown error',
+          };
         }
       },
-    } as any),
+    }),
 
     addAsset: tool({
-      description: 'Add an asset.',
-      parameters: addAssetParams,
-      execute: async ({
+      description: 'Add an asset (including stocks).',
+      inputSchema: addAssetParams,
+      async execute({
         name,
         emoji,
         type,
@@ -194,91 +187,106 @@ Current Route: ${context?.currentRoute || 'Unknown'}
         symbol,
         shares,
         average_buy_price,
-      }: AddAssetParams) => {
+      }) {
         try {
           let value = current_amount || 0;
-          if (type === 'stock' && shares && average_buy_price) {
+          if (type === 'stock' && !current_amount && shares && average_buy_price) {
             value = shares * average_buy_price;
           }
 
-          const { error } = await supabase.from('goals').insert({
+          const payload = {
             name: `${emoji} ${name}`,
             type: type === 'stock' ? 'stock' : 'cash',
             investment_type: type,
             current_amount: value,
-            target_amount: value * 1.5,
-            symbol: symbol,
+            target_amount: value > 0 ? value * 1.5 : 0,
+            symbol,
             quantity: shares,
-            currency: currency,
-            institution: institution,
+            currency,
+            institution,
             couple_id: coupleId,
             last_updated: new Date().toISOString(),
-          });
+          };
+
+          const { data, error } = await supabase.from('goals').insert(payload).select().single();
           if (error) throw error;
-          return { success: true };
-        } catch (e: unknown) {
-          return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
+          return { success: true, data };
+        } catch (e) {
+          return {
+            success: false,
+            error: e instanceof Error ? e.message : 'Unknown error',
+          };
         }
       },
-    } as any),
+    }),
 
     addSubscription: tool({
       description: 'Add a recurring subscription.',
-      parameters: addSubscriptionParams,
-      execute: async ({
-        name,
-        emoji,
-        amount,
-        billing_cycle,
-        payer,
-        category,
-      }: AddSubscriptionParams) => {
+      inputSchema: addSubscriptionParams,
+      async execute({ name, emoji, amount, billing_cycle, payer, category }) {
         try {
-          const { error } = await supabase.from('subscriptions').insert({
+          const payload = {
             name: `${emoji} ${name}`,
-            amount: amount,
+            amount: Math.abs(amount),
+            billing_day: 1,
             owner: payer,
             category: category || 'חשבונות',
-            billing_cycle: billing_cycle,
             couple_id: coupleId,
             active: true,
-          });
+          };
+
+          const { data, error } = await supabase
+            .from('subscriptions')
+            .insert(payload)
+            .select()
+            .single();
           if (error) throw error;
-          return { success: true };
-        } catch (e: unknown) {
-          return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
+          return { success: true, data };
+        } catch (e) {
+          return {
+            success: false,
+            error: e instanceof Error ? e.message : 'Unknown error',
+          };
         }
       },
-    } as any),
+    }),
 
     addWish: tool({
       description: 'Add an item to the wishlist.',
-      parameters: addWishParams,
-      execute: async ({ title, target_amount, emoji }: AddWishParams) => {
+      inputSchema: addWishParams,
+      async execute({ title, target_amount, emoji }) {
         try {
-          const { error } = await supabase.from('wishlist').insert({
+          const payload = {
             name: `${emoji} ${title}`,
-            price: target_amount,
+            price: Math.abs(target_amount),
             status: 'pending',
             current_amount: 0,
             couple_id: coupleId,
-            requested_by: user?.id,
-          });
+            requested_by: user?.id ?? null,
+            saved_amount: 0,
+            priority: 0,
+            link: null,
+          };
+
+          const { data, error } = await supabase.from('wishlist').insert(payload).select().single();
           if (error) throw error;
-          return { success: true };
-        } catch (e: unknown) {
-          return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
+          return { success: true, data };
+        } catch (e) {
+          return {
+            success: false,
+            error: e instanceof Error ? e.message : 'Unknown error',
+          };
         }
       },
-    } as any),
+    }),
 
     MapsToPage: tool({
       description: 'Navigate the UI.',
-      parameters: mapsToPageParams,
-      execute: async ({ path }: MapsToPageParams) => {
+      inputSchema: mapsToPageParams,
+      async execute({ path }) {
         return { success: true, path };
       },
-    } as any),
+    }),
   };
 
   try {
