@@ -166,7 +166,7 @@ function SubscriptionActionItem({
             <div className="flex items-center gap-2">
                 <select
                     value={sub.status || 'active'}
-                    onChange={(e) => onUpdateStatus?.(sub.id, e.target.value as any)}
+                    onChange={(e) => onUpdateStatus?.(sub.id, e.target.value as Subscription['status'])}
                     className="bg-white/5 border border-white/10 rounded-lg text-[10px] px-2 py-1 outline-none text-white/60 focus:border-blue-500 transition-colors"
                 >
                     <option value="active">פעיל</option>

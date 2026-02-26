@@ -1,17 +1,110 @@
 "use client";
 
-import { useDashboardStore, WidgetConfig, FeatureKey } from "@/stores/dashboardStore";
+import { useDashboardStore, type FeatureKey } from "@/stores/dashboardStore";
 import { WIDGET_REGISTRY } from "./WIDGET_REGISTRY";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
 import { ChevronUp, ChevronDown, LayoutGrid, TrendingUp, CreditCard, Sparkles, Wand2, Shield, Users, Smartphone, Gift, Rocket, Zap } from "lucide-react";
 import { triggerHaptic } from "@/utils/haptics";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
 import { cn } from "@/lib/utils";
 
+type FeatureToggleProps = {
+    featureKey: FeatureKey;
+    label: string;
+    description: string;
+    icon: ComponentType<{ className?: string }>;
+    colorClass?: string;
+};
+
+function FeatureToggle({ featureKey, label, description, icon: Icon, colorClass = "blue" }: FeatureToggleProps) {
+    const { features, toggleFeature } = useDashboardStore();
+    const isActive = features[featureKey];
+
+    return (
+        <motion.div
+            variants={{
+                hidden: { opacity: 0, scale: 0.95, y: 10 },
+                visible: { opacity: 1, scale: 1, y: 0 }
+            }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+                toggleFeature(featureKey);
+                triggerHaptic();
+            }}
+            className={cn(
+                "relative flex flex-col justify-between p-5 rounded-[2.2rem] border transition-all duration-500 cursor-pointer overflow-hidden group/item h-[160px]",
+                isActive
+                    ? "bg-white/[0.05] border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+                    : "bg-black/20 border-white/5 opacity-60 grayscale-[0.5] hover:opacity-100 hover:grayscale-0"
+            )}
+        >
+            <AnimatePresence>
+                {isActive && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className={cn(
+                            "absolute inset-0 bg-gradient-to-br transition-all duration-700 pointer-events-none opacity-20",
+                            colorClass === "blue" && "from-blue-600/40 via-transparent to-indigo-600/20",
+                            colorClass === "purple" && "from-purple-600/40 via-transparent to-pink-600/20",
+                            colorClass === "emerald" && "from-emerald-600/40 via-transparent to-teal-600/20",
+                            colorClass === "orange" && "from-orange-600/40 via-transparent to-red-600/20",
+                            colorClass === "pink" && "from-pink-600/40 via-transparent to-rose-600/20"
+                        )}
+                    />
+                )}
+            </AnimatePresence>
+
+            <div className="flex items-start justify-between relative z-10 w-full">
+                <div className={cn(
+                    "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-700 border border-white/10 shadow-xl relative overflow-hidden",
+                    isActive
+                        ? "bg-white/10 scale-110 rotate-3"
+                        : "bg-white/5"
+                )}>
+                    <div className={cn(
+                        "absolute inset-0 opacity-20 bg-gradient-to-tr",
+                        colorClass === "blue" && "from-blue-500 to-cyan-500",
+                        colorClass === "purple" && "from-purple-500 to-pink-500",
+                        colorClass === "emerald" && "from-emerald-500 to-teal-500",
+                        colorClass === "orange" && "from-orange-500 to-yellow-500"
+                    )} />
+                    <Icon className={cn(
+                        "w-6 h-6 relative z-10",
+                        isActive ? "text-white" : "text-white/20"
+                    )} />
+                </div>
+
+                <Switch
+                    checked={isActive}
+                    onCheckedChange={() => {
+                        // handled via card click
+                    }}
+                    className={cn(
+                        "transition-all scale-110",
+                        isActive && colorClass === "blue" && "data-[state=checked]:bg-blue-500",
+                        isActive && colorClass === "purple" && "data-[state=checked]:bg-purple-500",
+                        isActive && colorClass === "emerald" && "data-[state=checked]:bg-emerald-500",
+                        isActive && colorClass === "orange" && "data-[state=checked]:bg-orange-500"
+                    )}
+                />
+            </div>
+
+            <div className="relative z-10">
+                <p className="text-[15px] font-black text-white tracking-tight leading-tight mb-1">{label}</p>
+                <p className="text-[10px] text-white/40 leading-snug font-medium line-clamp-2">{description}</p>
+            </div>
+
+            <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover/item:bg-white/10 transition-colors pointer-events-none" />
+        </motion.div>
+    );
+}
+
 export function CustomizationManager() {
-    const { widgets, features, toggleWidget, toggleFeature, reorderWidgets } = useDashboardStore();
+    const { widgets, toggleWidget, reorderWidgets } = useDashboardStore();
     const [activeTab, setActiveTab] = useState<'home' | 'screens' | 'wealth' | 'stocks' | 'subs' | 'lounge' | 'wishlist'>('screens');
 
     const moveWidget = (index: number, direction: 'up' | 'down') => {
@@ -20,104 +113,12 @@ export function CustomizationManager() {
 
         if (targetIndex < 0 || targetIndex >= newWidgets.length) return;
 
-        // Swap
         const [movedWidget] = newWidgets.splice(index, 1);
         newWidgets.splice(targetIndex, 0, movedWidget);
 
-        // Update orders
         const updatedWidgets = newWidgets.map((w, i) => ({ ...w, order: i }));
         reorderWidgets(updatedWidgets);
         triggerHaptic();
-    };
-
-    const FeatureToggle = ({ featureKey, label, description, icon: Icon, colorClass = "blue" }: { featureKey: FeatureKey, label: string, description: string, icon: any, colorClass?: string }) => {
-        const isActive = features[featureKey];
-
-        return (
-            <motion.div
-                variants={{
-                    hidden: { opacity: 0, scale: 0.95, y: 10 },
-                    visible: { opacity: 1, scale: 1, y: 0 }
-                }}
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                    toggleFeature(featureKey);
-                    triggerHaptic();
-                }}
-                className={cn(
-                    "relative flex flex-col justify-between p-5 rounded-[2.2rem] border transition-all duration-500 cursor-pointer overflow-hidden group/item h-[160px]",
-                    isActive
-                        ? "bg-white/[0.05] border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
-                        : "bg-black/20 border-white/5 opacity-60 grayscale-[0.5] hover:opacity-100 hover:grayscale-0"
-                )}
-            >
-                {/* Dynamic Background Glow */}
-                <AnimatePresence>
-                    {isActive && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className={cn(
-                                "absolute inset-0 bg-gradient-to-br transition-all duration-700 pointer-events-none opacity-20",
-                                colorClass === "blue" && "from-blue-600/40 via-transparent to-indigo-600/20",
-                                colorClass === "purple" && "from-purple-600/40 via-transparent to-pink-600/20",
-                                colorClass === "emerald" && "from-emerald-600/40 via-transparent to-teal-600/20",
-                                colorClass === "orange" && "from-orange-600/40 via-transparent to-red-600/20",
-                                colorClass === "pink" && "from-pink-600/40 via-transparent to-rose-600/20"
-                            )}
-                        />
-                    )}
-                </AnimatePresence>
-
-                {/* Top Section: Icon & Switch */}
-                <div className="flex items-start justify-between relative z-10 w-full">
-                    <div className={cn(
-                        "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-700 border border-white/10 shadow-xl relative overflow-hidden",
-                        isActive
-                            ? "bg-white/10 scale-110 rotate-3"
-                            : "bg-white/5"
-                    )}>
-                        <div className={cn(
-                            "absolute inset-0 opacity-20 bg-gradient-to-tr",
-                            colorClass === "blue" && "from-blue-500 to-cyan-500",
-                            colorClass === "purple" && "from-purple-500 to-pink-500",
-                            colorClass === "emerald" && "from-emerald-500 to-teal-500",
-                            colorClass === "orange" && "from-orange-500 to-yellow-500"
-                        )} />
-                        <Icon className={cn(
-                            "w-6 h-6 relative z-10",
-                            isActive ? "text-white" : "text-white/20"
-                        )} />
-                    </div>
-
-                    <Switch
-                        checked={isActive}
-                        onCheckedChange={(checked) => {
-                            // Already handled by parent div onClick, but keep for accessibility
-                            // Actually, let's stop propagation to handle separately if needed
-                        }}
-                        className={cn(
-                            "transition-all scale-110",
-                            isActive && colorClass === "blue" && "data-[state=checked]:bg-blue-500",
-                            isActive && colorClass === "purple" && "data-[state=checked]:bg-purple-500",
-                            isActive && colorClass === "emerald" && "data-[state=checked]:bg-emerald-500",
-                            isActive && colorClass === "orange" && "data-[state=checked]:bg-orange-500"
-                        )}
-                    />
-                </div>
-
-                {/* Bottom Section: Text Content */}
-                <div className="relative z-10">
-                    <p className="text-[15px] font-black text-white tracking-tight leading-tight mb-1">{label}</p>
-                    <p className="text-[10px] text-white/40 leading-snug font-medium line-clamp-2">{description}</p>
-                </div>
-
-                {/* Mesh Gradient Overlay for interactive feel */}
-                <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover/item:bg-white/10 transition-colors pointer-events-none" />
-            </motion.div>
-        );
     };
 
     const TABS = [
@@ -132,8 +133,6 @@ export function CustomizationManager() {
 
     return (
         <div className="space-y-6">
-            {/* Tab Switcher */}
-            {/* Premium Tab Switcher */}
             <div className="flex bg-slate-900/60 backdrop-blur-2xl p-2 rounded-[2.5rem] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] relative overflow-hidden">
                 {TABS.map((tab) => (
                     <button

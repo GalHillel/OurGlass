@@ -48,13 +48,24 @@ describe('AIChatButton', () => {
         vi.clearAllMocks();
         vi.useFakeTimers();
         vi.mocked(useAuth).mockReturnValue({
-            user: { id: '123' } as any,
-            profile: { name: 'Test' } as any,
+            user: { id: '123' },
+            profile: { name: 'Test' },
             loading: false,
             signOut: vi.fn()
-        } as any);
-        vi.mocked(useAppStore).mockReturnValue({ appIdentity: 'him' } as any);
-        vi.mocked(useWealth).mockReturnValue({ netWorth: 300000, assets: [], loading: false, cashValue: 0, investmentsValue: 0, refetch: vi.fn() } as any);
+        } as unknown as ReturnType<typeof useAuth>);
+        vi.mocked(useAppStore).mockReturnValue(
+            { appIdentity: 'him' } as unknown as ReturnType<typeof useAppStore>
+        );
+        vi.mocked(useWealth).mockReturnValue(
+            {
+                netWorth: 300000,
+                assets: [],
+                loading: false,
+                cashValue: 0,
+                investmentsValue: 0,
+                refetch: vi.fn()
+            } as unknown as ReturnType<typeof useWealth>
+        );
     });
 
     afterEach(() => {

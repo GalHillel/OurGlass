@@ -84,7 +84,7 @@ export const ChatInterface = ({ context, onClose }: ChatInterfaceProps) => {
 
     const { messages, setMessages, sendMessage, status, stop } = useChat({
         id: chatId,
-        onToolCall({ toolCall }: any) {
+        onToolCall({ toolCall }: { toolCall: { toolName: string; args: unknown } }) {
             if (toolCall.toolName === 'MapsToPage') {
                 const { path } = toolCall.args as { path: string };
                 hapticConfirm();
@@ -274,9 +274,13 @@ export const ChatInterface = ({ context, onClose }: ChatInterfaceProps) => {
                                     </div>
                                 )}
                                 <div className="font-medium">
-                                    {m.parts?.map((part: any, partIndex) => {
+                                    {(m.parts ?? []).map((part, partIndex) => {
                                         if (part.type === 'text') {
-                                            return <span key={partIndex} className="whitespace-pre-wrap">{part.text}</span>;
+                                            return (
+                                                <span key={partIndex} className="whitespace-pre-wrap">
+                                                    {part.text}
+                                                </span>
+                                            );
                                         }
                                         if (part.type === 'tool-call') {
                                             return (

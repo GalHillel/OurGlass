@@ -20,7 +20,7 @@ describe('AppHeader', () => {
                 status: 'safe'
             },
             isLoading: false
-        } as any);
+        } as unknown as ReturnType<typeof hooks.useGlobalCashflow>);
     });
 
     it('renders title and icon', () => {

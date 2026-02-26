@@ -68,7 +68,7 @@ export interface HomeMosaicProps {
     onDeleteSubscription?: (id: string) => void;
 }
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { useDashboardStore, WidgetConfig } from "@/stores/dashboardStore";
 import { useAppStore } from "@/stores/appStore";
 import { triggerHaptic } from "@/utils/haptics";
@@ -121,20 +121,18 @@ export const HomeMosaic = React.memo(({
     }
 
     // -- Calculations for Tiles --
-    const budgetUsedPercent = useMemo(() => Math.min(100, Math.round((totalExpenses / budget) * 100)), [totalExpenses, budget]);
-    const healthStatus = useMemo(() => budgetUsedPercent > 90 ? "critical" : budgetUsedPercent > 75 ? "warning" : "good", [budgetUsedPercent]);
+    const budgetUsedPercent = Math.min(100, Math.round((totalExpenses / budget) * 100));
+    const healthStatus = budgetUsedPercent > 90 ? "critical" : budgetUsedPercent > 75 ? "warning" : "good";
 
-    const actualSavings = useMemo(() => monthlyIncome - totalExpenses, [monthlyIncome, totalExpenses]);
-    const savingsRate = useMemo(() => monthlyIncome > 0 ? Math.round((actualSavings / monthlyIncome) * 100) : 0, [monthlyIncome, actualSavings]);
+    const actualSavings = monthlyIncome - totalExpenses;
+    const savingsRate = monthlyIncome > 0 ? Math.round((actualSavings / monthlyIncome) * 100) : 0;
 
-    const stockAssets = useMemo(() => assets.filter(a => a.type === 'stock'), [assets]);
+    const stockAssets = assets.filter(a => a.type === 'stock');
 
-    const cashAssets = useMemo(() => assets.filter(a => a.type === 'cash'), [assets]);
-    const totalCash = useMemo(() => cashAssets.reduce((sum: number, a: Asset) => sum + (Number(a.current_amount) || 0), 0), [cashAssets]);
+    const cashAssets = assets.filter(a => a.type === 'cash');
+    const totalCash = cashAssets.reduce((sum: number, a: Asset) => sum + (Number(a.current_amount) || 0), 0);
 
-    const activeWidgets = useMemo(() => {
-        return [...widgets].filter(w => w.enabled).sort((a, b) => a.order - b.order);
-    }, [widgets]);
+    const activeWidgets = [...widgets].filter(w => w.enabled).sort((a, b) => a.order - b.order);
 
     const renderWidget = (id: string, key: string) => {
         switch (id) {

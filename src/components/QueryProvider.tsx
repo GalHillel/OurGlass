@@ -4,8 +4,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 
+import { useAuth } from "./AuthProvider";
+
 function RealtimeSync() {
-    useRealtimeSync();
+    const { profile } = useAuth();
+    useRealtimeSync(profile?.couple_id || null);
     return null;
 }
 

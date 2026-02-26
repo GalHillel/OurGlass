@@ -44,7 +44,7 @@ export default function SubscriptionsPage() {
             toast.success("סטטוס המנוי עודכן");
             queryClient.invalidateQueries({ queryKey: ['subscriptions', profile?.couple_id] });
             queryClient.invalidateQueries({ queryKey: ['global-cashflow', profile?.couple_id] });
-        } catch (error: any) {
+        } catch {
             toast.error("שגיאה בעדכון הסטטוס");
         }
     };
@@ -68,7 +68,7 @@ export default function SubscriptionsPage() {
             toast.success("מנוי הוסר");
             queryClient.invalidateQueries({ queryKey: ['subscriptions', profile?.couple_id] });
             queryClient.invalidateQueries({ queryKey: ['global-cashflow', profile?.couple_id] });
-        } catch (error: any) {
+        } catch {
             toast.error("שגיאה במחיקה");
         }
     };

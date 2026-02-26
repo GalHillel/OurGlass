@@ -78,7 +78,11 @@ vi.mock('framer-motion', async (importOriginal) => {
         AnimatePresence: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
         useScroll: () => ({ scrollYProgress: { get: () => 0 } }),
         useSpring: (v: unknown) => v,
-        useTransform: (v: unknown, f: any, o?: any) => {
+        useTransform: (
+            v: unknown,
+            f: ((value: unknown) => unknown) | unknown,
+            o?: unknown
+        ) => {
             if (typeof f === 'function') return f(v);
             if (Array.isArray(o)) return o[0];
             return v;

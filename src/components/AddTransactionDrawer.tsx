@@ -55,6 +55,10 @@ interface AddTransactionDrawerProps {
     onSuccess?: (amount: number, newTx?: Transaction) => void;
 }
 
+type SavePayload =
+    | { txs: Array<Record<string, unknown>>; txData?: never }
+    | { txs?: never; txData: Record<string, unknown> };
+
 // Hebrew categories that match the database category text field
 const CATEGORIES = [
     { id: 'אוכל', label: 'אוכל', icon: Utensils, color: 'text-orange-400', bg: 'bg-orange-500/20', border: 'border-orange-500/30' },
@@ -95,7 +99,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
     const supabase = supabaseRef.current;
 
     const saveMutation = useMutation({
-        mutationFn: async (payload: { txs?: any[], txData?: any }) => {
+        mutationFn: async (payload: SavePayload) => {
             if (payload.txs) {
                 const { data, error } = await supabase.from('transactions').insert(payload.txs).select();
                 if (error) throw error;
@@ -120,7 +124,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
             const previousTransactions = queryClient.getQueryData(['transactions']);
 
             if (payload.txData && !initialData && !payload.txs) {
-                queryClient.setQueriesData({ queryKey: ['transactions', profile?.couple_id] }, (old: any) => {
+                queryClient.setQueriesData({ queryKey: ['transactions', profile?.couple_id] }, (old: Transaction[] | undefined) => {
                     const optimisticTx = {
                         ...payload.txData,
                         id: crypto.randomUUID(),

@@ -32,65 +32,23 @@ User Identity: ${context?.identityName || 'User'}
 Current Route: ${context?.currentRoute || 'Unknown'}
 `;
 
-  // Define parameter schemas
-  const addTransactionParams = z.object({
-    amount: z.number().positive(),
-    description: z.string(),
-    category: z.string(),
-    type: z.enum(['expense', 'income']).default('expense'),
-    payer: z.enum(['him', 'her', 'joint']),
-    emoji: z.string(),
-    installments: z.number().int().min(1).default(1),
-    date: z.string().optional(),
-    mood_rating: z.number().int().min(1).max(5).optional(),
-  });
-
-  const updateTransactionParams = z.object({
-    id: z.string(),
-    updates: z.record(z.string(), z.any()),
-  });
-
-  const deleteTransactionParams = z.object({ id: z.string() });
-
-  const addAssetParams = z.object({
-    name: z.string(),
-    emoji: z.string(),
-    type: z.enum(['cash', 'stock', 'foreign_currency', 'real_estate', 'money_market']),
-    current_amount: z.number().positive().optional(),
-    currency: z.string().default('ILS'),
-    institution: z.string().optional(),
-    symbol: z.string().optional(),
-    shares: z.number().positive().optional(),
-    average_buy_price: z.number().positive().optional(),
-  });
-
-  const addSubscriptionParams = z.object({
-    name: z.string(),
-    emoji: z.string(),
-    amount: z.number().positive(),
-    billing_cycle: z.enum(['monthly', 'yearly']).default('monthly'),
-    payer: z.enum(['him', 'her', 'joint']),
-    category: z.string().optional(),
-  });
-
-  const addWishParams = z.object({
-    title: z.string(),
-    target_amount: z.number().positive(),
-    emoji: z.string(),
-  });
-
-  const mapsToPageParams = z.object({
-    path: z.string(),
-  });
-
-  // Build tools object with explicit 'any' to resolve persistent version-mismatch lint errors
-  const tools: any = {
+  // Build tools object with proper type inference for Vercel AI SDK
+  const tools = {
     addTransaction: tool({
       description: 'Add a new transaction.',
-      parameters: addTransactionParams,
-      execute: async (params: any) => {
+      parameters: z.object({
+        amount: z.number().positive(),
+        description: z.string(),
+        category: z.string(),
+        type: z.enum(['expense', 'income']).default('expense'),
+        payer: z.enum(['him', 'her', 'joint']),
+        emoji: z.string(),
+        installments: z.number().int().min(1).default(1),
+        date: z.string().optional(),
+        mood_rating: z.number().int().min(1).max(5).optional(),
+      }),
+      execute: async ({ amount, description, category, type, payer, emoji, installments, date, mood_rating }) => {
         try {
-          const { amount, description, category, type, payer, emoji, installments, date, mood_rating } = params;
           const finalDescription = `${emoji} ${description}`;
           const isExpense = type === 'expense';
           const items = [];
@@ -128,101 +86,125 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           const { error } = await supabase.from('transactions').insert(items);
           if (error) throw error;
           return { success: true };
-        } catch (e: any) {
-          return { success: false, error: e.message };
+        } catch (e) {
+          return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
     }),
 
     updateTransaction: tool({
       description: 'Update an existing transaction.',
-      parameters: updateTransactionParams,
-      execute: async ({ id, updates }: any) => {
+      parameters: z.object({
+        id: z.string(),
+        updates: z.record(z.string(), z.unknown()),
+      }),
+      execute: async ({ id, updates }) => {
         try {
           const { error } = await supabase.from('transactions').update(updates).eq('id', id);
           if (error) throw error;
           return { success: true };
-        } catch (e: any) {
-          return { success: false, error: e.message };
+        } catch (e: unknown) {
+          return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
     }),
 
     deleteTransaction: tool({
       description: 'Delete a transaction.',
-      parameters: deleteTransactionParams,
-      execute: async ({ id }: any) => {
+      parameters: z.object({ id: z.string() }),
+      execute: async ({ id }) => {
         try {
           const { error } = await supabase.from('transactions').delete().eq('id', id);
           if (error) throw error;
           return { success: true };
-        } catch (e: any) {
-          return { success: false, error: e.message };
+        } catch (e: unknown) {
+          return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
     }),
 
     addAsset: tool({
       description: 'Add an asset.',
-      parameters: addAssetParams,
-      execute: async (params: any) => {
+      parameters: z.object({
+        name: z.string(),
+        emoji: z.string(),
+        type: z.enum(['cash', 'stock', 'foreign_currency', 'real_estate', 'money_market']),
+        current_amount: z.number().positive().optional(),
+        currency: z.string().default('ILS'),
+        institution: z.string().optional(),
+        symbol: z.string().optional(),
+        shares: z.number().positive().optional(),
+        average_buy_price: z.number().positive().optional(),
+      }),
+      execute: async ({ name, emoji, type, current_amount, currency, institution, symbol, shares, average_buy_price }) => {
         try {
-          let value = params.current_amount || 0;
-          if (params.type === 'stock' && params.shares && params.average_buy_price) {
-            value = params.shares * params.average_buy_price;
+          let value = current_amount || 0;
+          if (type === 'stock' && shares && average_buy_price) {
+            value = shares * average_buy_price;
           }
 
           const { error } = await supabase.from('goals').insert({
-            name: `${params.emoji} ${params.name}`,
-            type: params.type === 'stock' ? 'stock' : 'cash',
-            investment_type: params.type,
+            name: `${emoji} ${name}`,
+            type: type === 'stock' ? 'stock' : 'cash',
+            investment_type: type,
             current_amount: value,
             target_amount: value * 1.5,
-            symbol: params.symbol,
-            quantity: params.shares,
-            currency: params.currency,
-            institution: params.institution,
+            symbol: symbol,
+            quantity: shares,
+            currency: currency,
+            institution: institution,
             couple_id: coupleId,
             last_updated: new Date().toISOString(),
           });
           if (error) throw error;
           return { success: true };
-        } catch (e: any) {
-          return { success: false, error: e.message };
+        } catch (e: unknown) {
+          return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
     }),
 
     addSubscription: tool({
       description: 'Add a recurring subscription.',
-      parameters: addSubscriptionParams,
-      execute: async (params: any) => {
+      parameters: z.object({
+        name: z.string(),
+        emoji: z.string(),
+        amount: z.number().positive(),
+        billing_cycle: z.enum(['monthly', 'yearly']).default('monthly'),
+        payer: z.enum(['him', 'her', 'joint']),
+        category: z.string().optional(),
+      }),
+      execute: async ({ name, emoji, amount, billing_cycle, payer, category }) => {
         try {
           const { error } = await supabase.from('subscriptions').insert({
-            name: `${params.emoji} ${params.name}`,
-            amount: params.amount,
-            owner: params.payer,
-            category: params.category || 'חשבונות',
-            billing_cycle: params.billing_cycle,
+            name: `${emoji} ${name}`,
+            amount: amount,
+            owner: payer,
+            category: category || 'חשבונות',
+            billing_cycle: billing_cycle,
             couple_id: coupleId,
             active: true,
           });
           if (error) throw error;
           return { success: true };
-        } catch (e: any) {
-          return { success: false, error: e.message };
+        } catch (e: unknown) {
+          return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
     }),
 
     addWish: tool({
       description: 'Add an item to the wishlist.',
-      parameters: addWishParams,
-      execute: async (params: any) => {
+      parameters: z.object({
+        title: z.string(),
+        target_amount: z.number().positive(),
+        emoji: z.string(),
+      }),
+      execute: async ({ title, target_amount, emoji }) => {
         try {
           const { error } = await supabase.from('wishlist').insert({
-            name: `${params.emoji} ${params.title}`,
-            price: params.target_amount,
+            name: `${emoji} ${title}`,
+            price: target_amount,
             status: 'pending',
             current_amount: 0,
             couple_id: coupleId,
@@ -230,16 +212,16 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           });
           if (error) throw error;
           return { success: true };
-        } catch (e: any) {
-          return { success: false, error: e.message };
+        } catch (e: unknown) {
+          return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
     }),
 
     MapsToPage: tool({
       description: 'Navigate the UI.',
-      parameters: mapsToPageParams,
-      execute: async ({ path }: any) => {
+      parameters: z.object({ path: z.string() }),
+      execute: async ({ path }) => {
         return { success: true, path };
       },
     }),
@@ -250,22 +232,22 @@ Current Route: ${context?.currentRoute || 'Unknown'}
       model: google('gemini-1.5-flash-latest'),
       system: systemMessage,
       messages: modelMessages,
-      tools: tools,
+      tools,
       maxSteps: 5,
       abortSignal: req.signal,
-    } as any);
+    });
     return result.toUIMessageStreamResponse();
-  } catch (error: any) {
+  } catch (error) {
     const { isQuotaError, backupModel } = await import('@/lib/ai-router');
     if (isQuotaError(error)) {
       const result = streamText({
         model: backupModel,
         system: systemMessage,
         messages: modelMessages,
-        tools: tools,
+        tools,
         maxSteps: 5,
         abortSignal: req.signal,
-      } as any);
+      });
       return result.toUIMessageStreamResponse();
     }
     console.error("Chat API Error:", error);

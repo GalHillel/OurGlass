@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 interface SmartInsightsProps {
     transactions?: Transaction[];
     subscriptions?: Subscription[];
-    liabilities?: any[];
+    liabilities?: unknown[];
     monthlyIncome?: number;
     hourlyWage?: number;
     isInline?: boolean;
@@ -70,12 +70,9 @@ export const SmartInsights = ({ transactions = [], subscriptions = [], liabiliti
         const dismissedDate = localStorage.getItem(STORAGE_KEY + '_dismissed');
 
         if (insight && !isLoading && dismissedDate !== todayString) {
-            if (isInline) {
-                setIsVisible(true);
-            } else {
-                const timer = setTimeout(() => setIsVisible(true), 2500);
-                return () => clearTimeout(timer);
-            }
+            const delay = isInline ? 0 : 2500;
+            const timer = window.setTimeout(() => setIsVisible(true), delay);
+            return () => window.clearTimeout(timer);
         }
     }, [insight, isLoading, isInline]);
 
