@@ -3,7 +3,7 @@
 import { useDashboardStore, type FeatureKey } from "@/stores/dashboardStore";
 import { WIDGET_REGISTRY } from "./WIDGET_REGISTRY";
 import { Switch } from "@/components/ui/switch";
-import { ChevronUp, ChevronDown, LayoutGrid, TrendingUp, CreditCard, Sparkles, Wand2, Shield, Users, Smartphone, Gift, Rocket, Zap } from "lucide-react";
+import { ChevronUp, ChevronDown, LayoutGrid, TrendingUp, CreditCard, Sparkles, Wand2, Shield, Users, Smartphone, Gift, Rocket, Zap, Settings } from "lucide-react";
 import { triggerHaptic } from "@/utils/haptics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, type ComponentType } from "react";
@@ -103,8 +103,18 @@ function FeatureToggle({ featureKey, label, description, icon: Icon, colorClass 
     );
 }
 
+export const NAV_ITEM_REGISTRY: Record<string, { label: string; icon: any; color: string }> = {
+    'home': { label: 'בית', icon: Smartphone, color: 'text-blue-400' },
+    'wealth': { label: 'עושר', icon: TrendingUp, color: 'text-emerald-400' },
+    'stocks': { label: 'מניות', icon: Rocket, color: 'text-blue-400' },
+    'lounge': { label: 'לובי', icon: Sparkles, color: 'text-pink-400' },
+    'subscriptions': { label: 'קבועות', icon: CreditCard, color: 'text-purple-400' },
+    'wishlist': { label: 'משאלות', icon: Gift, color: 'text-orange-400' },
+    'settings': { label: 'הגדרות', icon: Settings, color: 'text-slate-400' },
+};
+
 export function CustomizationManager() {
-    const { widgets, toggleWidget, reorderWidgets } = useDashboardStore();
+    const { widgets, toggleWidget, reorderWidgets, navItems, toggleNavItem, reorderNavItems } = useDashboardStore();
     const [activeTab, setActiveTab] = useState<'home' | 'screens' | 'wealth' | 'stocks' | 'subs' | 'lounge' | 'wishlist'>('screens');
 
     const moveWidget = (index: number, direction: 'up' | 'down') => {
@@ -118,6 +128,20 @@ export function CustomizationManager() {
 
         const updatedWidgets = newWidgets.map((w, i) => ({ ...w, order: i }));
         reorderWidgets(updatedWidgets);
+        triggerHaptic();
+    };
+
+    const moveNavItem = (index: number, direction: 'up' | 'down') => {
+        const newItems = [...navItems];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+
+        if (targetIndex < 0 || targetIndex >= newItems.length) return;
+
+        const [movedItem] = newItems.splice(index, 1);
+        newItems.splice(targetIndex, 0, movedItem);
+
+        const updatedItems = newItems.map((n, i) => ({ ...n, order: i }));
+        reorderNavItems(updatedItems);
         triggerHaptic();
     };
 
@@ -181,8 +205,6 @@ export function CustomizationManager() {
                                 <h3 className="text-sm font-black text-white/50 uppercase tracking-widest">רכיבי בית</h3>
                             </div>
                         </div>
-                        <FeatureToggle featureKey="showMonthlyRoast" label="סיכום חודשי" description="תובנות עוקצניות מה-AI" icon={Zap} colorClass="orange" />
-                        <FeatureToggle featureKey="showSmartInsights" label="תובנות חכמות" description="זיהוי מגמות חריגות" icon={Sparkles} colorClass="purple" />
                         {widgets.map((widget) => {
                             const info = WIDGET_REGISTRY[widget.id];
                             if (!info) return null;
@@ -246,11 +268,60 @@ export function CustomizationManager() {
                             <Smartphone className="w-4 h-4 text-emerald-400" />
                             <h3 className="text-sm font-black text-white/50 uppercase tracking-widest">עמודי אפליקציה</h3>
                         </div>
-                        <FeatureToggle featureKey="enableStocks" label="עושר" description="נכסים, מזומן ושווי נקי" icon={TrendingUp} colorClass="emerald" />
-                        <FeatureToggle featureKey="enableStocksPage" label="מניות" description="תיק השקעות ודיבידנדים" icon={Rocket} colorClass="blue" />
-                        <FeatureToggle featureKey="enableSubscriptions" label="קבועות" description="ניהול מנויים והלוואות" icon={CreditCard} colorClass="purple" />
-                        <FeatureToggle featureKey="enableLounge" label="לובי" description="נווה-מדבר ומשחקיות" icon={Sparkles} colorClass="pink" />
-                        <FeatureToggle featureKey="enableWishlist" label="משאלות" description="מעקב אחר יעדי רכישה" icon={Gift} colorClass="orange" />
+                        {[...navItems].sort((a, b) => a.order - b.order).map((item) => {
+                            const info = NAV_ITEM_REGISTRY[item.id];
+                            if (!info) return null;
+                            const Icon = info.icon;
+                            const isActive = item.enabled;
+
+                            return (
+                                <motion.div
+                                    key={item.id}
+                                    variants={{
+                                        hidden: { opacity: 0, scale: 0.95, y: 10 },
+                                        visible: { opacity: 1, scale: 1, y: 0 }
+                                    }}
+                                    whileHover={{ scale: 1.02, y: -2 }}
+                                    className={cn(
+                                        "relative flex flex-col justify-between p-5 rounded-[2.2rem] border transition-all duration-500 cursor-pointer h-[160px] overflow-hidden group/item",
+                                        isActive
+                                            ? "bg-white/[0.05] border-white/20 shadow-xl"
+                                            : "bg-black/20 border-white/5 opacity-60 grayscale hover:opacity-100 h-[100px] grayscale-0"
+                                    )}
+                                    onClick={() => { toggleNavItem(item.id); triggerHaptic(); }}
+                                >
+                                    <div className="flex items-center justify-between relative z-10">
+                                        <div className={cn(
+                                            "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-700 border border-white/10",
+                                            isActive ? "bg-white/10 scale-110 rotate-3" : "bg-white/5"
+                                        )}>
+                                            <Icon className={cn("w-6 h-6", isActive ? info.color : "text-white/20")} />
+                                        </div>
+                                        <Switch checked={isActive} onCheckedChange={() => { }} className="pointer-events-none" />
+                                    </div>
+                                    <div className="relative z-10 pr-1">
+                                        <p className="text-[14px] font-black text-white tracking-tight">{info.label}</p>
+                                        <p className="text-[9px] text-white/30 font-medium leading-tight">ניהול תצוגה ומיקום בסרגל העליון</p>
+                                    </div>
+                                    {isActive && (
+                                        <div className="absolute top-2 left-2 flex flex-col gap-1">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); moveNavItem(navItems.findIndex(n => n.id === item.id), 'up'); }}
+                                                className="p-1 hover:bg-white/10 rounded-lg text-white/30 hover:text-white transition-colors"
+                                            >
+                                                <ChevronUp className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); moveNavItem(navItems.findIndex(n => n.id === item.id), 'down'); }}
+                                                className="p-1 hover:bg-white/10 rounded-lg text-white/30 hover:text-white transition-colors"
+                                            >
+                                                <ChevronDown className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            );
+                        })}
                     </>
                 )}
 

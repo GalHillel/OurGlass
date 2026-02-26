@@ -7,9 +7,15 @@ export interface WidgetConfig {
     order: number;
 }
 
+export interface NavItemConfig {
+    id: string;
+    enabled: boolean;
+    order: number;
+}
+
 export type FeatureKey =
     | 'enableStocks' | 'enableStocksPage' | 'enableWishlist' | 'enableSubscriptions' | 'enableSettlements' | 'enableLounge'
-    | 'showSP500Benchmark' | 'showDividendForecast' | 'showRebalancingCoach' | 'showMonthlyRoast' | 'showSmartInsights'
+    | 'showSP500Benchmark' | 'showDividendForecast' | 'showRebalancingCoach'
     // Wealth Page Features
     | 'wealthShowHistory' | 'wealthShowInsights' | 'wealthShowAssets' | 'wealthShowPortfolio' | 'wealthShowSummaryCards'
     // Subscriptions Page Features
@@ -18,7 +24,6 @@ export type FeatureKey =
     | 'loungeShowVibe' | 'loungeShowRoulette' | 'loungeShowTinder'
     // Wishlist Page Features
     | 'wishlistShowHarvester'
-    // Home Page Features
     | 'homeShowQuickActions';
 
 const DEFAULT_WIDGETS: WidgetConfig[] = [
@@ -38,6 +43,16 @@ const DEFAULT_WIDGETS: WidgetConfig[] = [
     { id: 'wishlist', enabled: true, order: 13 },
 ];
 
+const DEFAULT_NAV_ITEMS: NavItemConfig[] = [
+    { id: "home", enabled: true, order: 0 },
+    { id: "wealth", enabled: true, order: 1 },
+    { id: "stocks", enabled: true, order: 2 },
+    { id: "lounge", enabled: true, order: 3 },
+    { id: "subscriptions", enabled: true, order: 4 },
+    { id: "wishlist", enabled: true, order: 5 },
+    { id: "settings", enabled: true, order: 6 },
+];
+
 const DEFAULT_FEATURES: Record<FeatureKey, boolean> = {
     enableStocks: true,
     enableStocksPage: true,
@@ -48,8 +63,6 @@ const DEFAULT_FEATURES: Record<FeatureKey, boolean> = {
     showSP500Benchmark: true,
     showDividendForecast: true,
     showRebalancingCoach: true,
-    showMonthlyRoast: true,
-    showSmartInsights: true,
     // Wealth
     wealthShowHistory: true,
     wealthShowInsights: true,
@@ -68,16 +81,18 @@ const DEFAULT_FEATURES: Record<FeatureKey, boolean> = {
     loungeShowTinder: true,
     // Wishlist
     wishlistShowHarvester: true,
-    // Home
     homeShowQuickActions: true,
 };
 
 interface DashboardState {
     widgets: WidgetConfig[];
+    navItems: NavItemConfig[];
     features: Record<FeatureKey, boolean>;
     toggleWidget: (id: string) => void;
+    toggleNavItem: (id: string) => void;
     toggleFeature: (key: FeatureKey) => void;
     reorderWidgets: (newOrder: WidgetConfig[]) => void;
+    reorderNavItems: (newOrder: NavItemConfig[]) => void;
     _hasHydrated: boolean;
     setHasHydrated: (state: boolean) => void;
 }
@@ -86,11 +101,18 @@ export const useDashboardStore = create<DashboardState>()(
     persist(
         (set) => ({
             widgets: DEFAULT_WIDGETS,
+            navItems: DEFAULT_NAV_ITEMS,
             features: DEFAULT_FEATURES,
             toggleWidget: (id) =>
                 set((state) => ({
                     widgets: state.widgets.map((w) =>
                         w.id === id ? { ...w, enabled: !w.enabled } : w
+                    ),
+                })),
+            toggleNavItem: (id) =>
+                set((state) => ({
+                    navItems: state.navItems.map((n) =>
+                        n.id === id ? { ...n, enabled: !n.enabled } : n
                     ),
                 })),
             toggleFeature: (key) =>
@@ -101,13 +123,48 @@ export const useDashboardStore = create<DashboardState>()(
                     },
                 })),
             reorderWidgets: (newOrder) => set({ widgets: newOrder }),
+            reorderNavItems: (newOrder) => set({ navItems: newOrder }),
             _hasHydrated: false,
             setHasHydrated: (state) => set({ _hasHydrated: state }),
         }),
         {
             name: 'ourglass-dashboard-store',
-            onRehydrateStorage: (state) => {
-                return () => state.setHasHydrated(true);
+            version: 1,
+            migrate: (persistedState: any, version: number) => {
+                if (version === 0) {
+                    // Version 0 was the old state. Let's ensure new segments exist.
+                    return {
+                        ...persistedState,
+                        navItems: DEFAULT_NAV_ITEMS,
+                    };
+                }
+                return persistedState;
+            },
+            onRehydrateStorage: () => (state) => {
+                if (state) {
+                    // Self-healing: Ensure all default widgets exist in the rehydrated state
+                    const currentWidgetIds = (state.widgets || []).map(w => w.id);
+                    const missingWidgets = DEFAULT_WIDGETS.filter(w => !currentWidgetIds.includes(w.id));
+
+                    if (missingWidgets.length > 0) {
+                        state.widgets = [
+                            ...(state.widgets || []),
+                            ...missingWidgets.map(w => ({ ...w, order: (state.widgets || []).length + w.order }))
+                        ];
+                    }
+
+                    // Self-healing: Ensure all default nav items exist
+                    const currentNavIds = state.navItems?.map(n => n.id) || [];
+                    const missingNavItems = DEFAULT_NAV_ITEMS.filter(n => !currentNavIds.includes(n.id));
+
+                    if (missingNavItems.length > 0) {
+                        state.navItems = [
+                            ...(state.navItems || []),
+                            ...missingNavItems
+                        ];
+                    }
+                    state.setHasHydrated(true);
+                }
             }
         }
     )

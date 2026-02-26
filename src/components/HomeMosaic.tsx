@@ -108,7 +108,7 @@ export const HomeMosaic = React.memo(({
     const [isEditModeOpen, setIsEditModeOpen] = useState(false);
 
     const isStealthMode = useAppStore(useShallow(s => s.isStealthMode));
-    const { widgets, features, _hasHydrated } = useDashboardStore(useShallow(s => ({
+    const { widgets = [], features = {} as any, _hasHydrated = false } = useDashboardStore(useShallow(s => ({
         widgets: s.widgets,
         features: s.features,
         _hasHydrated: s._hasHydrated
@@ -199,7 +199,6 @@ export const HomeMosaic = React.memo(({
                     </div>
                 );
             case 'smart-insights':
-                if (!features.showSmartInsights) return null;
                 return (
                     <div key={key} className="col-span-2">
                         <SmartInsights
@@ -212,7 +211,6 @@ export const HomeMosaic = React.memo(({
                     </div>
                 );
             case 'monthly-roast':
-                if (!features.showMonthlyRoast) return null;
                 return (
                     <div key={key} className="col-span-2">
                         <MonthlyRoastPraise

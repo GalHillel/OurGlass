@@ -26,8 +26,14 @@ import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 export default function SubscriptionsPage() {
     const isStealthMode = useAppStore(s => s.isStealthMode);
-    const features = useDashboardStore((s) => s.features);
-    const { subsShowIndicator, subsShowLiabilities, subsShowGhost, subsShowKiller, subsShowSummary } = features;
+    const features = useDashboardStore((s) => s.features) || ({} as any);
+    const {
+        subsShowIndicator = true,
+        subsShowLiabilities = true,
+        subsShowGhost = true,
+        subsShowKiller = true,
+        subsShowSummary = true
+    } = features;
     const { profile } = useAuth();
     const queryClient = useQueryClient();
     const { data: subscriptions = [], isLoading: loading } = useSubscriptions();

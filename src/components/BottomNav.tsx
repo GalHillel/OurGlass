@@ -6,8 +6,9 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { triggerHaptic } from "@/utils/haptics";
 import { cn } from "@/lib/utils";
-import { useDashboardStore, FeatureKey } from "@/stores/dashboardStore";
+import { useDashboardStore, FeatureKey, NavItemConfig } from "@/stores/dashboardStore";
 import { useMemo } from "react";
+import { useShallow } from 'zustand/react/shallow';
 
 interface NavItem {
     id: string;
@@ -17,7 +18,7 @@ interface NavItem {
     featureKey?: FeatureKey;
 }
 
-const navItems: NavItem[] = [
+const navItemsRegistry: NavItem[] = [
     { id: "home", label: "בית", icon: Home, path: "/" },
     { id: "wealth", label: "עושר", icon: Gem, path: "/wealth", featureKey: "enableStocks" },
     { id: "stocks", label: "מניות", icon: Rocket, path: "/stocks", featureKey: "enableStocksPage" },
@@ -29,15 +30,26 @@ const navItems: NavItem[] = [
 
 export const BottomNav = () => {
     const pathname = usePathname();
-    const features = useDashboardStore((s) => s.features);
+    const { navItems, features, _hasHydrated } = useDashboardStore(useShallow((s) => ({
+        navItems: s.navItems,
+        features: s.features,
+        _hasHydrated: s._hasHydrated
+    })));
 
-    const visibleItems = useMemo(
-        () => navItems.filter((item) => !item.featureKey || features[item.featureKey]),
-        [features]
-    );
+    const visibleItems = useMemo(() => {
+        if (!_hasHydrated) return [];
+        return [...navItems]
+            .filter(item => item.enabled)
+            .sort((a, b) => a.order - b.order)
+            .map(item => {
+                const baseItem = navItemsRegistry.find(n => n.id === item.id);
+                return baseItem ? { ...baseItem, ...item } : null;
+            })
+            .filter((n): n is NavItem & NavItemConfig => n !== null && (!n.featureKey || (features as any)[n.featureKey]));
+    }, [navItems, features, _hasHydrated]);
 
-    // Don't show on login page
-    if (pathname === "/login") return null;
+    // Don't show on login page or before hydration
+    if (pathname === "/login" || !_hasHydrated) return null;
 
     return (
         <div className="fixed bottom-0 left-0 right-0 px-4 pb-[env(safe-area-inset-bottom)] pt-3 z-50 pointer-events-none">
