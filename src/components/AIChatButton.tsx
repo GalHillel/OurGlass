@@ -242,14 +242,14 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
                 className="fixed bottom-28 left-6 z-50"
                 dir="rtl"
             >
-                {/* Notification Bubble */}
+                {/* Notification Bubble - Premium Redesign */}
                 <AnimatePresence>
                     {bubbleMessage && (
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.8, x: 20 }}
-                            animate={{ opacity: 1, scale: 1, x: 0 }}
-                            exit={{ opacity: 0, scale: 0.8, x: 20 }}
-                            className="absolute bottom-full left-0 mb-4 w-48 p-3 bg-violet-600 text-white text-[11px] font-bold rounded-2xl rounded-bl-none shadow-xl border border-white/20 group/bubble"
+                            initial={{ opacity: 0, scale: 0.9, y: 10, filter: "blur(10px)" }}
+                            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+                            exit={{ opacity: 0, scale: 0.9, y: 10, filter: "blur(10px)" }}
+                            className="absolute bottom-full left-0 mb-6 w-56 p-4 bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] group/bubble"
                         >
                             <button
                                 onClick={(e) => {
@@ -258,36 +258,58 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
                                     setBubbleDismissed(true);
                                     triggerHaptic();
                                 }}
-                                className="absolute -top-3 -right-3 w-8 h-8 bg-slate-900 border border-white/20 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-all shadow-xl z-20 active:scale-90"
-                                aria-label="סגור הצעה"
+                                className="absolute -top-2 -right-2 w-6 h-6 bg-slate-800 border border-white/10 rounded-full flex items-center justify-center text-white/40 hover:text-white transition-all shadow-lg z-20 active:scale-90"
                             >
-                                <X className="w-4 h-4" />
+                                <X className="w-3 h-3" />
                             </button>
-                            {bubbleMessage}
-                            <div className="absolute -bottom-2 left-0 w-4 h-4 bg-violet-600 transform rotate-45" />
+
+                            <div className="flex flex-col gap-2 text-right">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Sparkles className="w-3 h-3 text-violet-400" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-white/30">תובנה חכמה</span>
+                                </div>
+                                <p className="text-[12px] font-bold text-white/90 leading-relaxed">
+                                    {bubbleMessage}
+                                </p>
+                            </div>
+
+                            {/* Decorative Glow */}
+                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/5 to-transparent pointer-events-none" />
                         </motion.div>
                     )}
                 </AnimatePresence>
 
                 <button
                     onClick={handleOpen}
-                    className="relative w-14 h-14 rounded-full bg-[#0c0f1a] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex items-center justify-center overflow-hidden group"
+                    className="relative w-14 h-14 rounded-full glass-panel shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex items-center justify-center overflow-hidden group"
                 >
-                    {/* Siri Orb Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-blue-600 to-cyan-500 opacity-80" />
+                    {/* Quantum Orb Effect */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-950" />
                     <motion.div
                         animate={{
-                            scale: [1, 1.2, 1],
-                            opacity: [0.5, 0.8, 0.5],
+                            scale: [1, 1.2, 0.9, 1.1, 1],
+                            opacity: [0.3, 0.6, 0.2, 0.5, 0.3],
                         }}
                         transition={{
-                            duration: 3,
+                            duration: 5,
                             repeat: Infinity,
                             ease: "easeInOut"
                         }}
-                        className="absolute inset-0 bg-white/20 blur-xl"
+                        className="absolute inset-0 bg-violet-500/30 blur-2xl"
                     />
-                    <Sparkles className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
+                    <motion.div
+                        animate={{
+                            scale: [1.2, 1, 1.3, 0.8, 1.2],
+                            opacity: [0.2, 0.4, 0.1, 0.3, 0.2],
+                        }}
+                        transition={{
+                            duration: 7,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                        className="absolute inset-0 bg-cyan-500/20 blur-2xl translate-x-1"
+                    />
+                    <Sparkles className="w-6 h-6 text-white relative z-10 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
                 </button>
             </motion.div>
 

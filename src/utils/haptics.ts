@@ -17,11 +17,15 @@ const PATTERNS: Record<HapticPattern, number | number[]> = {
     double: [15, 30, 15], // Two taps — confirmations
 };
 
-function vibrate(pattern: number | number[]) {
+function vibrate(pattern: number | number[]): boolean {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(pattern);
+        return navigator.vibrate(pattern);
     }
+    return false;
 }
+
+/** Check if haptics are supported/enabled */
+export const supportsHaptics = () => typeof navigator !== 'undefined' && !!navigator.vibrate;
 
 /** Light tap — navigation, browsing */
 export const triggerHaptic = () => vibrate(PATTERNS.light);
@@ -47,10 +51,10 @@ export const hapticConfirm = () => vibrate(PATTERNS.double);
  */
 export const hapticForAmount = (amount: number) => {
     if (amount >= 1000) {
-        vibrate(PATTERNS.heavy);
+        return vibrate(PATTERNS.heavy);
     } else if (amount >= 300) {
-        vibrate(PATTERNS.medium);
+        return vibrate(PATTERNS.medium);
     } else {
-        vibrate(PATTERNS.light);
+        return vibrate(PATTERNS.light);
     }
 };

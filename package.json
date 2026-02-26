@@ -48,6 +48,7 @@
     "use-sound": "^5.0.0",
     "vaul": "^1.1.2",
     "web-push": "^1.0.2",
+    "zod": "^4.3.6",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
@@ -59,6 +60,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "@vitest/coverage-v8": "^4.0.18",
     "baseline-browser-mapping": "^2.9.19",
     "eslint": "^9",

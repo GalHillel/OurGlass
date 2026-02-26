@@ -64,7 +64,7 @@ export const PartnerStats = ({ transactions, subscriptions = [], liabilities = [
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 + (i * 0.1) }}
-                    className="flex flex-col items-center justify-center p-3 rounded-2xl border border-white/10 bg-slate-950/50 backdrop-blur-xl shadow-lg relative overflow-hidden"
+                    className="flex flex-col items-center justify-center p-3 glass-card-inner shadow-lg relative overflow-hidden"
                 >
                     <div className="absolute inset-0 bg-blue-500/5 pointer-events-none" />
 

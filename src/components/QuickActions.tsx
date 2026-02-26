@@ -58,7 +58,7 @@ export const QuickActions = ({ onAction }: { onAction: (id: string, label: strin
                     }}
                     className="flex flex-col items-center gap-1.5 group"
                 >
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-slate-900/40 bg-cyan-500/10 backdrop-blur-md border border-white/10 shadow-lg active:scale-95 transition-all duration-150 group-hover:bg-cyan-500/20 ${action.color}`}>
+                    <div className={`w-14 h-14 glass-card-inner flex items-center justify-center bg-cyan-500/10 shadow-lg active:scale-95 transition-all duration-150 group-hover:bg-cyan-500/20 ${action.color}`}>
                         <action.icon className="w-6 h-6 stroke-[1.5]" />
                     </div>
                     <span className="text-[10px] font-medium text-white/60 whitespace-nowrap">{action.label}</span>

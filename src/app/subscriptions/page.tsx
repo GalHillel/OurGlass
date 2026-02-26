@@ -18,6 +18,8 @@ import { useAuth } from "@/components/AuthProvider";
 import { SubscriptionKiller } from "@/components/SubscriptionKiller";
 import { GhostSubscriptions } from "@/components/GhostSubscriptions";
 import { LiabilitiesSection } from "@/components/LiabilitiesSection";
+import { useSubscriptions, useGlobalCashflow } from "@/hooks/useJointFinance";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { AddSubscriptionDialog, CATEGORIES } from "@/components/AddSubscriptionDialog";
 import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
@@ -26,42 +28,26 @@ export default function SubscriptionsPage() {
     const isStealthMode = useAppStore(s => s.isStealthMode);
     const features = useDashboardStore((s) => s.features);
     const { subsShowIndicator, subsShowLiabilities, subsShowGhost, subsShowKiller, subsShowSummary } = features;
-    const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { profile } = useAuth();
+    const queryClient = useQueryClient();
+    const { data: subscriptions = [], isLoading: loading } = useSubscriptions();
 
     // Form State
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingSub, setEditingSub] = useState<Subscription | null>(null);
     const [selectedGhost, setSelectedGhost] = useState<{ name: string; amount: number } | null>(null);
 
-    const { profile } = useAuth();
-    const supabaseRef = useRef(createClient());
-    const supabase = supabaseRef.current;
-
-    const fetchSubscriptions = useCallback(async () => {
+    const handleUpdateStatus = async (id: string, status: Subscription['status']) => {
         try {
-            setLoading(true);
-            const { data, error } = await supabase
-                .from('subscriptions')
-                .select('*')
-                .order('amount', { ascending: false });
-
-            if (error) {
-                console.error("Supabase error fetching subscriptions:", error);
-                toast.error("שגיאה בטעינת מנויים");
-                throw error;
-            }
-            setSubscriptions(data || []);
-        } catch (error) {
-            console.error("Error fetching subscriptions:", error);
-        } finally {
-            setLoading(false);
+            const { error } = await createClient().from('subscriptions').update({ status }).eq('id', id);
+            if (error) throw error;
+            toast.success("סטטוס המנוי עודכן");
+            queryClient.invalidateQueries({ queryKey: ['subscriptions', profile?.couple_id] });
+            queryClient.invalidateQueries({ queryKey: ['global-cashflow', profile?.couple_id] });
+        } catch (error: any) {
+            toast.error("שגיאה בעדכון הסטטוס");
         }
-    }, [supabase]);
-
-    useEffect(() => {
-        fetchSubscriptions();
-    }, [fetchSubscriptions]);
+    };
 
     const openAddDialog = () => {
         setEditingSub(null);
@@ -77,14 +63,20 @@ export default function SubscriptionsPage() {
 
     const handleDelete = async (id: string) => {
         try {
-            const { error } = await supabase.from('subscriptions').delete().eq('id', id);
+            const { error } = await createClient().from('subscriptions').delete().eq('id', id);
             if (error) throw error;
             toast.success("מנוי הוסר");
-            fetchSubscriptions();
-        } catch (error: unknown) {
-            const err = error as { message?: string };
-            toast.error("שגיאה במחיקה", { description: err.message });
+            queryClient.invalidateQueries({ queryKey: ['subscriptions', profile?.couple_id] });
+            queryClient.invalidateQueries({ queryKey: ['global-cashflow', profile?.couple_id] });
+        } catch (error: any) {
+            toast.error("שגיאה במחיקה");
         }
+    };
+
+    const handleSuccess = () => {
+        setIsDialogOpen(false);
+        queryClient.invalidateQueries({ queryKey: ['subscriptions', profile?.couple_id] });
+        queryClient.invalidateQueries({ queryKey: ['global-cashflow', profile?.couple_id] });
     };
 
     const { activeLiabilities = [], monthlyPayments: totalDebtMonthly = 0 } = useTotalLiabilities();
@@ -272,6 +264,7 @@ export default function SubscriptionsPage() {
                 <SubscriptionKiller
                     subscriptions={subscriptions}
                     onDelete={handleDelete}
+                    onUpdateStatus={handleUpdateStatus}
                 />
             )}
 
@@ -284,7 +277,7 @@ export default function SubscriptionsPage() {
                 }}
                 editingSub={editingSub}
                 initialData={selectedGhost}
-                onSuccess={fetchSubscriptions}
+                onSuccess={handleSuccess}
             />
 
             {/* Final bottom spacer for edge-to-edge layout accessibility */}

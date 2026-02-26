@@ -78,6 +78,8 @@ interface DashboardState {
     toggleWidget: (id: string) => void;
     toggleFeature: (key: FeatureKey) => void;
     reorderWidgets: (newOrder: WidgetConfig[]) => void;
+    _hasHydrated: boolean;
+    setHasHydrated: (state: boolean) => void;
 }
 
 export const useDashboardStore = create<DashboardState>()(
@@ -99,9 +101,14 @@ export const useDashboardStore = create<DashboardState>()(
                     },
                 })),
             reorderWidgets: (newOrder) => set({ widgets: newOrder }),
+            _hasHydrated: false,
+            setHasHydrated: (state) => set({ _hasHydrated: state }),
         }),
         {
             name: 'ourglass-dashboard-store',
+            onRehydrateStorage: (state) => {
+                return () => state.setHasHydrated(true);
+            }
         }
     )
 );

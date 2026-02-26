@@ -64,6 +64,8 @@ export interface HomeMosaicProps {
     usdToIls?: number;
     viewingDate: Date;
     onViewingDateChange: (date: Date | ((prev: Date) => Date)) => void;
+    onUpdateStatus?: (id: string, status: Subscription['status']) => void;
+    onDeleteSubscription?: (id: string) => void;
 }
 
 import React, { useState, useMemo } from "react";
@@ -74,6 +76,8 @@ import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 import { format, subMonths, addMonths } from "date-fns";
 import { he } from "date-fns/locale";
 import { getBillingPeriodForDate } from "@/lib/billing";
+
+import { useShallow } from 'zustand/react/shallow';
 
 export const HomeMosaic = React.memo(({
     balance,
@@ -97,12 +101,24 @@ export const HomeMosaic = React.memo(({
     onRefresh,
     usdToIls,
     viewingDate,
-    onViewingDateChange
+    onViewingDateChange,
+    onUpdateStatus,
+    onDeleteSubscription,
 }: HomeMosaicProps) => {
     const [isEditModeOpen, setIsEditModeOpen] = useState(false);
 
-    const { isStealthMode } = useAppStore();
-    const { widgets, features } = useDashboardStore();
+    const isStealthMode = useAppStore(useShallow(s => s.isStealthMode));
+    const { widgets, features, _hasHydrated } = useDashboardStore(useShallow(s => ({
+        widgets: s.widgets,
+        features: s.features,
+        _hasHydrated: s._hasHydrated
+    })));
+
+    if (!_hasHydrated) {
+        return <div className="w-full max-w-md px-4 min-h-[50vh] flex items-center justify-center">
+            <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+        </div>;
+    }
 
     // -- Calculations for Tiles --
     const budgetUsedPercent = useMemo(() => Math.min(100, Math.round((totalExpenses / budget) * 100)), [totalExpenses, budget]);
@@ -125,7 +141,7 @@ export const HomeMosaic = React.memo(({
             case 'reactor':
                 return (
                     <div key={key} className="col-span-2 mb-2">
-                        <div className="bg-slate-900/40 backdrop-blur-xl rounded-[3rem] border border-white/5 overflow-hidden relative">
+                        <div className="glass-panel overflow-hidden relative">
                             <div className="absolute inset-0 bg-blue-500/5 pointer-events-none" />
                             <ReactorCore
                                 income={monthlyIncome}
@@ -153,9 +169,9 @@ export const HomeMosaic = React.memo(({
                             <div className="flex items-center gap-2.5 px-4 py-2 bg-white/5 rounded-2xl border border-white/10">
                                 <CalendarRange className="w-4 h-4 text-blue-400" />
                                 <span className="text-sm font-bold text-white/90">
-                                    {format(getBillingPeriodForDate(viewingDate).start, 'd.M', { locale: he })}
+                                    {format(getBillingPeriodForDate(viewingDate).start, 'd בMMMM', { locale: he })}
                                     {' - '}
-                                    {format(getBillingPeriodForDate(viewingDate).end, 'd.M', { locale: he })}
+                                    {format(getBillingPeriodForDate(viewingDate).end, 'd בMMMM', { locale: he })}
                                 </span>
                             </div>
                             <button
@@ -220,7 +236,7 @@ export const HomeMosaic = React.memo(({
                                 whileTap={{ scale: 0.95 }}
                                 className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
                             >
-                                <div className="absolute inset-0 bg-blue-400/5 group-hover:bg-blue-400/10 transition-colors" />
+                                <div className="absolute inset-0 bg-sky-400/5 group-hover:bg-sky-400/10 transition-colors" />
                                 <div className="flex justify-between items-start relative z-10">
                                     <div className="p-2 bg-blue-500/20 rounded-xl">
                                         <HeartPulse className="w-5 h-5 text-blue-300" />
@@ -263,7 +279,7 @@ export const HomeMosaic = React.memo(({
                             <motion.div
                                 layout
                                 whileTap={{ scale: 0.95 }}
-                                className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
+                                className="aspect-[4/3] glass-panel p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-emerald-400/5 group-hover:bg-emerald-400/10 transition-colors" />
                                 <div className="flex justify-between items-start relative z-10">
@@ -302,7 +318,7 @@ export const HomeMosaic = React.memo(({
                             key={key}
                             layout
                             whileTap={{ scale: 0.95 }}
-                            className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-6 flex flex-col items-center justify-center gap-2 text-center"
+                            className="aspect-[4/3] glass-panel p-6 flex flex-col items-center justify-center gap-2 text-center opacity-60"
                         >
                             <div className="p-3 bg-purple-500/10 rounded-full">
                                 <Rocket className="w-6 h-6 text-purple-300/30" />
@@ -318,7 +334,7 @@ export const HomeMosaic = React.memo(({
                             <motion.div
                                 layout
                                 whileTap={{ scale: 0.95 }}
-                                className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
+                                className="aspect-[4/3] glass-panel p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-purple-400/5 group-hover:bg-purple-400/10 transition-colors" />
                                 <div className="p-3 bg-purple-500/20 rounded-full relative z-10">
@@ -349,7 +365,7 @@ export const HomeMosaic = React.memo(({
                             <motion.div
                                 layout
                                 whileTap={{ scale: 0.95 }}
-                                className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
+                                className="aspect-[4/3] glass-panel p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-amber-400/5 group-hover:bg-amber-400/10 transition-colors" />
                                 <div className="p-3 bg-amber-500/20 rounded-full relative z-10">
@@ -427,7 +443,7 @@ export const HomeMosaic = React.memo(({
                             <motion.div
                                 layout
                                 whileTap={{ scale: 0.95 }}
-                                className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
+                                className="aspect-[4/3] glass-panel p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-cyan-400/5 group-hover:bg-cyan-400/10 transition-colors" />
                                 <div className="p-3 bg-cyan-500/20 rounded-full relative z-10">
@@ -457,7 +473,7 @@ export const HomeMosaic = React.memo(({
                             <motion.div
                                 layout
                                 whileTap={{ scale: 0.95 }}
-                                className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
+                                className="aspect-[4/3] glass-panel p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-pink-400/5 group-hover:bg-pink-400/10 transition-colors" />
                                 <div className="p-3 bg-pink-500/20 rounded-full relative z-10">
@@ -487,7 +503,7 @@ export const HomeMosaic = React.memo(({
                             <motion.div
                                 layout
                                 whileTap={{ scale: 0.95 }}
-                                className="col-span-2 bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex items-center justify-between group cursor-pointer"
+                                className="col-span-2 glass-panel p-6 relative overflow-hidden flex items-center justify-between group cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-indigo-400/5 group-hover:bg-indigo-400/10 transition-colors" />
                                 <div className="flex items-center gap-3 relative z-10">
@@ -523,7 +539,7 @@ export const HomeMosaic = React.memo(({
                             <motion.div
                                 layout
                                 whileTap={{ scale: 0.95 }}
-                                className="col-span-2 bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex items-center justify-between group cursor-pointer"
+                                className="col-span-2 glass-panel p-6 relative overflow-hidden flex items-center justify-between group cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-rose-400/5 group-hover:bg-rose-400/10 transition-colors" />
                                 <div className="flex items-center gap-3 relative z-10">
@@ -566,7 +582,7 @@ export const HomeMosaic = React.memo(({
                         layout
                         whileTap={{ scale: 0.95 }}
                         onClick={() => window.location.href = '/subscriptions'}
-                        className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
+                        className="aspect-[4/3] glass-panel p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
                     >
                         <div className="absolute inset-0 bg-blue-400/5 group-hover:bg-blue-400/10 transition-colors" />
                         <div className="flex justify-between items-start relative z-10">
@@ -590,7 +606,7 @@ export const HomeMosaic = React.memo(({
                         layout
                         whileTap={{ scale: 0.95 }}
                         onClick={() => window.location.href = '/wishlist'}
-                        className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
+                        className="aspect-[4/3] glass-panel p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
                     >
                         <div className="absolute inset-0 bg-pink-400/5 group-hover:bg-pink-400/10 transition-colors" />
                         <div className="flex justify-between items-start relative z-10">

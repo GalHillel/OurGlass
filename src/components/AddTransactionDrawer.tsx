@@ -120,11 +120,10 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
             const previousTransactions = queryClient.getQueryData(['transactions']);
 
             if (payload.txData && !initialData && !payload.txs) {
-                queryClient.setQueriesData({ queryKey: ['transactions'] }, (old: any) => {
-                    const maxId = Array.isArray(old) ? Math.max(0, ...old.map((t: any) => t.id || 0)) : 0;
+                queryClient.setQueriesData({ queryKey: ['transactions', profile?.couple_id] }, (old: any) => {
                     const optimisticTx = {
                         ...payload.txData,
-                        id: maxId + 1,
+                        id: crypto.randomUUID(),
                         created_at: new Date().toISOString()
                     };
                     return Array.isArray(old) ? [optimisticTx, ...old] : [optimisticTx];
@@ -317,7 +316,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
     };
 
     return (
-        <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()} dismissible={false}>
+        <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()} dismissible={true}>
             <DrawerContent className="bg-slate-950/95 backdrop-blur-3xl border-t border-white/10 h-[95dvh] flex flex-col outline-none">
 
                 {/* Header Actions */}

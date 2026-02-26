@@ -30,6 +30,10 @@ interface AppState {
     /** Global Privacy Stealth Mode */
     isStealthMode: boolean;
     toggleStealthMode: () => void;
+
+    /** Hydration tracking */
+    _hasHydrated: boolean;
+    setHasHydrated: (state: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -56,6 +60,9 @@ export const useAppStore = create<AppState>()(
 
             isStealthMode: false,
             toggleStealthMode: () => set((state) => ({ isStealthMode: !state.isStealthMode })),
+
+            _hasHydrated: false,
+            setHasHydrated: (state) => set({ _hasHydrated: state }),
         }),
         {
             name: 'ourglass-store', // unique name for localStorage
@@ -64,6 +71,9 @@ export const useAppStore = create<AppState>()(
                 activeTab: state.activeTab,
                 isStealthMode: state.isStealthMode
             }), // persist these fields
+            onRehydrateStorage: (state) => {
+                return () => state.setHasHydrated(true);
+            }
         }
     )
 );

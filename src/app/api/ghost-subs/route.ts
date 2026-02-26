@@ -70,7 +70,7 @@ export async function GET() {
         `;
 
         const { text } = await generateText({
-            model: google("gemini-2.5-flash"),
+            model: google('gemini-2.5-flash'),
             system: "You are a sharp financial forensic auditor. Respond only with JSON.",
             prompt: prompt,
         });

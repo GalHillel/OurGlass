@@ -59,6 +59,7 @@ export interface Subscription {
     category_id?: string | null;
     category?: string;
     active: boolean;
+    status?: 'active' | 'to_cancel' | 'processing' | 'saved';
     usage_rating: number | null;
     last_auto_transaction: string | null;
     created_at: string;
