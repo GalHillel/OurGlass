@@ -34,7 +34,8 @@ import { RebalancingCoach } from "@/components/RebalancingCoach";
 import { useLiabilities } from "@/hooks/useWealthData";
 import { useDashboardStore } from "@/stores/dashboardStore";
 import { useAppStore } from "@/stores/appStore";
-import { formatAmount } from "@/lib/utils";
+import { cn, formatAmount } from "@/lib/utils";
+import { triggerHaptic } from "@/utils/haptics";
 
 export default function WealthPage() {
     const isStealthMode = useAppStore(s => s.isStealthMode);
@@ -165,7 +166,7 @@ export default function WealthPage() {
             {/* Row 2: SIDE BY SIDE Cards */}
             {wealthShowSummaryCards && (
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="neon-card p-4 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
+                    <div className="neon-card p-4 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden group">
                         <div className="absolute -right-4 -top-4 w-20 h-20 bg-purple-500/20 rounded-full blur-xl group-hover:bg-purple-500/30 transition-all" />
                         <span className="text-purple-300 text-[10px] font-bold tracking-widest uppercase mb-1">השקעות וחסכונות</span>
                         {loading ? (
@@ -176,7 +177,7 @@ export default function WealthPage() {
                             </div>
                         )}
                     </div>
-                    <div className="neon-card p-4 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
+                    <div className="neon-card p-4 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden group">
                         <div className="absolute -right-4 -top-4 w-20 h-20 bg-emerald-500/20 rounded-full blur-xl group-hover:bg-emerald-500/30 transition-all" />
                         <span className="text-emerald-300 text-[10px] font-bold tracking-widest uppercase mb-1">פקדונות ומזומן</span>
                         {loading ? (
@@ -237,17 +238,28 @@ export default function WealthPage() {
             {/* Live Portfolio - REMOVED (Moved to Stocks Page) */}
 
             {/* Filter Tabs */}
-            <div className="flex gap-2 p-1 bg-white/5 rounded-2xl mx-2 overflow-x-auto no-scrollbar">
+            <div className="mx-2 mb-2 p-1.5 bg-slate-900/50 backdrop-blur-xl rounded-[2rem] border border-white/5 flex gap-1 items-center justify-center">
                 {visibleTabs.map((tab) => (
                     <button
                         key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`whitespace-nowrap px-4 py-3 text-xs font-bold rounded-xl transition-all duration-300 ${activeTab === tab
-                            ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.5)] scale-105"
-                            : "text-white/40 hover:bg-white/5 hover:text-white"
-                            }`}
+                        onClick={() => {
+                            setActiveTab(tab);
+                            triggerHaptic();
+                        }}
+                        className={cn(
+                            "flex-1 min-w-[70px] py-3 text-xs font-bold rounded-[1.5rem] transition-all duration-300 relative",
+                            activeTab === tab
+                                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20 scale-105"
+                                : "text-white/40 hover:bg-white/5 hover:text-white"
+                        )}
                     >
                         {tab}
+                        {activeTab === tab && (
+                            <motion.div
+                                layoutId="activeTabGlow"
+                                className="absolute inset-0 bg-blue-400/5 blur-xl pointer-events-none rounded-full"
+                            />
+                        )}
                     </button>
                 ))}
             </div>

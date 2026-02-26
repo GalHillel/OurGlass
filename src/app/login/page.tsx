@@ -8,8 +8,7 @@ import { LoadingSplash } from "@/components/LoadingSplash";
 
 export default function LoginPage() {
     const router = useRouter();
-    const supabaseRef = useRef(createClient());
-    const supabase = supabaseRef.current;
+    const supabase = useRef(createClient()).current;
     const [hasError, setHasError] = useState(false);
     const [cooldownSeconds, setCooldownSeconds] = useState(0);
     const attemptedLogin = useRef(false);

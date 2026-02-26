@@ -70,32 +70,35 @@ export function LiabilitiesSection() {
 
     return (
         <section className="space-y-4">
-            <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/95 to-slate-800/80 p-4">
-                <div className="flex items-end justify-between gap-3">
-                    <div>
-                        <h2 className="text-sm font-bold text-red-300/90 uppercase tracking-widest flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4" /> ניהול החזר חובות
-                        </h2>
-                        <p className="text-[11px] text-white/60 mt-1">ממויין לפי ריבית (Avalanche) כדי לסגור קודם את היקר ביותר</p>
+            <div className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-xl p-8 group shadow-2xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 via-transparent to-orange-500/5 opacity-50" />
+                <div className="relative z-10">
+                    <div className="flex items-end justify-between gap-3">
+                        <div>
+                            <h2 className="text-sm font-bold text-red-300/90 uppercase tracking-widest flex items-center gap-2">
+                                <TrendingUp className="w-4 h-4" /> ניהול החזר חובות
+                            </h2>
+                            <p className="text-[11px] text-white/60 mt-1">ממויין לפי ריבית (Avalanche) כדי לסגור קודם את היקר ביותר</p>
+                        </div>
+                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button size="sm" className="bg-red-600/90 hover:bg-red-600 text-white rounded-full text-xs font-bold">
+                                    <Plus className="w-4 h-4 ml-1" /> הוסף חוב
+                                </Button>
+                            </DialogTrigger>
+                            <AddLiabilityDialog onClose={() => setIsDialogOpen(false)} />
+                        </Dialog>
                     </div>
-                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button size="sm" className="bg-red-600/90 hover:bg-red-600 text-white rounded-full text-xs font-bold">
-                                <Plus className="w-4 h-4 ml-1" /> הוסף חוב
-                            </Button>
-                        </DialogTrigger>
-                        <AddLiabilityDialog onClose={() => setIsDialogOpen(false)} />
-                    </Dialog>
-                </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                        <p className="text-[10px] text-white/50">סה״כ יתרת חוב</p>
-                        <p className="text-lg font-black text-red-300">{formatAmount(totalDebt, isStealthMode, CURRENCY_SYMBOL, '***')}</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                        <p className="text-[10px] text-white/50">תשלומי חוב פעילים / חודש</p>
-                        <p className="text-lg font-black text-orange-300">{formatAmount(totalMonthly, isStealthMode, CURRENCY_SYMBOL, '***')}</p>
+                    <div className="mt-8 grid grid-cols-2 gap-4">
+                        <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 group-hover:bg-white/[0.08] transition-colors">
+                            <p className="text-[10px] text-white/30 font-black uppercase tracking-[0.2em] mb-1">סה״כ יתרת חוב</p>
+                            <p className="text-2xl font-black text-white font-mono tracking-tighter tabular-nums">{formatAmount(totalDebt, isStealthMode, CURRENCY_SYMBOL, '***')}</p>
+                        </div>
+                        <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 group-hover:bg-white/[0.08] transition-colors">
+                            <p className="text-[10px] text-white/30 font-black uppercase tracking-[0.2em] mb-1">החזר חודשי</p>
+                            <p className="text-2xl font-black text-rose-400 font-mono tracking-tighter tabular-nums">{formatAmount(totalMonthly, isStealthMode, CURRENCY_SYMBOL, '***')}</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -150,9 +153,9 @@ function LiabilityCard({ liability, isStealthMode }: { liability: Liability, isS
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={cn(
-                    "relative overflow-hidden p-5 rounded-2xl border transition-all duration-300",
+                    "relative overflow-hidden p-6 rounded-[1.5rem] border transition-all duration-300",
                     isActive
-                        ? "bg-white/[0.03] border-white/10 hover:border-white/20 hover:bg-white/[0.05]"
+                        ? "bg-slate-900/40 backdrop-blur-md border-white/10 hover:border-white/20 hover:bg-white/[0.05]"
                         : "bg-emerald-500/5 border-emerald-500/10 grayscale-[0.5]"
                 )}
             >

@@ -95,7 +95,7 @@ export const useWealth = () => {
                         const lastCalcDate = new Date(asset.last_interest_calc);
                         const today = new Date();
                         const diffTime = today.getTime() - lastCalcDate.getTime();
-                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 30.44)); // Approximation or diff in days?
+                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
                         if (diffDays >= 1) {
                             const dailyRate = (Number(asset.interest_rate) / 100) / 365;

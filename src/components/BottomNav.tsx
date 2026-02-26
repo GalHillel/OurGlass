@@ -42,7 +42,7 @@ export const BottomNav = () => {
     return (
         <div className="fixed bottom-0 left-0 right-0 px-4 pb-[env(safe-area-inset-bottom)] pt-3 z-50 pointer-events-none">
             {/* Floating Rounded Nav Container */}
-            <nav className="rounded-3xl flex justify-around items-center p-2 backdrop-blur-xl bg-[#0c0f1a]/60 border border-white/[0.08] pointer-events-auto shadow-[0_0_40px_rgba(0,0,0,0.5)] max-w-md mx-auto">
+            <nav className="rounded-full flex justify-around items-center p-2.5 backdrop-blur-xl bg-[#0c0f1a]/70 border border-white/[0.08] pointer-events-auto shadow-[0_20px_50px_rgba(0,0,0,0.6)] max-w-md mx-auto">
                 {visibleItems.map((item) => {
                     const isActive = pathname === item.path;
                     return (

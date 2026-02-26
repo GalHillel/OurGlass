@@ -48,7 +48,7 @@ export const DividendForecast = ({ assets = [] }: DividendForecastProps) => {
     const totalForecast = upcomingDividends.reduce((sum, item) => sum + (item?.amount || 0), 0);
 
     return (
-        <div className="neon-card rounded-2xl relative overflow-hidden group flex flex-col transition-all duration-300">
+        <div className="bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] border border-white/10 relative overflow-hidden group flex flex-col transition-all duration-300">
             {/* Header - Always Visible & Clickable */}
             <button
                 onClick={() => {
@@ -58,14 +58,14 @@ export const DividendForecast = ({ assets = [] }: DividendForecastProps) => {
                 className="w-full flex items-center justify-between p-4 bg-white/[0.02] hover:bg-white/[0.05] transition-colors"
             >
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
-                        <Calendar className="w-4 h-4 text-purple-400" />
+                    <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-purple-500/10 group-hover:border-purple-500/20 transition-all">
+                        <Calendar className="w-5 h-5 text-purple-400" />
                     </div>
                     <div className="text-right">
                         <h3 className="text-sm font-bold text-white leading-tight">צפי דיבידנדים</h3>
                         {totalForecast > 0 && !isExpanded && (
-                            <p className="text-[10px] text-purple-300/60 mt-0.5">
-                                סה״כ צפוי: {isStealthMode ? '$***' : `$${totalForecast}`}
+                            <p className="text-[10px] text-purple-400 font-black uppercase tracking-widest mt-0.5 font-mono">
+                                {formatAmount(totalForecast, isStealthMode, '$', '***')} EST.
                             </p>
                         )}
                     </div>
@@ -90,29 +90,34 @@ export const DividendForecast = ({ assets = [] }: DividendForecastProps) => {
                             {upcomingDividends.length > 0 ? (
                                 <div className="space-y-3">
                                     {upcomingDividends.map((div, idx) => (
-                                        <div key={idx} className="flex justify-between items-center p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                                            <div className="flex flex-col">
-                                                <span className="text-xs font-bold text-white/80">{div?.name}</span>
-                                                <span className="text-[10px] text-white/40">צפוי ב-{div?.date}</span>
+                                        <div key={idx} className="flex justify-between items-center p-3.5 rounded-[1.5rem] bg-white/5 border border-white/5 hover:border-white/10 transition-all group/item">
+                                            <div className="flex flex-col text-right">
+                                                <span className="text-xs font-bold text-white/90 group-hover/item:text-purple-300 transition-colors uppercase tracking-tight">{div?.name}</span>
+                                                <span className="text-[9px] text-white/30 font-black uppercase tracking-[0.1em] mt-0.5">EST. DATE: {div?.date}</span>
                                             </div>
-                                            <span className="font-mono text-xs font-bold text-emerald-300">
-                                                +{isStealthMode ? '$***' : `$${div?.amount}`}
-                                            </span>
+                                            <div className="text-left font-mono">
+                                                <span className="text-xs font-bold text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.2)]">
+                                                    +{formatAmount(div?.amount || 0, isStealthMode, '$', '***')}
+                                                </span>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="py-6 flex flex-col items-center justify-center text-center opacity-50">
-                                    <TrendingUp className="w-8 h-8 mb-2" />
-                                    <p className="text-xs">אין דיבידנדים צפויים בקרוב</p>
+                                <div className="py-8 flex flex-col items-center justify-center text-center opacity-30">
+                                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                                        <TrendingUp className="w-6 h-6" />
+                                    </div>
+                                    <p className="text-xs font-medium">אין דיבידנדים צפויים ברבעון הקרוב</p>
                                 </div>
                             )}
 
                             {totalForecast > 0 && (
-                                <div className="pt-3 border-t border-white/10 text-center">
-                                    <p className="text-xs font-bold text-purple-300">
-                                        סה״כ צפוי ברבעון: {isStealthMode ? '$***' : `$${totalForecast}`}
-                                    </p>
+                                <div className="pt-4 border-t border-white/5 flex items-center justify-between px-1">
+                                    <span className="text-[10px] text-white/20 font-black uppercase tracking-[0.2em]">סה״כ רבעוני</span>
+                                    <span className="text-lg font-black text-purple-400 tabular-nums font-mono drop-shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+                                        {formatAmount(totalForecast, isStealthMode, '$', '***')}
+                                    </span>
                                 </div>
                             )}
                         </div>

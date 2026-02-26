@@ -17,20 +17,25 @@ export type FeatureKey =
     // Lounge Page Features
     | 'loungeShowVibe' | 'loungeShowRoulette' | 'loungeShowTinder'
     // Wishlist Page Features
-    | 'wishlistShowHarvester';
+    | 'wishlistShowHarvester'
+    // Home Page Features
+    | 'homeShowQuickActions';
 
 const DEFAULT_WIDGETS: WidgetConfig[] = [
     { id: 'reactor', enabled: true, order: 0 },
-    { id: 'ai-hub', enabled: true, order: 1 },
-    { id: 'health', enabled: true, order: 2 },
-    { id: 'savings', enabled: true, order: 3 },
-    { id: 'investments', enabled: true, order: 4 },
-    { id: 'vault', enabled: true, order: 5 },
-    { id: 'partner-stats', enabled: true, order: 6 },
-    { id: 'calendar', enabled: true, order: 7 },
-    { id: 'categories', enabled: true, order: 8 },
-    { id: 'subscriptions', enabled: true, order: 9 },
-    { id: 'wishlist', enabled: true, order: 10 },
+    { id: 'smart-insights', enabled: true, order: 1 },
+    { id: 'monthly-roast', enabled: true, order: 2 },
+    { id: 'ai-hub', enabled: true, order: 3 },
+    { id: 'health', enabled: true, order: 4 },
+    { id: 'savings', enabled: true, order: 5 },
+    { id: 'investments', enabled: true, order: 6 },
+    { id: 'vault', enabled: true, order: 7 },
+    { id: 'quick-action', enabled: true, order: 8 },
+    { id: 'partner-stats', enabled: true, order: 9 },
+    { id: 'calendar', enabled: true, order: 10 },
+    { id: 'categories', enabled: true, order: 11 },
+    { id: 'subscriptions', enabled: true, order: 12 },
+    { id: 'wishlist', enabled: true, order: 13 },
 ];
 
 const DEFAULT_FEATURES: Record<FeatureKey, boolean> = {
@@ -63,6 +68,8 @@ const DEFAULT_FEATURES: Record<FeatureKey, boolean> = {
     loungeShowTinder: true,
     // Wishlist
     wishlistShowHarvester: true,
+    // Home
+    homeShowQuickActions: true,
 };
 
 interface DashboardState {

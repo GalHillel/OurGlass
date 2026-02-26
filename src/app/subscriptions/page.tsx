@@ -46,7 +46,11 @@ export default function SubscriptionsPage() {
                 .select('*')
                 .order('amount', { ascending: false });
 
-            if (error) throw error;
+            if (error) {
+                console.error("Supabase error fetching subscriptions:", error);
+                toast.error("שגיאה בטעינת מנויים");
+                throw error;
+            }
             setSubscriptions(data || []);
         } catch (error) {
             console.error("Error fetching subscriptions:", error);
@@ -83,9 +87,9 @@ export default function SubscriptionsPage() {
         }
     };
 
-    const { activeLiabilities = [], monthlyPayments: totalDebtMonthly } = useTotalLiabilities();
+    const { activeLiabilities = [], monthlyPayments: totalDebtMonthly = 0 } = useTotalLiabilities();
 
-    const totalMonthly = subscriptions.reduce((sum, sub) => sum + Number(sub.amount), 0) + totalDebtMonthly;
+    const totalMonthly = subscriptions.reduce((sum, sub) => sum + (Number(sub.amount) || 0), 0) + (totalDebtMonthly || 0);
 
     return (
         <div className="flex flex-col gap-6 w-full mx-auto pt-8 pb-0 px-4">

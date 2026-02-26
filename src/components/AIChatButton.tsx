@@ -11,10 +11,11 @@ import { useAuth } from "@/components/AuthProvider";
 import { useAppStore } from "@/stores/appStore";
 import { useWealth } from "@/hooks/useWealth";
 import { PAYERS, CURRENCY_SYMBOL } from "@/lib/constants";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { FinancialContext, Goal, Liability, Transaction, Subscription, WishlistItem, WealthSnapshot } from "@/types";
 import { isLiabilityActive } from "@/hooks/useWealthData";
 import { getBillingPeriodForDate } from "@/lib/billing";
+import { triggerHaptic } from "@/utils/haptics";
 
 const toSafeNumber = (value: unknown): number => {
     const parsed = Number(value);
@@ -57,7 +58,7 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
     const [error, setError] = useState(false);
     const [loading, setLoading] = useState(false);
     const [bubbleMessage, setBubbleMessage] = useState<string | null>(null);
-    const [bubbleDismissed] = useState(false);
+    const [bubbleDismissed, setBubbleDismissed] = useState(false);
     const pathname = usePathname();
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
@@ -209,7 +210,7 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
                 const msg = generateDynamicInsight(ctx, firstName);
                 if (msg) setBubbleMessage(msg);
             }
-        }, 4000);
+        }, 10000); // 10s instead of 4s to be less intrusive
 
         return () => clearTimeout(timer);
     }, [bubbleDismissed, isOpen, firstName, fetchContext]);
@@ -225,6 +226,7 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
     const handleOpen = async () => {
         setIsOpen(true);
         setBubbleMessage(null);
+        setBubbleDismissed(true);
         if (!context) await fetchContext();
     };
 
@@ -233,49 +235,60 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
     return (
         <>
             <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="sticky top-[70px] z-40 mx-4 mt-4 mb-6"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="fixed bottom-28 left-6 z-50"
                 dir="rtl"
             >
-                <div className="absolute -inset-1.5 bg-gradient-to-r from-violet-600/20 via-blue-500/20 to-cyan-400/20 rounded-[2.2rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                {/* Notification Bubble */}
+                <AnimatePresence>
+                    {bubbleMessage && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8, x: 20 }}
+                            animate={{ opacity: 1, scale: 1, x: 0 }}
+                            exit={{ opacity: 0, scale: 0.8, x: 20 }}
+                            className="absolute bottom-full left-0 mb-4 w-48 p-3 bg-violet-600 text-white text-[11px] font-bold rounded-2xl rounded-bl-none shadow-xl border border-white/20 group/bubble"
+                        >
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setBubbleMessage(null);
+                                    setBubbleDismissed(true);
+                                    triggerHaptic();
+                                }}
+                                className="absolute -top-3 -right-3 w-8 h-8 bg-slate-900 border border-white/20 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-all shadow-xl z-20 active:scale-90"
+                                aria-label="סגור הצעה"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                            {bubbleMessage}
+                            <div className="absolute -bottom-2 left-0 w-4 h-4 bg-violet-600 transform rotate-45" />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-                <motion.button
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.98 }}
+                <button
                     onClick={handleOpen}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#0c0f1a]/80 backdrop-blur-2xl border border-white/[0.12] shadow-[0_8px_32px_rgba(0,0,0,0.5)] relative overflow-hidden group transition-all duration-300 ring-1 ring-white/5 active:ring-violet-500/30"
+                    className="relative w-14 h-14 rounded-full bg-[#0c0f1a] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex items-center justify-center overflow-hidden group"
                 >
-                    {/* Siri-style Animated Multi-Gradient Glow */}
+                    {/* Siri Orb Effect */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-blue-600 to-cyan-500 opacity-80" />
                     <motion.div
                         animate={{
-                            opacity: [0.15, 0.35, 0.15],
-                            scale: [1, 1.05, 1],
+                            scale: [1, 1.2, 1],
+                            opacity: [0.5, 0.8, 0.5],
                         }}
                         transition={{
-                            duration: 5,
+                            duration: 3,
                             repeat: Infinity,
                             ease: "easeInOut"
                         }}
-                        className="absolute inset-0 bg-gradient-to-r from-violet-600/20 via-blue-500/20 to-cyan-400/20 pointer-events-none filter blur-2xl"
+                        className="absolute inset-0 bg-white/20 blur-xl"
                     />
-
-                    {/* Sophisticated inner border light */}
-                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50" />
-
-                    <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 via-blue-600 to-cyan-500 flex items-center justify-center shrink-0 shadow-[0_2px_12px_rgba(124,58,237,0.4)] ring-1 ring-white/20">
-                        <Sparkles className="w-4 h-4 text-white drop-shadow-[0_1px_4px_rgba(255,255,255,0.4)]" />
-                    </div>
-
-                    <span className="text-white/60 text-[13px] font-semibold flex-1 text-right tracking-tight">
-                        {bubbleMessage || "שאל את רועי, היועץ הפיננסי שלך..."}
-                    </span>
-
-                    <div className="hidden sm:flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
-                        <kbd className="px-2 py-0.5 rounded-md border border-white/10 bg-white/5 text-[10px] text-white/40 font-mono shadow-inner">⌘</kbd>
-                        <kbd className="px-2 py-0.5 rounded-md border border-white/10 bg-white/5 text-[10px] text-white/40 font-mono shadow-inner">K</kbd>
-                    </div>
-                </motion.button>
+                    <Sparkles className="w-6 h-6 text-white relative z-10 drop-shadow-lg" />
+                </button>
             </motion.div>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>

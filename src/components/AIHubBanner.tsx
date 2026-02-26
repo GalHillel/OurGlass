@@ -123,7 +123,7 @@ export function AIHubBanner({
                 <DrawerTrigger asChild>
                     <motion.div
                         whileTap={{ scale: 0.98 }}
-                        className="w-full bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden group cursor-pointer shadow-2xl"
+                        className="w-full bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[3rem] p-6 relative overflow-hidden group cursor-pointer shadow-2xl"
                     >
                         {/* Premium Glow Effect */}
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 opacity-50 group-hover:opacity-80 transition-opacity" />
@@ -146,7 +146,7 @@ export function AIHubBanner({
                     </motion.div>
                 </DrawerTrigger>
 
-                <DrawerContent className="bg-slate-950/95 backdrop-blur-2xl border-white/10 text-white focus:outline-none">
+                <DrawerContent className="bg-slate-950/95 backdrop-blur-xl border-white/10 text-white focus:outline-none">
                     <div className="mx-auto w-full max-w-md h-[80vh] flex flex-col p-6">
                         <DrawerHeader className="px-0 pt-0 pb-6 border-b border-white/5">
                             <DrawerTitle className="text-2xl font-black flex items-center gap-3">

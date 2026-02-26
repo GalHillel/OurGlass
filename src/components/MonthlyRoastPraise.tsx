@@ -28,10 +28,24 @@ interface Insight {
  */
 export function MonthlyRoastPraise({ transactions, subscriptions, liabilities, balance, budget, monthlyIncome }: MonthlyRoastProps) {
 
+    const STORAGE_KEY = 'last_ai_insights';
     const { data: insights, isLoading, isError } = useQuery<Insight[]>({
-        queryKey: ['ai-insights', transactions.length, balance], // Re-fetch only when major transactions change
+        queryKey: ['ai-insights', transactions.length, balance, budget, monthlyIncome],
         queryFn: async () => {
-            if (transactions.length === 0) return []; // Don't call AI if no data
+            const todayString = new Date().toDateString();
+            const lastSeenDate = localStorage.getItem(STORAGE_KEY + '_date');
+            const cachedData = localStorage.getItem(STORAGE_KEY + '_data');
+
+            // Cache hit from today?
+            if (lastSeenDate === todayString && cachedData && !isError) {
+                try {
+                    return JSON.parse(cachedData);
+                } catch (e) {
+                    console.error("Failed to parse cached insights", e);
+                }
+            }
+
+            if (transactions.length === 0) return [];
 
             const res = await fetch('/api/insights', {
                 method: 'POST',
@@ -41,11 +55,23 @@ export function MonthlyRoastPraise({ transactions, subscriptions, liabilities, b
 
             if (!res.ok) throw new Error("Failed to fetch insights");
             const data = await res.json();
-            return data.insights || [];
+            const result = data.insights || [];
+
+            // Cache it
+            if (result.length > 0) {
+                localStorage.setItem(STORAGE_KEY + '_date', todayString);
+                localStorage.setItem(STORAGE_KEY + '_data', JSON.stringify(result));
+            }
+
+            return result;
         },
-        staleTime: 1000 * 60 * 60 * 24, // Cache for 24 hours (don't burn API limits)
+        staleTime: 1000 * 60 * 60 * 24, // 24 hours
         retry: 1
     });
+
+    // Add InsightData interface check if missing
+    // In fact, it was named Insight in the original file, I should use that or rename.
+    // Let's use Insight to match the file.
 
     if (transactions.length === 0) {
         return (

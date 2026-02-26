@@ -28,19 +28,26 @@ export async function POST(req: Request) {
 
         const prompt = `
 You are a highly intelligent, proactive financial assistant in the OurGlass app.
-Generate ONE highly contextual, daily "smart insight" for the user based on their data.
+Generate ONE highly contextual, daily "smart insight" for the couple based on their TOTAL spending.
+
+CRITICAL: The "Total Spent" MUST include BOTH Variable expenses (transactions) AND Fixed expenses (subscriptions + loans).
+If you only see variable expenses, you are missing half the picture.
+
 Today is day ${dayOfMonth} of the month.
 Monthly Income: ${CURRENCY_SYMBOL}${monthlyIncome}
 Hourly Wage: ${CURRENCY_SYMBOL}${hourlyWage}
-Total Spent this month (variable): ${CURRENCY_SYMBOL}${totalSpend}
-Total Fixed Payments (Loans + Subs): $${CURRENCY_SYMBOL}${totalFixed}
-Top 3 biggest expenses: ${JSON.stringify(topTx.map(t => ({ desc: t.description, amount: t.amount })))}
+Variable spent (daily): ${CURRENCY_SYMBOL}${totalSpend}
+Fixed spent (Loans + Subs): ${CURRENCY_SYMBOL}${totalFixed}
+TOTAL COMMITTED SPEND: ${CURRENCY_SYMBOL}${totalSpend + totalFixed}
+Real Budget Usage: ${((totalSpend + totalFixed) / monthlyIncome * 100).toFixed(1)}% of income
+
+Top 3 biggest variable expenses: ${JSON.stringify(topTx.map(t => ({ desc: t.description, amount: t.amount })))}
 
 Rules:
-1. Speak in modern Hebrew (masculine/plural neutral is fine, e.g., "שמתם לב ש...").
+1. Speak in modern Hebrew (plural "אתם/שלכם").
 2. Provide exactly ONE insight.
-3. Be brutally honest, encouraging, or analytical based on the numbers.
-4. If hourlyWage > 0, you can calculate how many "hours of work" a big expense cost them.
+3. Be brutally honest, encouraging, or analytical based on the TOTAL numbers.
+4. If hourlyWage > 0, you can calculate how many "hours of work" a big expense (variable or fixed) cost them.
 5. Return EXACTLY a JSON object with:
    - "type": "warning" | "opportunity" | "tip" | "info"
    - "text": The insight text (max 20 words).

@@ -13,14 +13,6 @@ export default function StocksPage() {
 
     return (
         <div className="min-h-screen bg-slate-950 text-white px-4 space-y-6 pt-6">
-            {/* Header Section */}
-            <div className="mx-2 p-4 neon-card rounded-2xl flex flex-col items-center justify-center relative overflow-hidden group min-h-[120px]">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <TrendingUp className="w-24 h-24 text-purple-500" />
-                </div>
-                <span className="text-purple-300 text-xs font-bold tracking-widest uppercase mb-2 block relative z-10">מעקב בורסה</span>
-                <h1 className="text-3xl font-black text-white neon-text relative z-10">השקעות בשידור חי</h1>
-            </div>
 
             {/* 1. Live Portfolio (TOP) */}
             <div className="mx-0">

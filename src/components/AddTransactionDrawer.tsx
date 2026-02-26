@@ -82,6 +82,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
     const [moodRating, setMoodRating] = useState<number | null>(null);
     const [payer, setPayer] = useState<'him' | 'her' | 'joint'>('him');
     const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [time, setTime] = useState<string>(new Date().toLocaleTimeString('he-IL', { hour12: false, hour: '2-digit', minute: '2-digit' }));
     const [installments, setInstallments] = useState<number>(1);
     const [loading, setLoading] = useState(false);
 
@@ -177,7 +178,11 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
         if (isImpulse) {
             finalDescription += " #impulse";
         }
-        const finalDate = new Date(date);
+
+        // Combine date and time for absolute precision
+        const [year, month, day] = date.split('-').map(Number);
+        const [hours, minutes] = time.split(':').map(Number);
+        const finalDate = new Date(year, month - 1, day, hours, minutes);
 
         if (installments > 1) {
             const totalAmount = numericAmount;
@@ -273,7 +278,9 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                 setDescription(initialData.description || "");
                 setSelectedCategory(initialData.category || "אחר");
                 setPayer(initialData.payer || 'him');
-                setDate(new Date(initialData.date).toISOString().split('T')[0]);
+                const dt = new Date(initialData.date);
+                setDate(dt.toISOString().split('T')[0]);
+                setTime(dt.toLocaleTimeString('he-IL', { hour12: false, hour: '2-digit', minute: '2-digit' }));
                 setMoodRating(initialData.mood_rating || null);
             } else {
                 setAmountStr("");
@@ -289,7 +296,9 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                 // Set default payer to the active app identity, or fallback to 'him'
                 setPayer(appIdentity || "him");
 
-                setDate(new Date().toISOString().split("T")[0]);
+                const now = new Date();
+                setDate(now.toISOString().split("T")[0]);
+                setTime(now.toLocaleTimeString('he-IL', { hour12: false, hour: '2-digit', minute: '2-digit' }));
                 setInstallments(1);
             }
         }
@@ -387,19 +396,29 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                                 <button type="button" onClick={() => { triggerHaptic(); setPayer("her"); }} className={cn("flex-1 py-2.5 rounded-lg text-xs font-bold transition-all", payer === "her" ? "bg-pink-600 shadow-md text-white" : "text-white/30")}>{PAYERS.HER}</button>
                             </div>
 
-                            {/* Date Picker - NATIVE */}
-                            <div className="relative flex-1">
-                                <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none text-white/40">
-                                    <ChevronDown className="w-4 h-4" />
+                            {/* Date & Time Pickers - NATIVE */}
+                            <div className="flex flex-[2] gap-2">
+                                <div className="relative flex-[1.5]">
+                                    <input
+                                        type="date"
+                                        value={date}
+                                        onChange={(e) => setDate(e.target.value)}
+                                        className="w-full h-11 bg-slate-900 border border-white/5 rounded-xl px-2 text-white text-[13px] text-right font-medium appearance-none focus:border-blue-500 focus:outline-none"
+                                    />
+                                    <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-blue-400">
+                                        <CalendarIcon className="w-3.5 h-3.5" />
+                                    </div>
                                 </div>
-                                <input
-                                    type="date"
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                    className="w-full h-full bg-slate-900 border border-white/5 rounded-xl px-3 text-white text-sm text-right font-medium appearance-none focus:border-blue-500 focus:outline-none"
-                                />
-                                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-blue-400">
-                                    <CalendarIcon className="w-4 h-4" />
+                                <div className="relative flex-1">
+                                    <input
+                                        type="time"
+                                        value={time}
+                                        onChange={(e) => setTime(e.target.value)}
+                                        className="w-full h-11 bg-slate-900 border border-white/5 rounded-xl px-2 text-white text-[13px] text-right font-medium appearance-none focus:border-blue-500 focus:outline-none"
+                                    />
+                                    <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-purple-400">
+                                        <Repeat className="w-3.5 h-3.5 rotate-90" />
+                                    </div>
                                 </div>
                             </div>
                         </div>

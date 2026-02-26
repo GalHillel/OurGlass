@@ -1,22 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAppStore } from "@/stores/appStore";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { Heart, X, Sparkles, ShoppingBag } from "lucide-react";
-import { useWealth } from "@/hooks/useWealth";
+import { createClient } from "@/utils/supabase/client";
+import { WishlistItem } from "@/types";
 import { triggerHaptic } from "@/utils/haptics";
 import { toast } from "sonner";
 import { cn, formatAmount } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
+import { useQuery } from "@tanstack/react-query";
 
 export function GoalTinder() {
     const isStealthMode = useAppStore(s => s.isStealthMode);
-    const { assets } = useWealth();
+    const supabase = useRef(createClient()).current;
     const [currentIndex, setCurrentIndex] = useState(0);
 
-    // Filter real wishlist items from assets
-    const items = assets.filter(a => a.type === 'wish');
+    const { data: items = [], isLoading } = useQuery<WishlistItem[]>({
+        queryKey: ['wishlist-items'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('wishlist')
+                .select('*')
+                .order('priority', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        }
+    });
 
     const activeItem = items[currentIndex];
 
@@ -27,15 +38,20 @@ export function GoalTinder() {
     const dislikeOpacity = useTransform(x, [-50, -150], [0, 1]);
 
     const handleSwipe = (direction: 'left' | 'right') => {
+        if (!activeItem) return;
         triggerHaptic();
         if (direction === 'right') {
-            toast.success(`אושר: ${activeItem?.name}!`, { icon: '❤️' });
+            toast.success(`אושר: ${activeItem.name}!`, { icon: '❤️' });
         } else {
-            toast.info(`נדחה: ${activeItem?.name}`, { icon: '🙅' });
+            toast.info(`נדחה: ${activeItem.name}`, { icon: '🙅' });
         }
         setCurrentIndex(prev => prev + 1);
         x.set(0);
     };
+
+    if (isLoading) {
+        return <div className="h-[450px] flex items-center justify-center text-white/20">טוען משאלות...</div>;
+    }
 
     if (currentIndex >= items.length) {
         return (
@@ -52,45 +68,65 @@ export function GoalTinder() {
     return (
         <div className="relative h-[450px] w-full max-w-sm mx-auto">
             <AnimatePresence>
-                <motion.div
-                    key={activeItem.id}
-                    style={{ x, rotate, opacity }}
-                    drag="x"
-                    dragConstraints={{ left: 0, right: 0 }}
-                    onDragEnd={(e, info) => {
-                        if (info.offset.x > 100) handleSwipe('right');
-                        else if (info.offset.x < -100) handleSwipe('left');
-                    }}
-                    className="absolute inset-0 z-10 cursor-grab active:cursor-grabbing"
-                >
-                    <div className="h-full w-full rounded-[2.5rem] bg-slate-900 border border-white/10 overflow-hidden relative shadow-2xl">
-                        {/* Mock Image Area */}
-                        <div className="h-2/3 bg-gradient-to-br from-purple-500/20 via-slate-900 to-pink-500/10 flex items-center justify-center relative">
-                            <ShoppingBag className="w-20 h-20 text-white/10" />
+                {activeItem && (
+                    <motion.div
+                        key={activeItem.id}
+                        style={{ x, rotate, opacity }}
+                        drag="x"
+                        dragConstraints={{ left: 0, right: 0 }}
+                        onDragEnd={(e, info) => {
+                            if (info.offset.x > 100) handleSwipe('right');
+                            else if (info.offset.x < -100) handleSwipe('left');
+                        }}
+                        className="absolute inset-0 z-10 cursor-grab active:cursor-grabbing"
+                    >
+                        <div className="h-full w-full rounded-[2.5rem] bg-slate-900 border border-white/10 overflow-hidden relative shadow-2xl flex flex-col">
+                            {/* Image Area */}
+                            <div className="h-2/3 flex items-center justify-center relative bg-slate-800">
+                                {activeItem.link && activeItem.link.includes('http') ? (
+                                    <img
+                                        src={activeItem.link}
+                                        alt={activeItem.name}
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <ShoppingBag className="w-20 h-20 text-white/10" />
+                                )}
 
-                            {/* Overlay Indicators */}
-                            <motion.div style={{ opacity: likeOpacity }} className="absolute top-10 right-10 border-4 border-emerald-500 rounded-xl px-4 py-2 rotate-12">
-                                <span className="text-3xl font-black text-emerald-500 uppercase">יאס!</span>
-                            </motion.div>
-                            <motion.div style={{ opacity: dislikeOpacity }} className="absolute top-10 left-10 border-4 border-rose-500 rounded-xl px-4 py-2 -rotate-12">
-                                <span className="text-3xl font-black text-rose-500 uppercase">פחות</span>
-                            </motion.div>
-                        </div>
+                                {/* Gradient Overlay */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80" />
 
-                        {/* Info Area */}
-                        <div className="p-6 text-right" dir="rtl">
-                            <div className="flex justify-between items-start mb-2">
-                                <h3 className="text-2xl font-black text-white">{activeItem.name}</h3>
-                                <span className="text-xl font-bold text-purple-400">
-                                    {formatAmount(activeItem.target_amount ?? 0, isStealthMode, CURRENCY_SYMBOL, '***')}
-                                </span>
+                                {/* Overlay Indicators */}
+                                <motion.div style={{ opacity: likeOpacity }} className="absolute top-10 right-10 border-4 border-emerald-500 rounded-xl px-4 py-2 rotate-12 bg-slate-900/20 backdrop-blur-sm z-20">
+                                    <span className="text-3xl font-black text-emerald-500 uppercase">יאס!</span>
+                                </motion.div>
+                                <motion.div style={{ opacity: dislikeOpacity }} className="absolute top-10 left-10 border-4 border-rose-500 rounded-xl px-4 py-2 -rotate-12 bg-slate-900/20 backdrop-blur-sm z-20">
+                                    <span className="text-3xl font-black text-rose-500 uppercase">פחות</span>
+                                </motion.div>
                             </div>
-                            <p className="text-xs text-white/40 leading-relaxed">
-                                שלב האישור: ממתין להחלטה שלכם. החליקו ימינה כדי לאשר רכישה עתידית או שמאלה כדי להשהות.
-                            </p>
+
+                            {/* Info Area */}
+                            <div className="p-6 text-right relative z-30" dir="rtl">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h3 className="text-2xl font-black text-white">{activeItem.name}</h3>
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-xl font-black text-purple-400">
+                                            {formatAmount(activeItem.price ?? 0, isStealthMode, CURRENCY_SYMBOL, '***')}
+                                        </span>
+                                        {activeItem.saved_amount > 0 && (
+                                            <span className="text-[10px] text-emerald-400 font-bold">
+                                                נחסכו {formatAmount(activeItem.saved_amount, isStealthMode, CURRENCY_SYMBOL, '***')}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <p className="text-[11px] text-white/50 leading-relaxed font-medium">
+                                    האם זה הזמן הנכון להשקיע בחלום הזה? החליקו ימינה כדי לאשר רכישה עתידית או שמאלה כדי להמתין.
+                                </p>
+                            </div>
                         </div>
-                    </div>
-                </motion.div>
+                    </motion.div>
+                )}
             </AnimatePresence>
 
             {/* Background stack effect */}

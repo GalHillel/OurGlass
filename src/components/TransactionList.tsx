@@ -232,7 +232,9 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
                 </motion.div>
             )}
 
-            <h3 className="text-white/80 text-lg font-medium mb-2">פירוט עסקאות</h3>
+            <div className="flex flex-col gap-1 mb-6 px-1">
+                <h3 className="text-sm font-black text-white/40 uppercase tracking-[0.2em]">פירוט עסקאות</h3>
+            </div>
             {visibleTransactions.map((tx) => {
                 if (tx.is_surprise) {
                     return (
@@ -243,7 +245,7 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
                             layoutId={tx.id}
                         >
                             <SwipeableRow
-                                className="mb-3 rounded-2xl overflow-hidden"
+                                className="mb-3 rounded-[1.5rem] overflow-hidden"
                                 onEdit={() => onEdit && onEdit(tx)}
                                 onDelete={() => handleDelete(tx.id)}
                                 deleteMessage="פעולה זו תמחק את העסקה לצמיתות."
@@ -271,22 +273,22 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
                         layoutId={tx.id}
                     >
                         <SwipeableRow
-                            className="mb-3 rounded-2xl overflow-hidden"
+                            className="mb-3 rounded-[1.5rem] overflow-hidden"
                             onEdit={() => onEdit && onEdit(tx)}
                             onDelete={() => handleDelete(tx.id)}
                             deleteMessage="פעולה זו תמחק את העסקה לצמיתות."
                         >
                             <ActivePress className="neon-card p-4 flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/90 shrink-0">
+                                    <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-white/40 shrink-0 group-hover:bg-white/10 transition-colors">
                                         <Icon className="w-5 h-5" />
                                     </div>
                                     <div className="min-w-0">
-                                        <h4 className="font-bold text-white line-clamp-1 md:line-clamp-2 break-words text-right">{title || "ללא תיאור"}</h4>
+                                        <h4 className="font-black text-white line-clamp-1 md:line-clamp-2 break-words text-right text-xs uppercase tracking-tight">{title || "ללא תיאור"}</h4>
                                         {note && (
-                                            <p className="text-sm text-white/70 break-words line-clamp-2 text-right">{note}</p>
+                                            <p className="text-[11px] text-white/50 break-words line-clamp-2 text-right">{note}</p>
                                         )}
-                                        <p className="text-xs text-white/60 mt-0.5 text-right">
+                                        <p className="text-[10px] text-white/30 mt-0.5 text-right font-black uppercase tracking-widest">
                                             {format(new Date(tx.date), "d בMMMM, HH:mm", { locale: he })}
                                         </p>
                                     </div>
@@ -298,7 +300,7 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
                                             {installmentLabel}
                                         </span>
                                     )}
-                                    <span className="font-bold text-white">{formatAmount(tx.amount, isStealthMode, CURRENCY_SYMBOL, '***')}</span>
+                                    <span className="font-black text-white font-mono tabular-nums text-sm">{formatAmount(tx.amount, isStealthMode, CURRENCY_SYMBOL, '***')}</span>
                                 </div>
                             </ActivePress>
                         </SwipeableRow>

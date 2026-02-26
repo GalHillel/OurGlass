@@ -10,7 +10,9 @@ import {
     PieChart,
     Sparkles,
     Gift,
-    CreditCard
+    CreditCard,
+    MessageSquare,
+    Lightbulb
 } from "lucide-react";
 
 export interface WidgetInfo {
@@ -112,5 +114,19 @@ export const WIDGET_REGISTRY: Record<string, WidgetInfo> = {
         description: 'ניהול רכישות מתוכננות וחלומות',
         icon: Gift,
         color: 'text-pink-300'
+    },
+    'monthly-roast': {
+        id: 'monthly-roast',
+        label: 'סיכום חודשי (ROAST)',
+        description: 'ה-AI מנתח את ההוצאות שלך בוויס צהוב',
+        icon: MessageSquare,
+        color: 'text-orange-400'
+    },
+    'smart-insights': {
+        id: 'smart-insights',
+        label: 'תובנות חכמות',
+        description: 'טיפים והזדמנויות לחיסכון מה-AI',
+        icon: Lightbulb,
+        color: 'text-blue-400'
     }
 };

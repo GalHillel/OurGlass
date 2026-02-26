@@ -224,67 +224,77 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
 
     return (
         <div className="w-full space-y-6">
-            {/* 1. Header Card */}
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/60 backdrop-blur-xl shadow-2xl group touch-pan-y">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-transparent to-blue-600/5" />
-                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 opacity-50" />
+            {/* 1. Header Card - Compact & Powerful (Refined & Centered) */}
+            <div className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-xl shadow-2xl group touch-pan-y">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-transparent to-blue-600/5 opacity-30" />
 
-                <div className="p-6 relative z-10 flex flex-col h-full min-h-[160px]">
-                    <div className="flex justify-between items-start mb-4">
-                        <h2 className="text-sm font-bold text-white/60 tracking-widest uppercase flex items-center gap-2">
-                            <Rocket className="w-4 h-4 text-purple-400" />
+                <div className="p-8 relative z-10 flex flex-col items-center text-center">
+                    {/* Icon & Floating Buttons */}
+                    <div className="relative mb-6">
+                        <div className="p-3.5 bg-purple-500/20 rounded-[2rem] border border-purple-500/30">
+                            <Rocket className="w-6 h-6 text-purple-400" />
+                        </div>
+
+                        {/* Top-Right: Refresh */}
+                        <button
+                            onClick={handleRefresh}
+                            disabled={isRefreshing}
+                            className="absolute -top-4 -right-24 p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 disabled:opacity-50 border border-white/10"
+                        >
+                            <RefreshCcw className={cn("w-4 h-4", isRefreshing && "animate-spin text-purple-400")} />
+                        </button>
+
+                        {/* Top-Left: Add */}
+                        <button
+                            onClick={openAdd}
+                            className="absolute -top-4 -left-24 p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 border border-white/10"
+                        >
+                            <Plus className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <div className="space-y-1 mb-6">
+                        <h2 className="text-[10px] font-black text-white/40 tracking-[0.3em] uppercase">
                             תיק השקעות חי
                         </h2>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={handleRefresh}
-                                disabled={isRefreshing}
-                                className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-all active:scale-90 disabled:opacity-50"
-                                title="רענן נתונים"
-                            >
-                                <RefreshCcw className={cn("w-4 h-4", isRefreshing && "animate-spin text-purple-400")} />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col gap-1 mb-6">
-                        <div className="text-4xl font-black text-white tracking-tight drop-shadow-lg tabular-nums">
+                        <div className="text-5xl font-black text-white tracking-tighter tabular-nums drop-shadow-2xl">
                             {formatAmount(portfolioValue, isStealthMode, CURRENCY_SYMBOL, '***')}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className={cn(
-                                "text-sm font-bold flex items-center gap-1.5 px-2.5 py-0.5 rounded-full backdrop-blur-md border",
-                                isTotalPositive ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.1)]" :
-                                    isTotalNegative ? "text-rose-400 bg-rose-500/10 border-rose-500/20 shadow-[0_0_15px_rgba(251,113,133,0.1)]" :
-                                        "text-white/40 bg-white/5 border-white/10"
-                            )}>
-                                {isTotalPositive ? <TrendingUp className="w-3.5 h-3.5" /> : isTotalNegative ? <TrendingDown className="w-3.5 h-3.5" /> : null}
-                                <span className="tabular-nums">
-                                    {isTotalPositive ? '+' : ''}{formatAmount(totalDailyChangeILS, isStealthMode, CURRENCY_SYMBOL, '***')}
-                                    <span className="mx-1 opacity-40">|</span>
-                                    יומי: {totalPortfolioPercent.toFixed(2)}%
-                                </span>
-                            </div>
-                            <div className="text-[10px] text-white/30 font-mono uppercase tracking-wider ml-auto">
-                                שער דולר: {CURRENCY_SYMBOL}{usdToIls.toFixed(2)}
-                            </div>
-                        </div>
                     </div>
 
-                    <div className="mt-auto">
-                        <Button
-                            onClick={openAdd}
-                            size="sm"
-                            className="bg-white/10 hover:bg-white/20 text-white rounded-full border border-white/5 backdrop-blur-md transition-all hover:scale-105 active:scale-95 px-5"
-                        >
-                            <Plus className="w-4 h-4 ml-1.5" /> הוסף מניה
-                        </Button>
+                    {/* Daily Performance Pill - Centered */}
+                    <div className={cn(
+                        "inline-flex items-center gap-2.5 px-5 py-2 rounded-full backdrop-blur-md border mb-8",
+                        isTotalPositive ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_20px_rgba(52,211,153,0.1)]" :
+                            isTotalNegative ? "text-rose-400 bg-rose-500/10 border-rose-500/20 shadow-[0_0_20px_rgba(251,113,133,0.1)]" :
+                                "text-white/40 bg-white/5 border-white/10"
+                    )}>
+                        {isTotalPositive ? <TrendingUp className="w-4 h-4" /> : isTotalNegative ? <TrendingDown className="w-4 h-4" /> : null}
+                        <span className="font-black text-xs tabular-nums uppercase tracking-wide">
+                            יומי: {totalPortfolioPercent.toFixed(2)}%
+                            <span className="mx-2 opacity-30">|</span>
+                            {isTotalPositive ? '+' : ''}{formatAmount(totalDailyChangeILS, isStealthMode, CURRENCY_SYMBOL, '***')}
+                        </span>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-4 w-full">
+                        <div className="text-[10px] text-white/30 font-mono font-black uppercase tracking-[0.2em]">
+                            שער חליפין: {CURRENCY_SYMBOL}{usdToIls.toFixed(2)}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* 2. Stock Lists */}
-            <div className="space-y-3">
+            {/* 2. Stock Rows Header - Dense Labeling (Fixed Grid) */}
+            <div className="px-4 py-2 grid grid-cols-12 gap-1 text-[10px] font-black text-white/20 uppercase tracking-[0.1em]" dir="rtl">
+                <div className="col-span-2 text-right">נייר</div>
+                <div className="col-span-2 text-center">כמות</div>
+                <div className="col-span-2 text-center">מחיר</div>
+                <div className="col-span-2 text-center">שינוי</div>
+                <div className="col-span-4 text-left">שווי (₪)</div>
+            </div>
+
+            <div className="space-y-2 pb-10">
                 <AnimatePresence mode="popLayout">
                     {stocks.map((stock) => {
                         const isPositive = stock.changePercent >= 0;
@@ -298,45 +308,53 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
                                 layout
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="group relative overflow-hidden rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all active:scale-[0.98]"
+                                className="group relative overflow-hidden rounded-[1.5rem] bg-slate-900/40 border border-white/5 hover:border-white/20 transition-all"
                             >
+                                {/* Sparkline Background Effect */}
+                                <div className={cn(
+                                    "absolute inset-0 opacity-[0.03] pointer-events-none transition-opacity group-hover:opacity-[0.08]",
+                                    isPositive ? "bg-gradient-to-t from-emerald-500 via-transparent to-transparent" : "bg-gradient-to-t from-rose-500 via-transparent to-transparent"
+                                )} />
+
                                 <SwipeableRow
                                     onEdit={() => openEdit(stock)}
                                     onDelete={() => handleDelete(stock.id, stock.symbol)}
                                     className="bg-transparent"
                                 >
-                                    <div className="flex items-center justify-between p-4 relative z-10 w-full">
-                                        {/* LEFT: Ticker + Qty */}
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-lg bg-slate-900 flex items-center justify-center font-black text-xs text-white border border-white/10 shadow-inner">
-                                                {stock.symbol}
-                                            </div>
-                                            <div>
-                                                <div className="font-bold text-white leading-none">
-                                                    {stock.symbol}
-                                                </div>
-                                                <div className="text-xs text-white/50 mt-1">
-                                                    {stock.shares} יח׳
-                                                </div>
+                                    <div className="grid grid-cols-12 gap-1 items-center p-4 relative z-10 w-full h-16" dir="rtl">
+                                        {/* Ticker - ICON ONLY */}
+                                        <div className="col-span-2 flex items-center gap-2 overflow-hidden">
+                                            <div className={cn(
+                                                "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-black text-[10px] border shadow-inner transition-all group-hover:scale-110",
+                                                isPositive ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                                            )}>
+                                                {stock.symbol.substring(0, 4)}
                                             </div>
                                         </div>
 
-                                        {/* RIGHT: Value + Price/Change */}
-                                        <div className="text-left min-w-[120px]">
-                                            <div className={`font-bold text-lg tabular-nums leading-none ${isProfitPositive ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]' : dailyProfitILS < 0 ? 'text-rose-400' : 'text-white'}`}>
-                                                {formatAmount(stock.totalValueILS, isStealthMode, CURRENCY_SYMBOL, '***')}
+                                        {/* Qty */}
+                                        <div className="col-span-2 text-center tabular-nums font-mono text-[11px] text-white/60">
+                                            {stock.shares}
+                                        </div>
+
+                                        {/* Price USD */}
+                                        <div className="col-span-2 text-center tabular-nums font-mono text-[11px] text-white/80" dir="ltr">
+                                            ${stock.currentPriceUSD.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                                        </div>
+
+                                        {/* Change % */}
+                                        <div className="col-span-2 text-center" dir="ltr">
+                                            <div className={cn(
+                                                "inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black",
+                                                isPositive ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                                            )}>
+                                                {isPositive ? '+' : ''}{stock.changePercent.toFixed(1)}%
                                             </div>
-                                            <div className="flex flex-col items-end mt-1.5">
-                                                <div className={`text-[10px] font-bold flex items-center leading-none ${isProfitPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                    {isProfitPositive ? '+' : ''}{formatAmount(dailyProfitILS, isStealthMode, CURRENCY_SYMBOL, '***')}
-                                                    <span className="mx-1 text-white/20">|</span>
-                                                    {isProfitPositive ? <TrendingUp className="w-2.5 h-2.5 mr-0.5" /> : <TrendingDown className="w-2.5 h-2.5 mr-0.5" />}
-                                                    {Math.abs(stock.changePercent).toFixed(1)}%
-                                                </div>
-                                                <div className="text-[9px] text-white/20 font-mono mt-0.5">
-                                                    ${isStealthMode ? '***' : stock.currentPriceUSD.toFixed(1)}
-                                                </div>
-                                            </div>
+                                        </div>
+
+                                        {/* Value ILS */}
+                                        <div className="col-span-4 text-left font-mono font-black text-[14px] tabular-nums text-white truncate leading-none">
+                                            {formatAmount(stock.totalValueILS, isStealthMode, CURRENCY_SYMBOL, '***')}
                                         </div>
                                     </div>
                                 </SwipeableRow>

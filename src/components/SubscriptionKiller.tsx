@@ -2,11 +2,13 @@
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Scissors, Star, StarOff, Trash2, Copy } from "lucide-react";
+import { Scissors, Star, StarOff, Trash2, Copy, AlertTriangle, Zap } from "lucide-react";
 import { Subscription } from "@/types";
 import { EmptyState } from "@/components/EmptyState";
 import CountUp from "react-countup";
 import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { useAppStore } from "@/stores/appStore";
+import { cn, formatAmount } from "@/lib/utils";
 
 interface SubscriptionKillerProps {
     subscriptions: Subscription[];
@@ -28,6 +30,7 @@ interface DuplicateGroup {
  * 3. Total potential savings
  */
 export function SubscriptionKiller({ subscriptions, onDelete }: SubscriptionKillerProps) {
+    const isStealthMode = useAppStore(s => s.isStealthMode);
     const analysis = useMemo(() => {
         // 1. Find duplicates by similar name
         const nameMap = new Map<string, Subscription[]>();
@@ -123,7 +126,36 @@ export function SubscriptionKiller({ subscriptions, onDelete }: SubscriptionKill
                 </div>
             </div>
 
-            {/* Duplicates */}
+            {/* Smart Insights Section */}
+            {(analysis.duplicates.length > 0 || analysis.lowUsage.length > 0) && (
+                <div className="space-y-3" dir="rtl">
+                    {analysis.duplicates.length > 0 && (
+                        <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-start gap-3">
+                            <AlertTriangle className="w-5 h-5 text-orange-400 shrink-0 mt-0.5" />
+                            <div className="text-right">
+                                <p className="font-bold text-orange-200 text-sm">זיהוי מנויים כפולים</p>
+                                <p className="text-[11px] text-orange-200/60 leading-tight">
+                                    מצאנו {analysis.duplicates.length} מנויים שנראים דומים מאוד. כדאי לוודא שאתם לא משלמים פעמיים.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {analysis.lowUsage.length > 0 && (
+                        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-start gap-3">
+                            <Zap className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                            <div className="text-right">
+                                <p className="font-bold text-emerald-200 text-sm">פוטנציאל חיסכון משמעותי</p>
+                                <p className="text-[11px] text-emerald-200/60 leading-tight">
+                                    יש לכם {analysis.lowUsage.length} מנויים עם דירוג שימוש נמוך. ביטולם יחסוך לכם {formatAmount(analysis.lowUsage.reduce((s, x) => s + x.amount, 0), isStealthMode, CURRENCY_SYMBOL)} בחודש.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Duplicates Details */}
             {analysis.duplicates.map((group, i) => (
                 <motion.div
                     key={i}

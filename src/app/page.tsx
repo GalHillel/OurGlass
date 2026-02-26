@@ -65,8 +65,7 @@ export default function Home() {
   const [viewingDate, setViewingDate] = useState(new Date());
   const [isPrivacyMode] = useState(false); // Manual Privacy Mode
 
-  const supabaseRef = useRef(createClient());
-  const supabase = supabaseRef.current;
+  const supabase = useRef(createClient()).current;
   const { user, profile, loading: authLoading } = useAuth();
   const { assets, usdToIls } = useWealth();
   const { appIdentity } = useAppStore();

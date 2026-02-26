@@ -35,6 +35,8 @@ import { MonthlyCalendar } from "@/components/MonthlyCalendar";
 import { CategoryBreakdown } from "@/components/CategoryBreakdown";
 import { AIHubBanner } from "@/components/AIHubBanner";
 import { WealthTimeMachine } from "@/components/WealthTimeMachine";
+import { SmartInsights } from "@/components/SmartInsights";
+import { MonthlyRoastPraise } from "@/components/MonthlyRoastPraise";
 
 export interface HomeMosaicProps {
     balance: number;
@@ -123,7 +125,7 @@ export const HomeMosaic = React.memo(({
             case 'reactor':
                 return (
                     <div key={key} className="col-span-2 mb-2">
-                        <div className="bg-slate-900/40 backdrop-blur-md rounded-[2.5rem] border border-white/5 overflow-hidden relative">
+                        <div className="bg-slate-900/40 backdrop-blur-xl rounded-[3rem] border border-white/5 overflow-hidden relative">
                             <div className="absolute inset-0 bg-blue-500/5 pointer-events-none" />
                             <ReactorCore
                                 income={monthlyIncome}
@@ -182,6 +184,33 @@ export const HomeMosaic = React.memo(({
                         />
                     </div>
                 );
+            case 'smart-insights':
+                if (!features.showSmartInsights) return null;
+                return (
+                    <div key={key} className="col-span-2">
+                        <SmartInsights
+                            transactions={transactions}
+                            subscriptions={subscriptions}
+                            liabilities={liabilities}
+                            monthlyIncome={monthlyIncome}
+                            isInline={true}
+                        />
+                    </div>
+                );
+            case 'monthly-roast':
+                if (!features.showMonthlyRoast) return null;
+                return (
+                    <div key={key} className="col-span-2">
+                        <MonthlyRoastPraise
+                            transactions={transactions}
+                            subscriptions={subscriptions}
+                            liabilities={liabilities}
+                            balance={balance}
+                            budget={budget}
+                            monthlyIncome={monthlyIncome}
+                        />
+                    </div>
+                );
             case 'health':
                 return (
                     <Dialog key={key}>
@@ -189,7 +218,7 @@ export const HomeMosaic = React.memo(({
                             <motion.div
                                 layout
                                 whileTap={{ scale: 0.95 }}
-                                className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
+                                className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-blue-400/5 group-hover:bg-blue-400/10 transition-colors" />
                                 <div className="flex justify-between items-start relative z-10">
@@ -199,8 +228,8 @@ export const HomeMosaic = React.memo(({
                                     {healthStatus === 'critical' && <span className="text-xs font-bold text-red-400 animate-pulse">!</span>}
                                 </div>
                                 <div className="relative z-10">
-                                    <h3 className="text-sm font-medium text-blue-100/80">בריאות</h3>
-                                    <div className="text-xl font-bold text-white mt-0.5">
+                                    <h3 className="text-[10px] font-black text-blue-100/40 uppercase tracking-[0.2em]">בריאות</h3>
+                                    <div className="text-2xl font-black text-white mt-1 font-mono tracking-tighter tabular-nums text-right">
                                         {100 - budgetUsedPercent}%
                                     </div>
                                     <div className="w-full bg-blue-900/50 h-1 mt-2 rounded-full overflow-hidden">
@@ -234,7 +263,7 @@ export const HomeMosaic = React.memo(({
                             <motion.div
                                 layout
                                 whileTap={{ scale: 0.95 }}
-                                className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
+                                className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-emerald-400/5 group-hover:bg-emerald-400/10 transition-colors" />
                                 <div className="flex justify-between items-start relative z-10">
@@ -244,11 +273,11 @@ export const HomeMosaic = React.memo(({
                                     {savingsRate > 20 && <TrendingUp className="w-4 h-4 text-emerald-400" />}
                                 </div>
                                 <div className="relative z-10">
-                                    <h3 className="text-sm font-medium text-emerald-100/80">חיסכון חודשי</h3>
-                                    <div className="text-xl font-bold text-white mt-0.5">
-                                        {formatAmount(Math.max(0, actualSavings), isStealthMode, CURRENCY_SYMBOL)}
+                                    <h3 className="text-[10px] font-black text-emerald-100/40 uppercase tracking-[0.2em]">חיסכון חודשי</h3>
+                                    <div className="text-2xl font-black text-white mt-1 font-mono tracking-tighter tabular-nums text-right">
+                                        {formatAmount(Math.max(0, actualSavings), isStealthMode, CURRENCY_SYMBOL, '***')}
                                     </div>
-                                    <p className="text-[10px] text-emerald-200/60 mt-1">
+                                    <p className="text-[9px] text-emerald-200/40 mt-1 font-black uppercase tracking-wider">
                                         {savingsRate}% מההכנסה
                                     </p>
                                 </div>
@@ -273,7 +302,7 @@ export const HomeMosaic = React.memo(({
                             key={key}
                             layout
                             whileTap={{ scale: 0.95 }}
-                            className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/5 rounded-3xl p-6 flex flex-col items-center justify-center gap-2 text-center"
+                            className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-6 flex flex-col items-center justify-center gap-2 text-center"
                         >
                             <div className="p-3 bg-purple-500/10 rounded-full">
                                 <Rocket className="w-6 h-6 text-purple-300/30" />
@@ -289,15 +318,15 @@ export const HomeMosaic = React.memo(({
                             <motion.div
                                 layout
                                 whileTap={{ scale: 0.95 }}
-                                className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
+                                className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-purple-400/5 group-hover:bg-purple-400/10 transition-colors" />
                                 <div className="p-3 bg-purple-500/20 rounded-full relative z-10">
                                     <Rocket className="w-6 h-6 text-purple-300" />
                                 </div>
                                 <div className="relative z-10">
-                                    <h3 className="text-base font-bold text-white">תיק השקעות</h3>
-                                    <p className="text-[10px] text-purple-200/60 mt-1">
+                                    <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">תיק השקעות</h3>
+                                    <p className="text-[10px] text-purple-400 font-bold uppercase tracking-widest mt-1">
                                         {stockAssets.length} נכסים
                                     </p>
                                 </div>
@@ -320,15 +349,15 @@ export const HomeMosaic = React.memo(({
                             <motion.div
                                 layout
                                 whileTap={{ scale: 0.95 }}
-                                className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
+                                className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-amber-400/5 group-hover:bg-amber-400/10 transition-colors" />
                                 <div className="p-3 bg-amber-500/20 rounded-full relative z-10">
                                     <Shield className="w-6 h-6 text-amber-300" />
                                 </div>
                                 <div className="relative z-10">
-                                    <h3 className="text-base font-bold text-white">מזומן וכספות</h3>
-                                    <p className="text-[10px] text-amber-200/60 mt-1">
+                                    <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">מזומן וכספות</h3>
+                                    <p className="text-[10px] text-amber-400 font-bold uppercase tracking-widest mt-1">
                                         נזילות מיידית
                                     </p>
                                 </div>
@@ -398,16 +427,16 @@ export const HomeMosaic = React.memo(({
                             <motion.div
                                 layout
                                 whileTap={{ scale: 0.95 }}
-                                className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
+                                className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-cyan-400/5 group-hover:bg-cyan-400/10 transition-colors" />
                                 <div className="p-3 bg-cyan-500/20 rounded-full relative z-10">
                                     <Zap className="w-6 h-6 text-cyan-300" />
                                 </div>
                                 <div className="relative z-10">
-                                    <h3 className="text-base font-bold text-white">פעולה מהירה</h3>
-                                    <p className="text-[10px] text-cyan-200/60 mt-1">
-                                        הוספת הוצאה
+                                    <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">פעולה מהירה</h3>
+                                    <p className="text-[11px] text-cyan-400 font-bold uppercase tracking-widest mt-1">
+                                        ניהול הוצאה
                                     </p>
                                 </div>
                             </motion.div>
@@ -428,16 +457,16 @@ export const HomeMosaic = React.memo(({
                             <motion.div
                                 layout
                                 whileTap={{ scale: 0.95 }}
-                                className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
+                                className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-pink-400/5 group-hover:bg-pink-400/10 transition-colors" />
                                 <div className="p-3 bg-pink-500/20 rounded-full relative z-10">
                                     <Users className="w-6 h-6 text-pink-300" />
                                 </div>
                                 <div className="relative z-10">
-                                    <h3 className="text-base font-bold text-white">חלוקה</h3>
-                                    <p className="text-[10px] text-pink-200/60 mt-1">
-                                        {PAYERS.HIM} / {PAYERS.HER} / {PAYERS.JOINT}
+                                    <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">חלוקה</h3>
+                                    <p className="text-[10px] text-pink-400 font-bold uppercase tracking-widest mt-1">
+                                        {PAYERS.HIM} / {PAYERS.HER}
                                     </p>
                                 </div>
                             </motion.div>
@@ -458,7 +487,7 @@ export const HomeMosaic = React.memo(({
                             <motion.div
                                 layout
                                 whileTap={{ scale: 0.95 }}
-                                className="col-span-2 bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex items-center justify-between group cursor-pointer"
+                                className="col-span-2 bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex items-center justify-between group cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-indigo-400/5 group-hover:bg-indigo-400/10 transition-colors" />
                                 <div className="flex items-center gap-3 relative z-10">
@@ -466,8 +495,8 @@ export const HomeMosaic = React.memo(({
                                         <CalendarDays className="w-5 h-5 text-indigo-300" />
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-bold text-white">לוח הוצאות</h3>
-                                        <p className="text-[10px] text-indigo-200/60">צפה בהוצאות יומיות</p>
+                                        <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">לוח הוצאות</h3>
+                                        <p className="text-[11px] text-indigo-400 font-bold uppercase tracking-widest mt-1">הוצאות יומיות</p>
                                     </div>
                                 </div>
                                 <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-white/60 transition-colors relative z-10" />
@@ -494,7 +523,7 @@ export const HomeMosaic = React.memo(({
                             <motion.div
                                 layout
                                 whileTap={{ scale: 0.95 }}
-                                className="col-span-2 bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex items-center justify-between group cursor-pointer"
+                                className="col-span-2 bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex items-center justify-between group cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-rose-400/5 group-hover:bg-rose-400/10 transition-colors" />
                                 <div className="flex items-center gap-3 relative z-10">
@@ -502,8 +531,8 @@ export const HomeMosaic = React.memo(({
                                         <PieChart className="w-5 h-5 text-rose-300" />
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-bold text-white">קטגוריות</h3>
-                                        <p className="text-[10px] text-rose-200/60">פילוח הוצאות חודשי</p>
+                                        <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">קטגוריות</h3>
+                                        <p className="text-[11px] text-rose-400 font-bold uppercase tracking-widest mt-1">פילוח חודשי</p>
                                     </div>
                                 </div>
                                 <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-white/60 transition-colors relative z-10" />
@@ -537,7 +566,7 @@ export const HomeMosaic = React.memo(({
                         layout
                         whileTap={{ scale: 0.95 }}
                         onClick={() => window.location.href = '/subscriptions'}
-                        className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
+                        className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
                     >
                         <div className="absolute inset-0 bg-blue-400/5 group-hover:bg-blue-400/10 transition-colors" />
                         <div className="flex justify-between items-start relative z-10">
@@ -546,10 +575,11 @@ export const HomeMosaic = React.memo(({
                             </div>
                         </div>
                         <div className="relative z-10">
-                            <h3 className="text-sm font-medium text-blue-100/80">קבועות</h3>
-                            <div className="text-xl font-bold text-white mt-0.5">
-                                {subscriptions.length} מנויים
+                            <h3 className="text-[10px] font-black text-blue-100/40 uppercase tracking-[0.2em]">קבועות</h3>
+                            <div className="text-2xl font-black text-white mt-1 font-mono tracking-tighter tabular-nums text-right">
+                                {subscriptions.length}
                             </div>
+                            <p className="text-[9px] text-blue-200/40 mt-1 font-black uppercase tracking-wider">מנויים פעילים</p>
                         </div>
                     </motion.div>
                 );
@@ -560,7 +590,7 @@ export const HomeMosaic = React.memo(({
                         layout
                         whileTap={{ scale: 0.95 }}
                         onClick={() => window.location.href = '/wishlist'}
-                        className="aspect-[4/3] bg-black/20 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
+                        className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
                     >
                         <div className="absolute inset-0 bg-pink-400/5 group-hover:bg-pink-400/10 transition-colors" />
                         <div className="flex justify-between items-start relative z-10">
@@ -569,10 +599,11 @@ export const HomeMosaic = React.memo(({
                             </div>
                         </div>
                         <div className="relative z-10">
-                            <h3 className="text-sm font-medium text-pink-100/80">משאלות</h3>
-                            <div className="text-xl font-bold text-white mt-0.5">
-                                {isStealthMode ? '***' : assets.filter(a => a.type === 'wish').length} פריטים
+                            <h3 className="text-[10px] font-black text-pink-100/40 uppercase tracking-[0.2em]">משאלות</h3>
+                            <div className="text-2xl font-black text-white mt-1 font-mono tracking-tighter tabular-nums text-right">
+                                {isStealthMode ? '***' : assets.filter(a => a.type === 'wish').length}
                             </div>
+                            <p className="text-[9px] text-pink-200/40 mt-1 font-black uppercase tracking-wider">פריטים בקולקציה</p>
                         </div>
                     </motion.div>
                 );
