@@ -24,7 +24,6 @@ import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 import { CustomizationManager } from "@/components/CustomizationManager";
 
 export default function SettingsPage() {
-    console.log("Settings Page Rendering"); // Debug log for build verification
     const { user, profile, updateProfile } = useAuth();
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;

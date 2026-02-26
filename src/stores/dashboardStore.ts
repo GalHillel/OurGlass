@@ -153,16 +153,41 @@ export const useDashboardStore = create<DashboardState>()(
                         ];
                     }
 
-                    // Self-healing: Ensure all default nav items exist
+                    // Self-healing: Ensure all default nav items exist and Lounge is ENABLED
                     const currentNavIds = state.navItems?.map(n => n.id) || [];
                     const missingNavItems = DEFAULT_NAV_ITEMS.filter(n => !currentNavIds.includes(n.id));
 
+                    let updatedNavItems = state.navItems || [];
                     if (missingNavItems.length > 0) {
-                        state.navItems = [
-                            ...(state.navItems || []),
-                            ...missingNavItems
-                        ];
+                        updatedNavItems = [...updatedNavItems, ...missingNavItems];
                     }
+
+                    // Explicitly force lounge to be enabled if it's there
+                    updatedNavItems = updatedNavItems.map(n =>
+                        n.id === 'lounge' ? { ...n, enabled: true } : n
+                    );
+
+                    state.navItems = updatedNavItems;
+
+                    // Self-healing: Ensure all default features exist and force active key ones
+                    const currentFeatureKeys = Object.keys(state.features || {});
+                    const missingFeatures = (Object.keys(DEFAULT_FEATURES) as FeatureKey[])
+                        .filter(key => !currentFeatureKeys.includes(key));
+
+                    if (missingFeatures.length > 0 || !state.features.enableLounge) {
+                        state.features = {
+                            ...(state.features || {}),
+                            ...missingFeatures.reduce((acc, key) => ({
+                                ...acc,
+                                [key]: DEFAULT_FEATURES[key]
+                            }), {}),
+                            // Force critical features to be true if they are currently missing or false (recovery)
+                            enableLounge: true,
+                            enableWishlist: true,
+                            enableStocks: true
+                        } as Record<FeatureKey, boolean>;
+                    }
+
                     state.setHasHydrated(true);
                 }
             }

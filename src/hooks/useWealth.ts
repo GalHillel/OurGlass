@@ -1,3 +1,5 @@
+"use client";
+
 import { useRef, useMemo } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -94,12 +96,15 @@ export const useWealth = () => {
                     if (asset.interest_rate && asset.interest_rate > 0 && asset.last_interest_calc) {
                         const lastCalcDate = new Date(asset.last_interest_calc);
                         const today = new Date();
-                        const diffTime = today.getTime() - lastCalcDate.getTime();
-                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                        const diffMs = today.getTime() - lastCalcDate.getTime();
 
-                        if (diffDays >= 1) {
-                            const dailyRate = (Number(asset.interest_rate) / 100) / 365;
-                            calculatedValue = calculatedValue * Math.pow(1 + dailyRate, diffDays);
+                        // Continuous Compounding Formula: principal * (1 + annual_rate) ^ (delta_time / year_time)
+                        // This ensures that after exactly 365 days, growth is exactly interest_rate.
+                        if (diffMs > 0) {
+                            const annualRate = Number(asset.interest_rate) / 100;
+                            const msPerYear = 365 * 24 * 60 * 60 * 1000;
+                            const yearFraction = diffMs / msPerYear;
+                            calculatedValue = calculatedValue * Math.pow(1 + annualRate, yearFraction);
                         }
                     }
                 }

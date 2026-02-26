@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { formatAmount } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { triggerHaptic } from "@/utils/haptics";
-import confetti from "canvas-confetti";
 
 interface WeeklyMoneyDateProps {
     isOpen: boolean;
@@ -16,8 +15,9 @@ interface WeeklyMoneyDateProps {
 }
 
 export function WeeklyMoneyDate({ isOpen, onClose, win, drift }: WeeklyMoneyDateProps) {
-    const handleNextWeek = () => {
+    const handleNextWeek = async () => {
         triggerHaptic();
+        const confetti = (await import("canvas-confetti")).default;
         confetti({
             particleCount: 150,
             spread: 70,

@@ -55,9 +55,9 @@ export default function RootLayout({
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    // Registration successful
                   }, function(err) {
-                    console.log('ServiceWorker registration failed: ', err);
+                    // Registration failed
                   });
                 });
               }
@@ -70,7 +70,6 @@ export default function RootLayout({
               <IdentityGate>
                 <main className="native-scroll touch-scroll relative z-10 w-full p-4 pt-[env(safe-area-inset-top)] pb-0">
                   <GlobalStealthHandler />
-                  <AIChatButton />
                   {children}
                 </main>
               </IdentityGate>

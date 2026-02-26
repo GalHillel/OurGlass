@@ -43,7 +43,6 @@ import { triggerHaptic } from "@/utils/haptics";
 import { Transaction } from "@/types";
 import { cn } from "@/lib/utils";
 import { NumericKeypad } from "./NumericKeypad";
-import confetti from "canvas-confetti";
 import { useAppStore } from "@/stores/appStore";
 import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
@@ -239,6 +238,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
             if (error) throw error;
 
             toast.success("הוקפא בהצלחה! 🧊", { description: "ההוצאה הועברה לרשימת המשאלות ל-24 שעות." });
+            const confetti = (await import("canvas-confetti")).default;
             confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             onClose();
         } catch (e: unknown) {
@@ -325,7 +325,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
 
                 {/* Header Actions */}
                 <div className="flex items-center justify-between px-4 py-3 shrink-0">
-                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full bg-white/5 text-white/60">
+                    <Button variant="ghost" size="icon" onClick={onClose} className="h-11 w-11 rounded-full bg-white/5 text-white/60">
                         <X className="w-5 h-5" />
                     </Button>
                     <DrawerTitle className="text-white font-medium">

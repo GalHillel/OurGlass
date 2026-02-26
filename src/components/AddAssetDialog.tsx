@@ -113,14 +113,28 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData, usdToI
             const numericQty = parseFloat(quantity) || 0;
             const numericYield = parseFloat(interestRate) || 0;
 
+            // Recalculate interest up to this point to "bake" it into the principal
+            // This prevents interest from resetting or double-calculating when editing
+            let finalPrincipal = numericAmount;
+            if (initialData?.interest_rate && initialData?.last_interest_calc) {
+                const lastCalc = new Date(initialData.last_interest_calc);
+                const now = new Date();
+                const diffMs = now.getTime() - lastCalc.getTime();
+                if (diffMs > 0) {
+                    const annualRate = Number(initialData.interest_rate) / 100;
+                    const msPerYear = 365 * 24 * 60 * 60 * 1000;
+                    finalPrincipal = numericAmount * Math.pow(1 + annualRate, diffMs / msPerYear);
+                }
+            }
+
             const payload: Partial<Goal> = {
                 name,
-                current_amount: numericAmount,
+                current_amount: finalPrincipal,
                 quantity: numericQty,
                 type: isMoneyMarket ? 'money_market' : isForeignCurrency ? 'foreign_currency' : 'cash',
                 investment_type: type,
                 interest_rate: (isMoneyMarket || isSavings) ? (numericYield || (isMoneyMarket ? 4.5 : 0)) : 0,
-                last_interest_calc: isMoneyMarket ? new Date(investmentDate).toISOString() : new Date().toISOString(),
+                last_interest_calc: new Date().toISOString(),
                 last_updated: new Date().toISOString(),
                 couple_id: profile?.couple_id || null,
                 currency: isForeignCurrency ? 'USD' : undefined,

@@ -147,10 +147,10 @@ describe('useWealth', () => {
 
         await waitFor(() => expect(result.current.loading).toBe(false));
 
-        // 10% annual / 365 = 0.00027397 daily
-        // 10000 * (1 + 0.00027397)^3 = ~10008.22
-        expect(result.current.netWorth).toBeGreaterThan(10008);
-        expect(result.current.netWorth).toBeLessThan(10009);
+        // Continuous: 10000 * (1 + 0.1)^(3/365) = ~10007.86
+        // (Previously it was ~10008.22 due to naive division)
+        expect(result.current.netWorth).toBeGreaterThan(10007.8);
+        expect(result.current.netWorth).toBeLessThan(10007.9);
     });
 
     it('sanitizes wealth totals by excluding negative goal amounts (assets only)', async () => {

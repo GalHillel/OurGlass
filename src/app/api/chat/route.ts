@@ -13,7 +13,22 @@ export async function POST(req: Request) {
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const coupleId = context?.wealthSnapshot?.couple_id || null;
+
+  if (!user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  // Fetch verified profile data to get the real coupleId
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('couple_id, name')
+    .eq('id', user.id)
+    .single();
+
+  const coupleId = profile?.couple_id;
+  if (!coupleId) {
+    return new Response("No couple associated with this user", { status: 403 });
+  }
 
   const CATEGORIES_LIST = "אוכל, קפה, סופר, תחבורה, דלק, רכב, קניות, בילוי, מסעדה, חשבונות, בריאות, ביטוח, לימודים, קוסמטיקה, עבודה, אחר";
 
@@ -33,7 +48,7 @@ General behavior:
 
 Context:
 ${JSON.stringify(context, null, 2)}
-User Identity: ${context?.identityName || 'User'}
+User Identity: ${context?.identityName || profile?.name || 'User'}
 Current Route: ${context?.currentRoute || 'Unknown'}
 `;
 
@@ -49,18 +64,15 @@ Current Route: ${context?.currentRoute || 'Unknown'}
     date: z.string().optional(),
     mood_rating: z.number().int().min(1).max(5).optional(),
   });
-  type AddTransactionParams = z.infer<typeof addTransactionParams>;
 
   const updateTransactionParams = z.object({
     id: z.string(),
     updates: z.record(z.string(), z.unknown()),
   });
-  type UpdateTransactionParams = z.infer<typeof updateTransactionParams>;
 
   const deleteTransactionParams = z.object({
     id: z.string(),
   });
-  type DeleteTransactionParams = z.infer<typeof deleteTransactionParams>;
 
   const addAssetParams = z.object({
     name: z.string(),
@@ -73,7 +85,6 @@ Current Route: ${context?.currentRoute || 'Unknown'}
     shares: z.number().positive().optional(),
     average_buy_price: z.number().positive().optional(),
   });
-  type AddAssetParams = z.infer<typeof addAssetParams>;
 
   const addSubscriptionParams = z.object({
     name: z.string(),
@@ -83,19 +94,16 @@ Current Route: ${context?.currentRoute || 'Unknown'}
     payer: z.enum(['him', 'her', 'joint']),
     category: z.string().optional(),
   });
-  type AddSubscriptionParams = z.infer<typeof addSubscriptionParams>;
 
   const addWishParams = z.object({
     title: z.string(),
     target_amount: z.number().positive(),
     emoji: z.string(),
   });
-  type AddWishParams = z.infer<typeof addWishParams>;
 
   const mapsToPageParams = z.object({
     path: z.string(),
   });
-  type MapsToPageParams = z.infer<typeof mapsToPageParams>;
 
   // Build tools object with proper Vercel AI SDK tool() helpers
   const tools = {
@@ -113,7 +121,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
               description: `${emoji} ${description}`,
               category,
               payer,
-              user_id: user?.id,
+              user_id: user.id,
               couple_id: coupleId,
               date: date || new Date().toISOString(),
               mood_rating,
@@ -126,6 +134,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           if (error) throw error;
           return { success: true, data };
         } catch (e) {
+          console.error("Tool Error (addTransaction):", e);
           return {
             success: false,
             error: e instanceof Error ? e.message : 'Unknown error',
@@ -139,6 +148,17 @@ Current Route: ${context?.currentRoute || 'Unknown'}
       inputSchema: updateTransactionParams,
       async execute({ id, updates }) {
         try {
+          // Security: Ensure the transaction belongs to the same couple
+          const { data: existing } = await supabase
+            .from('transactions')
+            .select('couple_id')
+            .eq('id', id)
+            .single();
+
+          if (existing?.couple_id !== coupleId) {
+            throw new Error("Unauthorized to update this transaction");
+          }
+
           const { data, error } = await supabase
             .from('transactions')
             .update(updates)
@@ -149,6 +169,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           if (error) throw error;
           return { success: true, data };
         } catch (e) {
+          console.error("Tool Error (updateTransaction):", e);
           return {
             success: false,
             error: e instanceof Error ? e.message : 'Unknown error',
@@ -162,10 +183,22 @@ Current Route: ${context?.currentRoute || 'Unknown'}
       inputSchema: deleteTransactionParams,
       async execute({ id }) {
         try {
+          // Security check
+          const { data: existing } = await supabase
+            .from('transactions')
+            .select('couple_id')
+            .eq('id', id)
+            .single();
+
+          if (existing?.couple_id !== coupleId) {
+            throw new Error("Unauthorized to delete this transaction");
+          }
+
           const { error } = await supabase.from('transactions').delete().eq('id', id);
           if (error) throw error;
           return { success: true };
         } catch (e) {
+          console.error("Tool Error (deleteTransaction):", e);
           return {
             success: false,
             error: e instanceof Error ? e.message : 'Unknown error',
@@ -212,6 +245,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           if (error) throw error;
           return { success: true, data };
         } catch (e) {
+          console.error("Tool Error (addAsset):", e);
           return {
             success: false,
             error: e instanceof Error ? e.message : 'Unknown error',
@@ -243,6 +277,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           if (error) throw error;
           return { success: true, data };
         } catch (e) {
+          console.error("Tool Error (addSubscription):", e);
           return {
             success: false,
             error: e instanceof Error ? e.message : 'Unknown error',
@@ -262,7 +297,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
             status: 'pending',
             current_amount: 0,
             couple_id: coupleId,
-            requested_by: user?.id ?? null,
+            requested_by: user.id,
             saved_amount: 0,
             priority: 0,
             link: null,
@@ -272,6 +307,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           if (error) throw error;
           return { success: true, data };
         } catch (e) {
+          console.error("Tool Error (addWish):", e);
           return {
             success: false,
             error: e instanceof Error ? e.message : 'Unknown error',
@@ -290,27 +326,38 @@ Current Route: ${context?.currentRoute || 'Unknown'}
   };
 
   try {
-    const result = streamText({
+    const stream = streamText({
       model: google('gemini-1.5-flash-latest'),
       system: systemMessage,
       messages: modelMessages,
       tools,
       abortSignal: req.signal,
     });
-    return result.toUIMessageStreamResponse();
+
+    return stream.toUIMessageStreamResponse();
   } catch (error) {
-    const { isQuotaError, backupModel } = await import('@/lib/ai-router');
-    if (isQuotaError(error)) {
-      const result = streamText({
-        model: backupModel,
-        system: systemMessage,
-        messages: modelMessages,
-        tools,
-        abortSignal: req.signal,
-      });
-      return result.toUIMessageStreamResponse();
+    console.error("Chat API Stream Error:", error);
+
+    try {
+      const { isQuotaError, backupModel } = await import('@/lib/ai-router');
+      if (isQuotaError(error)) {
+        const result = streamText({
+          model: backupModel,
+          system: systemMessage,
+          messages: modelMessages,
+          tools,
+          abortSignal: req.signal,
+        });
+        return result.toUIMessageStreamResponse();
+      }
+    } catch (importErr) {
+      console.error("Error importing AI router:", importErr);
     }
-    console.error("Chat API Error:", error);
-    throw error;
+
+    return new Response(JSON.stringify({ error: "חלה שגיאה בעיבוד הבקשה. אנא נסה שנית." }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
+
 }

@@ -5,7 +5,6 @@ import { motion, useAnimate, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Gift, Zap, Utensils, Coffee, Camera, Plane, Music, Sparkles, Heart } from "lucide-react";
 import { triggerHaptic } from "@/utils/haptics";
-import confetti from "canvas-confetti";
 
 const TREATS = [
     { label: "דייט בבקתה", icon: Plane, color: "text-blue-400", bg: "bg-blue-500/10" },
@@ -55,6 +54,7 @@ export function GuiltFreeRoulette() {
         setResult(finalResult);
         setIsSpinning(false);
 
+        const confetti = (await import("canvas-confetti")).default;
         confetti({
             particleCount: 150,
             spread: 70,

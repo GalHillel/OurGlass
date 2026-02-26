@@ -165,12 +165,12 @@ export const WishlistActionDrawer = ({ isOpen, onClose, item, mode, onConfirm }:
                         </div>
 
                         {/* Action Button */}
-                        <div className="px-4 pb-8">
+                        <div className="px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
                             <Button
                                 onClick={handleConfirm}
                                 disabled={amount <= 0}
                                 className={cn(
-                                    "w-full h-16 text-xl font-bold rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-95",
+                                    "w-full h-14 text-xl font-bold rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-95",
                                     `bg-gradient-to-r ${gradient}`
                                 )}
                             >
