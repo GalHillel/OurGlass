@@ -1,5 +1,5 @@
 import { google } from '@ai-sdk/google';
-import { streamText, convertToModelMessages, type UIMessage, tool } from 'ai';
+import { streamText, convertToModelMessages, type UIMessage, type ToolSet } from 'ai';
 import { z } from 'zod';
 import { createClient } from "@/utils/supabase/server";
 import { FinancialContext } from "@/types";
@@ -32,22 +32,82 @@ User Identity: ${context?.identityName || 'User'}
 Current Route: ${context?.currentRoute || 'Unknown'}
 `;
 
-  // Build tools object with proper type inference for Vercel AI SDK
+  // Define schemas so execute params can be typed via z.infer
+  const addTransactionParams = z.object({
+    amount: z.number().positive(),
+    description: z.string(),
+    category: z.string(),
+    type: z.enum(['expense', 'income']).default('expense'),
+    payer: z.enum(['him', 'her', 'joint']),
+    emoji: z.string(),
+    installments: z.number().int().min(1).default(1),
+    date: z.string().optional(),
+    mood_rating: z.number().int().min(1).max(5).optional(),
+  });
+  type AddTransactionParams = z.infer<typeof addTransactionParams>;
+
+  const updateTransactionParams = z.object({
+    id: z.string(),
+    updates: z.record(z.string(), z.unknown()),
+  });
+  type UpdateTransactionParams = z.infer<typeof updateTransactionParams>;
+
+  const deleteTransactionParams = z.object({
+    id: z.string(),
+  });
+  type DeleteTransactionParams = z.infer<typeof deleteTransactionParams>;
+
+  const addAssetParams = z.object({
+    name: z.string(),
+    emoji: z.string(),
+    type: z.enum(['cash', 'stock', 'foreign_currency', 'real_estate', 'money_market']),
+    current_amount: z.number().positive().optional(),
+    currency: z.string().default('ILS'),
+    institution: z.string().optional(),
+    symbol: z.string().optional(),
+    shares: z.number().positive().optional(),
+    average_buy_price: z.number().positive().optional(),
+  });
+  type AddAssetParams = z.infer<typeof addAssetParams>;
+
+  const addSubscriptionParams = z.object({
+    name: z.string(),
+    emoji: z.string(),
+    amount: z.number().positive(),
+    billing_cycle: z.enum(['monthly', 'yearly']).default('monthly'),
+    payer: z.enum(['him', 'her', 'joint']),
+    category: z.string().optional(),
+  });
+  type AddSubscriptionParams = z.infer<typeof addSubscriptionParams>;
+
+  const addWishParams = z.object({
+    title: z.string(),
+    target_amount: z.number().positive(),
+    emoji: z.string(),
+  });
+  type AddWishParams = z.infer<typeof addWishParams>;
+
+  const mapsToPageParams = z.object({
+    path: z.string(),
+  });
+  type MapsToPageParams = z.infer<typeof mapsToPageParams>;
+
+  // Build tools object; cast when passing to streamText to satisfy SDK types
   const tools = {
-    addTransaction: tool({
+    addTransaction: {
       description: 'Add a new transaction.',
-      parameters: z.object({
-        amount: z.number().positive(),
-        description: z.string(),
-        category: z.string(),
-        type: z.enum(['expense', 'income']).default('expense'),
-        payer: z.enum(['him', 'her', 'joint']),
-        emoji: z.string(),
-        installments: z.number().int().min(1).default(1),
-        date: z.string().optional(),
-        mood_rating: z.number().int().min(1).max(5).optional(),
-      }),
-      execute: async ({ amount, description, category, type, payer, emoji, installments, date, mood_rating }) => {
+      parameters: addTransactionParams,
+      execute: async ({
+        amount,
+        description,
+        category,
+        type,
+        payer,
+        emoji,
+        installments,
+        date,
+        mood_rating,
+      }: AddTransactionParams) => {
         try {
           const finalDescription = `${emoji} ${description}`;
           const isExpense = type === 'expense';
@@ -90,15 +150,12 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
-    }),
+    },
 
-    updateTransaction: tool({
+    updateTransaction: {
       description: 'Update an existing transaction.',
-      parameters: z.object({
-        id: z.string(),
-        updates: z.record(z.string(), z.unknown()),
-      }),
-      execute: async ({ id, updates }) => {
+      parameters: updateTransactionParams,
+      execute: async ({ id, updates }: UpdateTransactionParams) => {
         try {
           const { error } = await supabase.from('transactions').update(updates).eq('id', id);
           if (error) throw error;
@@ -107,12 +164,12 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
-    }),
+    },
 
-    deleteTransaction: tool({
+    deleteTransaction: {
       description: 'Delete a transaction.',
-      parameters: z.object({ id: z.string() }),
-      execute: async ({ id }) => {
+      parameters: deleteTransactionParams,
+      execute: async ({ id }: DeleteTransactionParams) => {
         try {
           const { error } = await supabase.from('transactions').delete().eq('id', id);
           if (error) throw error;
@@ -121,22 +178,22 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
-    }),
+    },
 
-    addAsset: tool({
+    addAsset: {
       description: 'Add an asset.',
-      parameters: z.object({
-        name: z.string(),
-        emoji: z.string(),
-        type: z.enum(['cash', 'stock', 'foreign_currency', 'real_estate', 'money_market']),
-        current_amount: z.number().positive().optional(),
-        currency: z.string().default('ILS'),
-        institution: z.string().optional(),
-        symbol: z.string().optional(),
-        shares: z.number().positive().optional(),
-        average_buy_price: z.number().positive().optional(),
-      }),
-      execute: async ({ name, emoji, type, current_amount, currency, institution, symbol, shares, average_buy_price }) => {
+      parameters: addAssetParams,
+      execute: async ({
+        name,
+        emoji,
+        type,
+        current_amount,
+        currency,
+        institution,
+        symbol,
+        shares,
+        average_buy_price,
+      }: AddAssetParams) => {
         try {
           let value = current_amount || 0;
           if (type === 'stock' && shares && average_buy_price) {
@@ -162,19 +219,19 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
-    }),
+    },
 
-    addSubscription: tool({
+    addSubscription: {
       description: 'Add a recurring subscription.',
-      parameters: z.object({
-        name: z.string(),
-        emoji: z.string(),
-        amount: z.number().positive(),
-        billing_cycle: z.enum(['monthly', 'yearly']).default('monthly'),
-        payer: z.enum(['him', 'her', 'joint']),
-        category: z.string().optional(),
-      }),
-      execute: async ({ name, emoji, amount, billing_cycle, payer, category }) => {
+      parameters: addSubscriptionParams,
+      execute: async ({
+        name,
+        emoji,
+        amount,
+        billing_cycle,
+        payer,
+        category,
+      }: AddSubscriptionParams) => {
         try {
           const { error } = await supabase.from('subscriptions').insert({
             name: `${emoji} ${name}`,
@@ -191,16 +248,12 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
-    }),
+    },
 
-    addWish: tool({
+    addWish: {
       description: 'Add an item to the wishlist.',
-      parameters: z.object({
-        title: z.string(),
-        target_amount: z.number().positive(),
-        emoji: z.string(),
-      }),
-      execute: async ({ title, target_amount, emoji }) => {
+      parameters: addWishParams,
+      execute: async ({ title, target_amount, emoji }: AddWishParams) => {
         try {
           const { error } = await supabase.from('wishlist').insert({
             name: `${emoji} ${title}`,
@@ -216,15 +269,15 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
-    }),
+    },
 
-    MapsToPage: tool({
+    MapsToPage: {
       description: 'Navigate the UI.',
-      parameters: z.object({ path: z.string() }),
-      execute: async ({ path }) => {
+      parameters: mapsToPageParams,
+      execute: async ({ path }: MapsToPageParams) => {
         return { success: true, path };
       },
-    }),
+    },
   };
 
   try {
@@ -232,8 +285,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
       model: google('gemini-1.5-flash-latest'),
       system: systemMessage,
       messages: modelMessages,
-      tools,
-      maxSteps: 5,
+      tools: tools as ToolSet,
       abortSignal: req.signal,
     });
     return result.toUIMessageStreamResponse();
@@ -244,8 +296,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
         model: backupModel,
         system: systemMessage,
         messages: modelMessages,
-        tools,
-        maxSteps: 5,
+        tools: tools as ToolSet,
         abortSignal: req.signal,
       });
       return result.toUIMessageStreamResponse();

@@ -84,9 +84,9 @@ export const ChatInterface = ({ context, onClose }: ChatInterfaceProps) => {
 
     const { messages, setMessages, sendMessage, status, stop } = useChat({
         id: chatId,
-        onToolCall({ toolCall }: { toolCall: { toolName: string; args: unknown } }) {
-            if (toolCall.toolName === 'MapsToPage') {
-                const { path } = toolCall.args as { path: string };
+        onToolCall({ toolCall }) {
+            if (toolCall.toolName === 'MapsToPage' && 'args' in toolCall) {
+                const { path } = (toolCall as { args: { path: string } }).args;
                 hapticConfirm();
                 router.push(path);
             }
