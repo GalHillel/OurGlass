@@ -1,5 +1,5 @@
 import { google } from '@ai-sdk/google';
-import { streamText, convertToModelMessages, type UIMessage, type ToolSet } from 'ai';
+import { streamText, convertToModelMessages, type UIMessage, tool } from 'ai';
 import { z } from 'zod';
 import { createClient } from "@/utils/supabase/server";
 import { FinancialContext } from "@/types";
@@ -92,22 +92,23 @@ Current Route: ${context?.currentRoute || 'Unknown'}
   });
   type MapsToPageParams = z.infer<typeof mapsToPageParams>;
 
-  // Build tools object; cast when passing to streamText to satisfy SDK types
+  // Build tools object with proper Vercel AI SDK tool() helpers
   const tools = {
-    addTransaction: {
+    addTransaction: tool({
       description: 'Add a new transaction.',
       parameters: addTransactionParams,
-      execute: async ({
-        amount,
-        description,
-        category,
-        type,
-        payer,
-        emoji,
-        installments,
-        date,
-        mood_rating,
-      }: AddTransactionParams) => {
+      execute: async (params: AddTransactionParams) => {
+        const {
+          amount,
+          description,
+          category,
+          type,
+          payer,
+          emoji,
+          installments,
+          date,
+          mood_rating,
+        } = params;
         try {
           const finalDescription = `${emoji} ${description}`;
           const isExpense = type === 'expense';
@@ -150,9 +151,9 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
-    },
+    }),
 
-    updateTransaction: {
+    updateTransaction: tool({
       description: 'Update an existing transaction.',
       parameters: updateTransactionParams,
       execute: async ({ id, updates }: UpdateTransactionParams) => {
@@ -164,9 +165,9 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
-    },
+    }),
 
-    deleteTransaction: {
+    deleteTransaction: tool({
       description: 'Delete a transaction.',
       parameters: deleteTransactionParams,
       execute: async ({ id }: DeleteTransactionParams) => {
@@ -178,9 +179,9 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
-    },
+    }),
 
-    addAsset: {
+    addAsset: tool({
       description: 'Add an asset.',
       parameters: addAssetParams,
       execute: async ({
@@ -219,9 +220,9 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
-    },
+    }),
 
-    addSubscription: {
+    addSubscription: tool({
       description: 'Add a recurring subscription.',
       parameters: addSubscriptionParams,
       execute: async ({
@@ -248,9 +249,9 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
-    },
+    }),
 
-    addWish: {
+    addWish: tool({
       description: 'Add an item to the wishlist.',
       parameters: addWishParams,
       execute: async ({ title, target_amount, emoji }: AddWishParams) => {
@@ -269,15 +270,15 @@ Current Route: ${context?.currentRoute || 'Unknown'}
           return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
         }
       },
-    },
+    }),
 
-    MapsToPage: {
+    MapsToPage: tool({
       description: 'Navigate the UI.',
       parameters: mapsToPageParams,
       execute: async ({ path }: MapsToPageParams) => {
         return { success: true, path };
       },
-    },
+    }),
   };
 
   try {
@@ -285,7 +286,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
       model: google('gemini-1.5-flash-latest'),
       system: systemMessage,
       messages: modelMessages,
-      tools: tools as ToolSet,
+      tools,
       abortSignal: req.signal,
     });
     return result.toUIMessageStreamResponse();
@@ -296,7 +297,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
         model: backupModel,
         system: systemMessage,
         messages: modelMessages,
-        tools: tools as ToolSet,
+        tools,
         abortSignal: req.signal,
       });
       return result.toUIMessageStreamResponse();
