@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Gift, EyeOff, PartyPopper } from "lucide-react";
 import { Transaction } from "@/types";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { hapticSuccess, hapticHeavy } from "@/utils/haptics";
 import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
@@ -129,7 +129,7 @@ export function SurpriseReveal({ transaction, isRecipient }: SurpriseRevealProps
                                 <>
                                     <EyeOff className="w-8 h-8 text-purple-400/50 mx-auto" />
                                     <p className="text-xs text-purple-300/40">
-                                        הפתעה! תתגלה ב-{new Date(transaction.surprise_reveal_date!).toLocaleDateString(LOCALE)}
+                                        הפתעה! תתגלה ב-{formatDate(transaction.surprise_reveal_date!, LOCALE)}
                                     </p>
                                 </>
                             ) : (
@@ -162,7 +162,7 @@ export function SurpriseReveal({ transaction, isRecipient }: SurpriseRevealProps
                             {transaction.description || "הפתעה"}
                         </p>
                         <p className="text-[10px] text-white/40">
-                            {new Date(transaction.date).toLocaleDateString(LOCALE)}
+                            {formatDate(transaction.date, LOCALE)}
                         </p>
                     </div>
                     <div className="text-left">

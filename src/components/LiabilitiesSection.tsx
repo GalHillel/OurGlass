@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useLiabilities, useAddLiability, useDeleteLiability, isLiabilityActive } from "@/hooks/useWealthData";
 import { Liability, LiabilityType } from "@/types";
 import { toast } from "sonner";
-import { cn, formatAmount } from "@/lib/utils";
+import { cn, formatAmount, formatDate } from "@/lib/utils";
 import { EmptyState } from "@/components/EmptyState";
 import { useAuth } from "@/components/AuthProvider";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -191,7 +191,7 @@ function LiabilityCard({ liability, isStealthMode }: { liability: Liability, isS
                             <span className="rounded-xl bg-red-500/15 px-2.5 py-1 text-red-200">{isStealthMode ? '***' : Number(liability.interest_rate || 0).toFixed(2)}% ריבית</span>
                             <span className="rounded-xl bg-white/10 px-2.5 py-1 text-white/70 inline-flex items-center gap-1">
                                 <CalendarClock className="w-3 h-3" />
-                                {liability.end_date ? new Date(liability.end_date).toLocaleDateString(LOCALE) : "ללא תאריך סיום"}
+                                {liability.end_date ? formatDate(liability.end_date, LOCALE) : "ללא תאריך סיום"}
                             </span>
                             {!isActive && <span className="rounded-xl bg-emerald-500/15 px-2.5 py-1 text-emerald-200">שולם / הסתיים</span>}
                         </div>

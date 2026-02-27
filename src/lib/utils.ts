@@ -95,12 +95,30 @@ export function calculateFutureWealth(currentWealth: number, monthlySavings: num
 }
 
 /**
+ * Formats a date safely for SSR, avoiding RangeError with specific locales.
+ */
+export function formatDate(date: Date | string | number | null, locale: string = 'he-IL') {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
+
+  try {
+    return d.toLocaleDateString(locale);
+  } catch (e) {
+    console.error(`Error formatting date for locale ${locale}:`, e);
+    // Fallback to a safe ISO-like format or en-US if he-IL fails (common in server environments)
+    return d.toLocaleDateString('en-GB');
+  }
+}
+
+/**
  * Formats a currency amount, respecting stealth mode.
  */
-export function formatAmount(amount: number, isStealth: boolean, currency: string = '₪', placeholder = '***,***') {
+export function formatAmount(amount: number | string, isStealth: boolean, currency: string = '₪', placeholder = '***,***') {
   if (isStealth) return placeholder;
-  const n = Number(amount) || 0;
+  const n = typeof amount === 'string' ? parseFloat(amount) : amount;
+  if (isNaN(n)) return `${currency}0`;
   const abs = Math.abs(n);
-  const formatted = abs.toLocaleString();
+  const formatted = abs.toLocaleString('en-US'); // Use stable locale for thousands separator
   return n < 0 ? `-${currency}${formatted}` : `${currency}${formatted}`;
 }
