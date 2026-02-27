@@ -37,6 +37,6 @@ describe('SubscriptionKiller', () => {
 
         render(<SubscriptionKiller subscriptions={subs as never} />);
 
-        expect(screen.getByText('✅ כל המנויים נראים תקינים!')).toBeInTheDocument();
+        expect(screen.getByText('אין מנויים לביטול כרגע ✨')).toBeInTheDocument();
     });
 });

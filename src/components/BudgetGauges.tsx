@@ -10,17 +10,19 @@ import { CURRENCY_SYMBOL } from "@/lib/constants";
 interface BudgetGaugesProps {
     balance: number;
     budget: number;
+    spent?: number;
     daysRemaining: number;
 }
 
-export const BudgetGauges = ({ balance, budget, daysRemaining }: BudgetGaugesProps) => {
+export const BudgetGauges = ({ balance, budget, spent, daysRemaining }: BudgetGaugesProps) => {
     const isStealthMode = useAppStore(s => s.isStealthMode);
     // 1. Daily Safe Spend
     // If we have balance, divide by days. If negative, 0.
     const safeDaily = balance > 0 ? balance / Math.max(1, daysRemaining) : 0;
 
     // 2. Burn Rate (Visual only for now, based on % used)
-    const encodedBurn = Math.min(100, Math.max(0, ((budget - balance) / budget) * 100));
+    const used = typeof spent === 'number' ? spent : (budget - balance);
+    const encodedBurn = budget > 0 ? Math.min(100, Math.max(0, (used / budget) * 100)) : 0;
 
     // Colors
     const isSafe = balance > 0;

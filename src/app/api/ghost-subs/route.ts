@@ -4,16 +4,23 @@ import { generateText } from "ai";
 import { createClient } from "@/utils/supabase/server";
 import { subMonths } from "date-fns";
 import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "edge";
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {
             return new Response("Unauthorized", { status: 401 });
+        }
+
+        const ip = getClientIp(req);
+        const rl = rateLimit({ key: `api:ghost-subs:${user.id}:${ip}`, limit: 5, windowMs: 60_000 });
+        if (!rl.ok) {
+            return NextResponse.json({ error: "Rate limit" }, { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } });
         }
 
         const { data: profile } = await supabase
@@ -40,7 +47,11 @@ export async function GET() {
                 .eq("couple_id", coupleId)
         ]);
 
-        const transactions = txs.data || [];
+        const transactions = (txs.data || []).filter((t: unknown) => {
+            const obj = t as Record<string, unknown>;
+            const type = typeof obj.type === "string" ? obj.type : "expense";
+            return type === "expense";
+        });
         const registeredSubscriptions = subs.data || [];
 
         const prompt = `

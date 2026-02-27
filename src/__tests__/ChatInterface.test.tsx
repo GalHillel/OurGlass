@@ -59,7 +59,7 @@ describe('ChatInterface', () => {
         render(<ChatInterface context={{ budget: 5000 } as never} onClose={vi.fn()} />);
 
         // Wait for load
-        const input = await screen.findByPlaceholderText('שאל את רועי...');
+        const input = await screen.findByPlaceholderText('איך אוכל לסייע?');
         fireEvent.change(input, { target: { value: 'How is my budget?' } });
 
         // The send button is a motion.button (mocked as <button>), find by its SVG child or role
@@ -70,7 +70,7 @@ describe('ChatInterface', () => {
 
         expect(mockSendMessage).toHaveBeenCalledWith(
             { text: 'How is my budget?' },
-            { body: { context: { budget: 5000 } } }
+            { body: { context: { budget: 5000 }, chatId: expect.any(String) } }
         );
     });
 

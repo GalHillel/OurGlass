@@ -108,7 +108,7 @@ export const HomeMosaic = React.memo(({
     const [isEditModeOpen, setIsEditModeOpen] = useState(false);
 
     const isStealthMode = useAppStore(useShallow(s => s.isStealthMode));
-    const { widgets = [], features = {} as any, _hasHydrated = false } = useDashboardStore(useShallow(s => ({
+    const { widgets, features, _hasHydrated } = useDashboardStore(useShallow(s => ({
         widgets: s.widgets,
         features: s.features,
         _hasHydrated: s._hasHydrated
@@ -119,6 +119,10 @@ export const HomeMosaic = React.memo(({
             <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
         </div>;
     }
+
+    const safeViewingDate = (viewingDate instanceof Date && !Number.isNaN(viewingDate.getTime()))
+        ? viewingDate
+        : new Date();
 
     // -- Calculations for Tiles --
     const budgetUsedPercent = Math.min(100, Math.round((totalExpenses / budget) * 100));
@@ -167,9 +171,9 @@ export const HomeMosaic = React.memo(({
                             <div className="flex items-center gap-2.5 px-4 py-2 bg-white/5 rounded-2xl border border-white/10">
                                 <CalendarRange className="w-4 h-4 text-blue-400" />
                                 <span className="text-sm font-bold text-white/90">
-                                    {format(getBillingPeriodForDate(viewingDate).start, 'd בMMMM', { locale: he })}
+                                    {format(getBillingPeriodForDate(safeViewingDate).start, 'd בMMMM', { locale: he })}
                                     {' - '}
-                                    {format(getBillingPeriodForDate(viewingDate).end, 'd בMMMM', { locale: he })}
+                                    {format(getBillingPeriodForDate(safeViewingDate).end, 'd בMMMM', { locale: he })}
                                 </span>
                             </div>
                             <button

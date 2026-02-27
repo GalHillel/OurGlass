@@ -11,10 +11,15 @@ import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
  * Calculate the current value of a money market / interest-bearing asset
  * using daily compound interest.
  *
- * Formula: P × (1 + r/365)^d
+ * Annual compounding base with daily-equivalent growth:
+ * \( P \\times (1 + r)^{\\Delta t / 365} \\)
+ * where \(r\) is the annual rate (decimal) and \(\Delta t\) is elapsed days (can be fractional).
+ *
+ * Daily-equivalent rate:
+ * daily_rate = (1 + annual_rate)^(1/365) - 1
  *   P = initial amount
  *   r = annual rate (decimal)
- *   d = days elapsed since investment
+ *   \(\Delta t\) = elapsed days since investment (fractional-safe)
  *
  * @param initialAmount  The original investment amount in {CURRENCY_SYMBOL}
  * @param investmentDate The date the investment was made (ISO string or Date)
@@ -32,21 +37,21 @@ export function calculateMoneyMarketYield(
     const start = new Date(investmentDate);
     const now = new Date();
 
-    // Calculate exact days elapsed
     const diffMs = now.getTime() - start.getTime();
-    const days = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+    if (!(diffMs > 0)) return initialAmount;
 
-    if (days === 0) return initialAmount;
-
-    const dailyRate = (annualRate / 100) / 365;
-    return initialAmount * Math.pow(1 + dailyRate, days);
+    const annualRateDecimal = annualRate / 100;
+    const msPerYear = 365 * 24 * 60 * 60 * 1000;
+    const yearFraction = diffMs / msPerYear;
+    return initialAmount * Math.pow(1 + annualRateDecimal, yearFraction);
 }
 
 /**
  * Calculate the daily yield amount for display purposes
  */
 export function calculateDailyYield(currentValue: number, annualRate: number = 4.5): number {
-    const dailyRate = (annualRate / 100) / 365;
+    const annualRateDecimal = annualRate / 100;
+    const dailyRate = Math.pow(1 + annualRateDecimal, 1 / 365) - 1;
     return currentValue * dailyRate;
 }
 
@@ -66,5 +71,5 @@ export function calculateTotalProfit(
  * Format {CURRENCY_SYMBOL} currency with proper locale
  */
 export function formatILS(amount: number, decimals: number = 0): string {
-    return `$${CURRENCY_SYMBOL}${amount.toLocaleString(LOCALE, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+    return `${CURRENCY_SYMBOL}${amount.toLocaleString(LOCALE, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
 }

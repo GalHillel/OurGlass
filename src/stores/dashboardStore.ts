@@ -130,15 +130,24 @@ export const useDashboardStore = create<DashboardState>()(
         {
             name: 'ourglass-dashboard-store',
             version: 1,
-            migrate: (persistedState: any, version: number) => {
+            migrate: (persistedState: unknown, version: number) => {
+                const state =
+                    persistedState && typeof persistedState === 'object'
+                        ? (persistedState as Partial<DashboardState>)
+                        : {};
                 if (version === 0) {
                     // Version 0 was the old state. Let's ensure new segments exist.
                     return {
-                        ...persistedState,
+                        ...state,
                         navItems: DEFAULT_NAV_ITEMS,
                     };
                 }
-                return persistedState;
+                return {
+                    widgets: state.widgets ?? DEFAULT_WIDGETS,
+                    navItems: state.navItems ?? DEFAULT_NAV_ITEMS,
+                    features: state.features ?? DEFAULT_FEATURES,
+                    _hasHydrated: false,
+                } as unknown as DashboardState;
             },
             onRehydrateStorage: () => (state) => {
                 if (state) {

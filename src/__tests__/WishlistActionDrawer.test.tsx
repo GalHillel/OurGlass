@@ -45,7 +45,7 @@ describe('WishlistActionDrawer', () => {
         const input = screen.getByPlaceholderText('0');
         fireEvent.change(input, { target: { value: '150' } });
 
-        fireEvent.click(screen.getByText(/הפקד ${CURRENCY_SYMBOL}150/));
+        fireEvent.click(screen.getByText(new RegExp(`הפקד\\s*\\${CURRENCY_SYMBOL}\\s*150`)));
 
         expect(onConfirm).toHaveBeenCalledWith(mockItem, 150);
     });

@@ -1,11 +1,25 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { createClient } from "@/utils/supabase/server";
 import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(req: Request) {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return NextResponse.json(null, { status: 401 });
+        }
+
+        const ip = getClientIp(req);
+        const rl = rateLimit({ key: `api:smart-insight:${user.id}:${ip}`, limit: 10, windowMs: 60_000 });
+        if (!rl.ok) {
+            return NextResponse.json(null, { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } });
+        }
+
         if (!process.env.GEMINI_API_KEY) {
             return NextResponse.json(null);
         }
@@ -24,6 +38,10 @@ export async function POST(req: Request) {
         const liabTotal = (liabilities as { monthly_payment: number }[]).reduce((s: number, l) => s + (l.monthly_payment || 0), 0);
         const totalFixed = subTotal + liabTotal;
 
+        const incomeNum = Number(monthlyIncome) || 0;
+        const totalCommitted = totalSpend + totalFixed;
+        const realBudgetUsagePct = incomeNum > 0 ? (totalCommitted / incomeNum) * 100 : 0;
+
         const topTx = ([...transactions] as { amount: number; description: string }[]).sort((a, b) => b.amount - a.amount).slice(0, 3);
 
         const prompt = `
@@ -38,8 +56,8 @@ Monthly Income: ${CURRENCY_SYMBOL}${monthlyIncome}
 Hourly Wage: ${CURRENCY_SYMBOL}${hourlyWage}
 Variable spent (daily): ${CURRENCY_SYMBOL}${totalSpend}
 Fixed spent (Loans + Subs): ${CURRENCY_SYMBOL}${totalFixed}
-TOTAL COMMITTED SPEND: ${CURRENCY_SYMBOL}${totalSpend + totalFixed}
-Real Budget Usage: ${((totalSpend + totalFixed) / monthlyIncome * 100).toFixed(1)}% of income
+TOTAL COMMITTED SPEND: ${CURRENCY_SYMBOL}${totalCommitted}
+Real Budget Usage: ${realBudgetUsagePct.toFixed(1)}% of income
 
 Top 3 biggest variable expenses: ${JSON.stringify(topTx.map(t => ({ desc: t.description, amount: t.amount })))}
 

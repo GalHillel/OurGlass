@@ -24,7 +24,10 @@ function generateSuggestedQuestions(context: FinancialContext): string[] {
     const transactions = context.transactions || context.recentTransactions || [];
     const { subscriptions, liabilities, budget, wishlist, wealthSnapshot } = context;
 
-    const totalSpent = transactions?.reduce((s: number, t: Transaction) => s + Number(t.amount), 0) || 0;
+    const totalSpent = transactions?.reduce((s: number, t: Transaction) => {
+        if ((t.type ?? 'expense') !== 'expense') return s;
+        return s + Number(t.amount);
+    }, 0) || 0;
     const budgetPct = budget > 0 ? Math.round((totalSpent / budget) * 100) : 0;
 
     // Category breakdown for targeted questions
@@ -201,11 +204,11 @@ export const ChatInterface = ({ context, onClose }: ChatInterfaceProps) => {
                 </div>
                 <div className="flex items-center gap-2">
                     {messages.length > 0 && (
-                        <Button variant="ghost" size="icon" onClick={clearHistory} className="w-9 h-9 text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
+                        <Button aria-label="Clear" variant="ghost" size="icon" onClick={clearHistory} className="w-9 h-9 text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
                             <Trash2 className="w-4 h-4" />
                         </Button>
                     )}
-                    <Button variant="ghost" size="icon" onClick={onClose} className="w-9 h-9 text-white/20 hover:text-white hover:bg-white/10 rounded-xl transition-colors">
+                    <Button aria-label="Close" variant="ghost" size="icon" onClick={onClose} className="w-9 h-9 text-white/20 hover:text-white hover:bg-white/10 rounded-xl transition-colors">
                         <X className="w-5 h-5" />
                     </Button>
                 </div>

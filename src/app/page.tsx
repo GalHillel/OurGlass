@@ -89,6 +89,7 @@ export default function Home() {
     ]);
 
     const variableTransactions = transactions.filter(tx => {
+      if ((tx.type ?? 'expense') !== 'expense') return false;
       const amount = Number(tx.amount);
       if (fixedAmounts.has(amount) && amount > 100) return false;
       return true;
@@ -110,7 +111,12 @@ export default function Home() {
 
   const handleUpdateSubscriptionStatus = async (id: string, status: Subscription['status']) => {
     try {
-      const { error } = await createClient().from('subscriptions').update({ status }).eq('id', id);
+      if (!profile?.couple_id) throw new Error("Missing couple_id");
+      const { error } = await createClient()
+        .from('subscriptions')
+        .update({ status })
+        .eq('id', id)
+        .eq('couple_id', profile.couple_id);
       if (error) throw error;
       toast.success("סטטוס המנוי עודכן");
       queryClient.invalidateQueries({ queryKey: ['subscriptions', profile?.couple_id] });
@@ -122,7 +128,12 @@ export default function Home() {
 
   const handleDeleteSubscription = async (id: string) => {
     try {
-      const { error } = await createClient().from('subscriptions').delete().eq('id', id);
+      if (!profile?.couple_id) throw new Error("Missing couple_id");
+      const { error } = await createClient()
+        .from('subscriptions')
+        .delete()
+        .eq('id', id)
+        .eq('couple_id', profile.couple_id);
       if (error) throw error;
       toast.success("המנוי נמחק");
       queryClient.invalidateQueries({ queryKey: ['subscriptions', profile?.couple_id] });
@@ -180,7 +191,7 @@ export default function Home() {
                     balance={cashflow?.balance ?? 0}
                     budget={cashflow?.budget ?? 20000}
                     monthlyIncome={profile?.monthly_income || cashflow?.budget || 20000}
-                    totalExpenses={(cashflow?.budget || 20000) - (cashflow?.balance ?? 0)}
+                    totalExpenses={cashflow?.totalSpent ?? 0}
                     daysInMonth={differenceInDays(getBillingPeriodForDate(viewingDate).end, getBillingPeriodForDate(viewingDate).start)}
                     daysPassed={Math.max(1, differenceInDays(new Date(), getBillingPeriodForDate(viewingDate).start))}
                     assets={assets}

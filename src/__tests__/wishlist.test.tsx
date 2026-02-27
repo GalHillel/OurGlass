@@ -10,7 +10,10 @@ vi.mock('@/utils/supabase/client', () => ({
     createClient: () => ({
         from: vi.fn().mockImplementation((table) => ({
             select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
             gte: vi.fn().mockReturnThis(),
+            lt: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: null, error: null }),
             order: vi.fn().mockResolvedValue({
                 data: table === 'wishlist' ? [{ id: '1', name: 'Vacation', price: 5000, saved_amount: 1000 }] : []
             })

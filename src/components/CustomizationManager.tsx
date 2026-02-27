@@ -103,7 +103,7 @@ function FeatureToggle({ featureKey, label, description, icon: Icon, colorClass 
     );
 }
 
-export const NAV_ITEM_REGISTRY: Record<string, { label: string; icon: any; color: string }> = {
+export const NAV_ITEM_REGISTRY: Record<string, { label: string; icon: ComponentType<{ className?: string }>; color: string }> = {
     'home': { label: 'בית', icon: Smartphone, color: 'text-blue-400' },
     'wealth': { label: 'עושר', icon: TrendingUp, color: 'text-emerald-400' },
     'stocks': { label: 'מניות', icon: Rocket, color: 'text-blue-400' },

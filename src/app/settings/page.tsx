@@ -86,10 +86,18 @@ export default function SettingsPage() {
     };
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
-        router.push("/login");
-        router.refresh();
+        try {
+            await supabase.auth.signOut();
+            // Clear any persisted state that might cause issues
+            localStorage.clear();
+            router.push("/login");
+            router.refresh();
+        } catch (error) {
+            console.error("Logout error:", error);
+            router.push("/login"); // Force redirect anyway
+        }
     };
+
 
     return (
         <div className="flex flex-col gap-6 max-w-md mx-auto pt-8 pb-0 px-4">

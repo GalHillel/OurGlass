@@ -3,6 +3,7 @@ import { streamText, convertToModelMessages, type UIMessage, tool } from 'ai';
 import { z } from 'zod';
 import { createClient } from "@/utils/supabase/server";
 import { FinancialContext } from "@/types";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -16,6 +17,15 @@ export async function POST(req: Request) {
 
   if (!user) {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  const ip = getClientIp(req);
+  const rl = rateLimit({ key: `api:chat:${user.id}:${ip}`, limit: 20, windowMs: 60_000 });
+  if (!rl.ok) {
+    return new Response("Rate limit", {
+      status: 429,
+      headers: { "Retry-After": String(rl.retryAfterSeconds) },
+    });
   }
 
   // Fetch verified profile data to get the real coupleId
@@ -54,10 +64,11 @@ Current Route: ${context?.currentRoute || 'Unknown'}
 
   // Define schemas so execute params can be typed via z.infer
   const addTransactionParams = z.object({
+    idempotency_key: z.string().uuid(),
     amount: z.number().positive(),
     description: z.string(),
     category: z.string(),
-    type: z.enum(['expense', 'income']).default('expense'),
+    type: z.enum(['expense', 'income', 'transfer', 'adjustment']).default('expense'),
     payer: z.enum(['him', 'her', 'joint']),
     emoji: z.string(),
     installments: z.number().int().min(1).default(1),
@@ -67,7 +78,16 @@ Current Route: ${context?.currentRoute || 'Unknown'}
 
   const updateTransactionParams = z.object({
     id: z.string(),
-    updates: z.record(z.string(), z.unknown()),
+    updates: z.object({
+      description: z.string().optional(),
+      category: z.string().optional(),
+      amount: z.number().positive().optional(),
+      type: z.enum(['expense', 'income', 'transfer', 'adjustment']).optional(),
+      payer: z.enum(['him', 'her', 'joint']).optional(),
+      emoji: z.string().optional(),
+      date: z.string().optional(),
+      mood_rating: z.number().int().min(1).max(5).optional(),
+    }),
   });
 
   const deleteTransactionParams = z.object({
@@ -111,13 +131,15 @@ Current Route: ${context?.currentRoute || 'Unknown'}
       description: 'Add a new transaction (expense or income).',
       inputSchema: addTransactionParams,
       async execute(
-        { amount, description, category, type, payer, emoji, installments, date, mood_rating },
+        { idempotency_key, amount, description, category, type, payer, emoji, installments, date, mood_rating },
       ) {
         try {
           const { data, error } = await supabase
             .from('transactions')
-            .insert({
+            .upsert({
+              idempotency_key,
               amount: Math.abs(amount),
+              type,
               description: `${emoji} ${description}`,
               category,
               payer,
@@ -127,7 +149,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
               mood_rating,
               is_surprise: false,
               tags: null,
-            })
+            }, { onConflict: 'couple_id,idempotency_key' })
             .select()
             .single();
 
@@ -163,6 +185,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
             .from('transactions')
             .update(updates)
             .eq('id', id)
+            .eq('couple_id', coupleId)
             .select()
             .single();
 
@@ -194,7 +217,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
             throw new Error("Unauthorized to delete this transaction");
           }
 
-          const { error } = await supabase.from('transactions').delete().eq('id', id);
+          const { error } = await supabase.from('transactions').delete().eq('id', id).eq('couple_id', coupleId);
           if (error) throw error;
           return { success: true };
         } catch (e) {

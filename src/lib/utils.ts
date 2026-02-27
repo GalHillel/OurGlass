@@ -78,7 +78,7 @@ export function detectSpendingAnomaly(amount: number, categoryAverage: number) {
  */
 export function calculateFutureWealth(currentWealth: number, monthlySavings: number, annualReturnRate: number, years: number) {
   const months = years * 12;
-  const monthlyRate = annualReturnRate / 12;
+  const monthlyRate = Math.pow(1 + annualReturnRate, 1 / 12) - 1;
 
   if (monthlyRate === 0) {
     // No growth — simple addition
@@ -99,5 +99,8 @@ export function calculateFutureWealth(currentWealth: number, monthlySavings: num
  */
 export function formatAmount(amount: number, isStealth: boolean, currency: string = '₪', placeholder = '***,***') {
   if (isStealth) return placeholder;
-  return `${currency}${amount.toLocaleString()}`;
+  const n = Number(amount) || 0;
+  const abs = Math.abs(n);
+  const formatted = abs.toLocaleString();
+  return n < 0 ? `-${currency}${formatted}` : `${currency}${formatted}`;
 }

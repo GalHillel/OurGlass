@@ -29,6 +29,8 @@ vi.mock('@/components/QuestsAndBadges', () => ({ QuestsAndBadges: () => <div dat
 vi.mock('@/components/BudgetHealthScore', () => ({ BudgetHealthScore: () => <div data-testid="mock-health">Health</div> }));
 vi.mock('@/components/StockPortfolio', () => ({ StockPortfolio: () => <div data-testid="mock-stocks">Stocks</div> }));
 vi.mock('@/components/AIHubBanner', () => ({ AIHubBanner: () => <div data-testid="mock-aihub">AI Hub</div> }));
+vi.mock('@/components/SmartInsights', () => ({ SmartInsights: () => <div data-testid="mock-smart">Smart</div> }));
+vi.mock('@/components/MonthlyRoastPraise', () => ({ MonthlyRoastPraise: () => <div data-testid="mock-roast">Roast</div> }));
 
 describe('HomeMosaic', () => {
     const defaultProps = {

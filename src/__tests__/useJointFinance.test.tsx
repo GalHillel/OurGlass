@@ -50,13 +50,20 @@ describe('useJointFinance', () => {
     });
 
     describe('useSettleUp', () => {
-        it('returns pending state with no data when no couple_id exists', async () => {
+        it('returns default state when no couple_id exists', async () => {
             const { result } = renderReactQueryHook(() => useSettleUp(new Date()));
 
-            // Query is disabled, so it stays pending and fetchStatus idle
-            await waitFor(() => expect(result.current.fetchStatus).toBe('idle'));
+            // Query is enabled now, so it resolves with defaults
+            await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-            expect(result.current.data).toBeUndefined();
+            expect(result.current.data).toEqual({
+                himTotal: 0,
+                herTotal: 0,
+                jointTotal: 0,
+                splitRatio: 0.5,
+                himOwes: 0,
+                transactions: { him: [], her: [], joint: [] }
+            });
             expect(mockSelect).not.toHaveBeenCalled();
         });
 
@@ -105,9 +112,14 @@ describe('useJointFinance', () => {
             mockProfile = { pocket_him: 1000, pocket_her: 800 };
             const { result } = renderReactQueryHook(() => useGuiltFreeWallets(new Date()));
 
-            await waitFor(() => expect(result.current.fetchStatus).toBe('idle'));
+            await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-            expect(result.current.data).toBeUndefined();
+            expect(result.current.data).toEqual({
+                himRemaining: 1000,
+                herRemaining: 800,
+                himSpent: 0,
+                herSpent: 0
+            });
             expect(mockSelect).not.toHaveBeenCalled();
         });
 

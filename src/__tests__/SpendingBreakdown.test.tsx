@@ -6,7 +6,7 @@ import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 describe('SpendingBreakdown', () => {
     it('shows empty state if no transactions', () => {
         render(<SpendingBreakdown transactions={[]} />);
-        expect(screen.getByText('אין נתונים להצגה')).toBeInTheDocument();
+        expect(screen.getByText('אין נתונים זמינים')).toBeInTheDocument();
     });
 
     it('renders breakdowns correctly grouped and sorted', () => {

@@ -6,6 +6,11 @@ export async function updateSession(request: NextRequest) {
         request,
     })
 
+    const pathname = request.nextUrl.pathname
+    const isApiRoute = pathname.startsWith('/api')
+    const isLoginRoute = pathname === '/login'
+    const isPwaManifestRoute = pathname === '/manifest.webmanifest'
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -53,27 +58,37 @@ export async function updateSession(request: NextRequest) {
         } = await supabase.auth.getUser()
 
         if (userError) {
+            // Treat missing session as a normal state in dev
+            if (userError.message === 'Auth session missing!') {
+                if (!isApiRoute && !isLoginRoute && !isPwaManifestRoute) {
+                    const url = request.nextUrl.clone()
+                    url.pathname = '/login'
+                    return NextResponse.redirect(url)
+                }
+                return supabaseResponse
+            }
             console.error("Middleware Auth User Error:", userError.message)
-            // If it's a network/fetch error, we just let it pass to avoid blocking the app
-            if (userError.message?.includes('fetch')) return supabaseResponse
         }
         user = authUser
     } catch (e) {
         console.error("Middleware Auth Execution Error (likely fetch failed):", e)
-        // In case of a hard crash (like 'fetch failed' in edge runtime), we just let it pass
-        // to avoid blocking the user from the app during transient network issues
+        if (!isApiRoute && !isLoginRoute && !isPwaManifestRoute) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/login'
+            return NextResponse.redirect(url)
+        }
         return supabaseResponse
     }
 
     // If no user and trying to access protected routes, redirect to login
-    if (!user && request.nextUrl.pathname !== '/login') {
+    if (!user && !isApiRoute && !isLoginRoute && !isPwaManifestRoute) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)
     }
 
     // If user exists and trying to access login, redirect to dashboard
-    if (user && request.nextUrl.pathname === '/login') {
+    if (user && isLoginRoute) {
         const url = request.nextUrl.clone()
         url.pathname = '/'
         return NextResponse.redirect(url)

@@ -64,8 +64,8 @@ export default function RootLayout({
             `,
           }}
         />
-        <QueryProvider>
-          <AuthProvider>
+        <AuthProvider>
+          <QueryProvider>
             <ErrorBoundary>
               <IdentityGate>
                 <main className="native-scroll touch-scroll relative z-10 w-full p-4 pt-[env(safe-area-inset-top)] pb-0">
@@ -90,8 +90,8 @@ export default function RootLayout({
                 }
               }}
             />
-          </AuthProvider>
-        </QueryProvider>
+          </QueryProvider>
+        </AuthProvider>
       </body>
     </html>
   );

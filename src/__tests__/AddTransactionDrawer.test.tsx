@@ -5,6 +5,8 @@ import { useAuth } from '@/components/AuthProvider';
 import { useAppStore } from '@/stores/appStore';
 import { useDeepFreeze } from '@/hooks/useDeepFreeze';
 import { Transaction } from '@/types';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 
 vi.mock('@/components/AuthProvider', () => ({
     useAuth: vi.fn()
@@ -16,20 +18,27 @@ vi.mock('@/hooks/useDeepFreeze', () => ({
     useDeepFreeze: vi.fn()
 }));
 vi.mock('@/utils/haptics', () => ({
-    triggerHaptic: vi.fn()
+    triggerHaptic: vi.fn(),
+    hapticForAmount: vi.fn(),
+    hapticError: vi.fn(),
 }));
 vi.mock('canvas-confetti', () => ({
     default: vi.fn()
 }));
 
-const mockInsert = vi.fn().mockResolvedValue({ data: [{ id: 1 }], error: null });
+const thenableSelect = (data: unknown) => ({
+    single: vi.fn().mockResolvedValue({ data: Array.isArray(data) ? data[0] : data, error: null }),
+    then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
+        Promise.resolve({ data, error: null }).then(resolve, reject),
+});
 
 vi.mock('@/utils/supabase/client', () => ({
     createClient: () => ({
         from: vi.fn().mockImplementation(() => ({
-            insert: vi.fn().mockReturnThis(),
-            select: vi.fn().mockReturnThis(),
-            single: mockInsert
+            upsert: vi.fn().mockReturnThis(),
+            update: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            select: vi.fn().mockImplementation(() => thenableSelect([{ id: '1' }])),
         }))
     })
 }));
@@ -50,6 +59,10 @@ describe('AddTransactionDrawer', () => {
     const mockOnClose = vi.fn();
     const mockOnSuccess = vi.fn();
     const mockCheckTransaction = vi.fn().mockReturnValue(false); // return true if frozen
+    const wrapper = ({ children }: { children: ReactNode }) => {
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    };
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -70,13 +83,13 @@ describe('AddTransactionDrawer', () => {
     });
 
     it('renders drawer content when open', () => {
-        render(<AddTransactionDrawer isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />);
+        render(<AddTransactionDrawer isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />, { wrapper });
         expect(screen.getByText('הוספת הוצאה')).toBeInTheDocument();
         expect(screen.getByText('סכום ההוצאה')).toBeInTheDocument();
     });
 
     it('handles keypad entry and submit', async () => {
-        render(<AddTransactionDrawer isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />);
+        render(<AddTransactionDrawer isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />, { wrapper });
 
         // Find keypad number 5 and 0
         fireEvent.click(screen.getByRole('button', { name: /5/ }));
@@ -95,6 +108,7 @@ describe('AddTransactionDrawer', () => {
     it('loads initial data correctly for editing', () => {
         const initialData: Partial<Transaction> = {
             id: '1',
+            type: 'expense',
             amount: 250,
             description: 'Lunch',
             category: 'מסעדה',
@@ -103,7 +117,7 @@ describe('AddTransactionDrawer', () => {
             mood_rating: 4
         };
 
-        render(<AddTransactionDrawer isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} initialData={initialData as Transaction} />);
+        render(<AddTransactionDrawer isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} initialData={initialData as Transaction} />, { wrapper });
 
         expect(screen.getByText('עריכת הוצאה')).toBeInTheDocument();
         // Displays amount

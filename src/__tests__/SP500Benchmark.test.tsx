@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SP500Benchmark } from '@/components/SP500Benchmark';
@@ -73,7 +73,9 @@ describe('SP500Benchmark', () => {
         render(<SP500Benchmark initialWealth={100000} />);
 
         // Use more permissive matcher first to check if anything renders
-        expect(screen.getByTestId('benchmark-header')).toBeInTheDocument();
-        expect(screen.getByTestId('wealth-return')).toBeInTheDocument();
+        const header = screen.getByTestId('benchmark-header');
+        expect(header).toBeInTheDocument();
+        fireEvent.click(header);
+        expect(await screen.findByTestId('wealth-return')).toBeInTheDocument();
     });
 });

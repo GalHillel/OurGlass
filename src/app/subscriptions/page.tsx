@@ -26,7 +26,7 @@ import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 export default function SubscriptionsPage() {
     const isStealthMode = useAppStore(s => s.isStealthMode);
-    const features = useDashboardStore((s) => s.features) || ({} as any);
+    const features = useDashboardStore((s) => s.features) ?? {};
     const {
         subsShowIndicator = true,
         subsShowLiabilities = true,
@@ -35,6 +35,7 @@ export default function SubscriptionsPage() {
         subsShowSummary = true
     } = features;
     const { profile } = useAuth();
+    const coupleId = profile?.couple_id ?? null;
     const queryClient = useQueryClient();
     const { data: subscriptions = [], isLoading: loading } = useSubscriptions();
 
@@ -45,11 +46,16 @@ export default function SubscriptionsPage() {
 
     const handleUpdateStatus = async (id: string, status: Subscription['status']) => {
         try {
-            const { error } = await createClient().from('subscriptions').update({ status }).eq('id', id);
+            if (!coupleId) throw new Error("Missing couple_id");
+            const { error } = await createClient()
+                .from('subscriptions')
+                .update({ status })
+                .eq('id', id)
+                .eq('couple_id', coupleId);
             if (error) throw error;
             toast.success("סטטוס המנוי עודכן");
-            queryClient.invalidateQueries({ queryKey: ['subscriptions', profile?.couple_id] });
-            queryClient.invalidateQueries({ queryKey: ['global-cashflow', profile?.couple_id] });
+            queryClient.invalidateQueries({ queryKey: ['subscriptions', coupleId] });
+            queryClient.invalidateQueries({ queryKey: ['global-cashflow', coupleId] });
         } catch {
             toast.error("שגיאה בעדכון הסטטוס");
         }
@@ -69,11 +75,33 @@ export default function SubscriptionsPage() {
 
     const handleDelete = async (id: string) => {
         try {
-            const { error } = await createClient().from('subscriptions').delete().eq('id', id);
+            if (!coupleId) throw new Error("Missing couple_id");
+            const { error } = await createClient()
+                .from('subscriptions')
+                .delete()
+                .eq('id', id)
+                .eq('couple_id', coupleId);
             if (error) throw error;
             toast.success("מנוי הוסר");
-            queryClient.invalidateQueries({ queryKey: ['subscriptions', profile?.couple_id] });
-            queryClient.invalidateQueries({ queryKey: ['global-cashflow', profile?.couple_id] });
+            queryClient.invalidateQueries({ queryKey: ['subscriptions', coupleId] });
+            queryClient.invalidateQueries({ queryKey: ['global-cashflow', coupleId] });
+        } catch {
+            toast.error("שגיאה במחיקה");
+        }
+    };
+
+    const handleDeleteLiability = async (id: string) => {
+        try {
+            if (!coupleId) throw new Error("Missing couple_id");
+            const { error } = await createClient()
+                .from('liabilities')
+                .delete()
+                .eq('id', id)
+                .eq('couple_id', coupleId);
+            if (error) throw error;
+            toast.success("התחייבות הוסרה");
+            queryClient.invalidateQueries({ queryKey: ['liabilities', coupleId] });
+            queryClient.invalidateQueries({ queryKey: ['global-cashflow', coupleId] });
         } catch {
             toast.error("שגיאה במחיקה");
         }
@@ -81,8 +109,8 @@ export default function SubscriptionsPage() {
 
     const handleSuccess = () => {
         setIsDialogOpen(false);
-        queryClient.invalidateQueries({ queryKey: ['subscriptions', profile?.couple_id] });
-        queryClient.invalidateQueries({ queryKey: ['global-cashflow', profile?.couple_id] });
+        queryClient.invalidateQueries({ queryKey: ['subscriptions', coupleId] });
+        queryClient.invalidateQueries({ queryKey: ['global-cashflow', coupleId] });
     };
 
     const { activeLiabilities = [], monthlyPayments: totalDebtMonthly = 0 } = useTotalLiabilities();
@@ -212,7 +240,7 @@ export default function SubscriptionsPage() {
                                     <SwipeableRow
                                         key={liab.id}
                                         onEdit={() => { }}
-                                        onDelete={() => handleDelete(liab.id)}
+                                        onDelete={() => handleDeleteLiability(liab.id)}
                                         deleteMessage="האם למחוק התחייבות זו?"
                                         className="mb-3"
                                     >

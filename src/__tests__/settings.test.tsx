@@ -47,7 +47,7 @@ describe('Settings Page', () => {
         render(<SettingsPage />);
 
         // Potential savings logic: Income (15000) - Budget (10000) = 5000
-        expect(screen.getByText(/${CURRENCY_SYMBOL}5,000/)).toBeInTheDocument();
+        expect(screen.getByText(new RegExp(`\\${CURRENCY_SYMBOL}5,000`))).toBeInTheDocument();
 
         fireEvent.click(screen.getByText('שמור שינויים'));
 

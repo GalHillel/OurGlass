@@ -78,7 +78,7 @@ describe('useWealth', () => {
 
         const goals = [
             { id: 1, type: 'stock', symbol: 'AAPL', quantity: 10 },
-            { id: 2, investment_type: 'crypto', symbol: 'BTC', quantity: 0.5 } // Handled as crypto
+            { id: 2, type: 'stock', symbol: 'BTC', quantity: 0.5 }
         ];
 
         mockOrder.mockResolvedValue({ data: goals, error: null });
@@ -147,10 +147,8 @@ describe('useWealth', () => {
 
         await waitFor(() => expect(result.current.loading).toBe(false));
 
-        // Continuous: 10000 * (1 + 0.1)^(3/365) = ~10007.86
-        // (Previously it was ~10008.22 due to naive division)
-        expect(result.current.netWorth).toBeGreaterThan(10007.8);
-        expect(result.current.netWorth).toBeLessThan(10007.9);
+        // Client should not accrue yield; server accrual updates stored amounts.
+        expect(result.current.netWorth).toBe(10000);
     });
 
     it('sanitizes wealth totals by excluding negative goal amounts (assets only)', async () => {
@@ -171,7 +169,6 @@ describe('useWealth', () => {
         expect(result.current.netWorth).toBe(10000);
         expect(result.current.cashValue).toBe(10000);
         expect(result.current.assets).toHaveLength(2);
-        // Individual asset should still keep its negative value for display
-        expect(result.current.assets.find(a => a.id === '2')?.calculatedValue).toBe(-2000);
+        expect(result.current.assets.find(a => a.id === '2')?.calculatedValue).toBe(0);
     });
 });

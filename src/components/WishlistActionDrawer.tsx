@@ -100,7 +100,7 @@ export const WishlistActionDrawer = ({ isOpen, onClose, item, mode, onConfirm }:
                                 />
                             </div>
                             <p className="text-sm text-white/40 mt-2">
-                                {isDeposit ? `חסרים $${CURRENCY_SYMBOL}${remaining.toLocaleString()}` : `זמינים למשיכה $${CURRENCY_SYMBOL}${saved.toLocaleString()}`}
+                                {isDeposit ? `חסרים ${CURRENCY_SYMBOL}${remaining.toLocaleString()}` : `זמינים למשיכה ${CURRENCY_SYMBOL}${saved.toLocaleString()}`}
                             </p>
                         </div>
 

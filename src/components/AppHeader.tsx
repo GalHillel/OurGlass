@@ -89,7 +89,7 @@ export const AppHeader = memo(({ title, subtitle, icon: Icon, iconColor = "text-
             )}>
                 {/* Right Side (RTL Start) - Title */}
                 <h1 className="text-xl font-black tracking-tight neon-text flex items-center gap-2">
-                    <button onClick={onIconClick} className="active:scale-90 transition-transform">
+                    <button aria-label="Left Icon" onClick={onIconClick} className="active:scale-90 transition-transform">
                         <Icon className={cn("w-6 h-6", iconColor)} />
                     </button>
                     {title} {subtitle && <span className={titleColor}>{subtitle}</span>}

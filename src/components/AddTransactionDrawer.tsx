@@ -94,22 +94,37 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
     const { user, profile } = useAuth();
     const { appIdentity } = useAppStore();
     const queryClient = useQueryClient();
+    const coupleId = profile?.couple_id ?? null;
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
     const saveMutation = useMutation({
         mutationFn: async (payload: SavePayload) => {
             if (payload.txs) {
-                const { data, error } = await supabase.from('transactions').insert(payload.txs).select();
+                const { data, error } = await supabase
+                    .from('transactions')
+                    .upsert(payload.txs, { onConflict: 'couple_id,idempotency_key' })
+                    .select();
                 if (error) throw error;
                 return data;
             } else if (payload.txData) {
                 if (initialData) {
-                    const { data, error } = await supabase.from('transactions').update(payload.txData).eq('id', initialData.id).select().single();
+                    if (!coupleId) throw new Error("Missing couple_id");
+                    const { data, error } = await supabase
+                        .from('transactions')
+                        .update(payload.txData)
+                        .eq('id', initialData.id)
+                        .eq('couple_id', coupleId)
+                        .select()
+                        .single();
                     if (error) throw error;
                     return data;
                 } else {
-                    const { data, error } = await supabase.from('transactions').insert(payload.txData).select().single();
+                    const { data, error } = await supabase
+                        .from('transactions')
+                        .upsert(payload.txData, { onConflict: 'couple_id,idempotency_key' })
+                        .select()
+                        .single();
                     if (error) throw error;
                     return data;
                 }
@@ -117,27 +132,33 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
             throw new Error("Invalid payload");
         },
         onMutate: async (payload) => {
-            await queryClient.cancelQueries({ queryKey: ['transactions'] });
-            await queryClient.cancelQueries({ queryKey: ['global-cashflow'] });
+            if (!coupleId) throw new Error("Missing couple_id");
 
-            const previousTransactions = queryClient.getQueryData(['transactions']);
+            await queryClient.cancelQueries({ queryKey: ['transactions', coupleId] });
+            await queryClient.cancelQueries({ queryKey: ['global-cashflow', coupleId] });
+            await queryClient.cancelQueries({ queryKey: ['settle-up', coupleId] });
+            await queryClient.cancelQueries({ queryKey: ['guilt-free', coupleId] });
+
+            const previousTransactionsEntries = queryClient.getQueriesData({ queryKey: ['transactions', coupleId] });
 
             if (payload.txData && !initialData && !payload.txs) {
-                queryClient.setQueriesData({ queryKey: ['transactions', profile?.couple_id] }, (old: Transaction[] | undefined) => {
+                queryClient.setQueriesData({ queryKey: ['transactions', coupleId] }, (old: Transaction[] | undefined) => {
                     const optimisticTx = {
                         ...payload.txData,
-                        id: crypto.randomUUID(),
+                        id: (payload.txData as { id?: string }).id ?? crypto.randomUUID(),
                         created_at: new Date().toISOString()
                     };
                     return Array.isArray(old) ? [optimisticTx, ...old] : [optimisticTx];
                 });
             }
 
-            return { previousTransactions };
+            return { previousTransactionsEntries };
         },
         onError: (err, newTx, context) => {
-            if (context?.previousTransactions) {
-                queryClient.setQueriesData({ queryKey: ['transactions'] }, context.previousTransactions);
+            if (context?.previousTransactionsEntries) {
+                for (const [key, data] of context.previousTransactionsEntries) {
+                    queryClient.setQueryData(key, data);
+                }
             }
             const errorMsg = err instanceof Error ? err.message : "שגיאה בשמירה";
             toast.error("שגיאה בשמירה: " + errorMsg);
@@ -176,6 +197,17 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
         triggerHaptic();
         setLoading(true);
 
+        if (!user?.id) {
+            toast.error("יש להתחבר מחדש");
+            setLoading(false);
+            return;
+        }
+        if (!coupleId) {
+            toast.error("לא נמצא מזהה זוג (couple_id)");
+            setLoading(false);
+            return;
+        }
+
         let finalDescription = description.trim() || selectedCategory || "הוצאה כללית";
         if (isImpulse) {
             finalDescription += " #impulse";
@@ -187,15 +219,22 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
         const finalDate = new Date(year, month - 1, day, hours, minutes);
 
         if (installments > 1) {
-            const totalAmount = numericAmount;
-            const perInstallment = Math.round((totalAmount / installments) * 100) / 100;
+            const totalCents = Math.round(numericAmount * 100);
+            const baseCents = Math.floor(totalCents / installments);
+            const remainder = totalCents - baseCents * installments;
+
             const txs = [];
             for (let i = 0; i < installments; i++) {
                 const installmentDate = addMonths(finalDate, i);
+                const cents = baseCents + (i < remainder ? 1 : 0);
+                const id = crypto.randomUUID();
                 txs.push({
-                    amount: perInstallment,
-                    user_id: user?.id,
-                    couple_id: profile?.couple_id,
+                    id,
+                    idempotency_key: id,
+                    type: 'expense',
+                    amount: cents / 100,
+                    user_id: user.id,
+                    couple_id: coupleId,
                     description: `${finalDescription} (תשלום ${i + 1}/${installments})`,
                     is_surprise: false,
                     date: installmentDate.toISOString(),
@@ -206,10 +245,14 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
             }
             saveMutation.mutate({ txs });
         } else {
+            const id = initialData?.id ?? crypto.randomUUID();
             const txData = {
+                id,
+                idempotency_key: initialData?.idempotency_key ?? id,
+                type: initialData?.type ?? 'expense',
                 amount: numericAmount,
-                user_id: user?.id,
-                couple_id: profile?.couple_id,
+                user_id: user.id,
+                couple_id: coupleId,
                 description: finalDescription,
                 is_surprise: false,
                 date: finalDate.toISOString(),
@@ -227,12 +270,18 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
 
         try {
             setLoading(true);
+            if (!user?.id) throw new Error("Missing user");
+            if (!coupleId) throw new Error("Missing couple_id");
             const { error } = await supabase.from('wishlist').insert({
                 name: `❄️ [מוקפא] ${itemName}`,
                 price: numericAmount,
                 status: 'pending',
-                user_id: user?.id,
-                link: null
+                couple_id: coupleId,
+                requested_by: user.id,
+                approved_by: null,
+                saved_amount: 0,
+                priority: 0,
+                link: null,
             });
 
             if (error) throw error;

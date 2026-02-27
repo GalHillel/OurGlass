@@ -44,7 +44,7 @@ describe('GuiltFreeWallets', () => {
 
         render(<GuiltFreeWallets />);
 
-        expect(screen.getByText(/כסף כיס ללא אשמה/)).toBeInTheDocument();
+        expect(screen.getByText('תקציב לביזבוזים')).toBeInTheDocument();
         expect(screen.getByText(new RegExp(PAYERS.HIM))).toBeInTheDocument();
         expect(screen.getByText(new RegExp(PAYERS.HER))).toBeInTheDocument();
 

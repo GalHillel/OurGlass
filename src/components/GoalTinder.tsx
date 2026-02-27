@@ -11,22 +11,28 @@ import { toast } from "sonner";
 import { cn, formatAmount } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/components/AuthProvider";
 
 export function GoalTinder() {
     const isStealthMode = useAppStore(s => s.isStealthMode);
     const supabase = useRef(createClient()).current;
     const [currentIndex, setCurrentIndex] = useState(0);
+    const { profile } = useAuth();
+    const coupleId = profile?.couple_id ?? null;
 
     const { data: items = [], isLoading } = useQuery<WishlistItem[]>({
-        queryKey: ['wishlist-items'],
+        queryKey: ['wishlist-items', coupleId],
         queryFn: async () => {
+            if (!coupleId) return [];
             const { data, error } = await supabase
                 .from('wishlist')
                 .select('*')
+                .eq('couple_id', coupleId)
                 .order('priority', { ascending: false });
             if (error) throw error;
             return data || [];
-        }
+        },
+        enabled: !!coupleId,
     });
 
     const activeItem = items[currentIndex];

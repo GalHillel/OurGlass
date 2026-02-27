@@ -79,7 +79,7 @@ export function useLiabilities() {
             if (error) throw error;
             return (data ?? []) as Liability[];
         },
-        enabled: !!coupleId,
+        enabled: true,
     });
 }
 

@@ -1,7 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DividendForecast } from '@/components/DividendForecast';
-
 
 describe('DividendForecast', () => {
     let mathRandomSpy: ReturnType<typeof vi.spyOn>;
@@ -18,7 +17,8 @@ describe('DividendForecast', () => {
     it('renders empty state when no assets', () => {
         render(<DividendForecast assets={[]} />);
         expect(screen.getByText('צפי דיבידנדים')).toBeInTheDocument();
-        expect(screen.getByText('אין דיבידנדים צפויים בקרוב')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button'));
+        expect(screen.getByText('אין דיבידנדים צפויים ברבעון הקרוב')).toBeInTheDocument();
     });
 
     it.skip('identifies dividend paying stocks based on names', () => {
@@ -44,6 +44,8 @@ describe('DividendForecast', () => {
 
         render(<DividendForecast assets={assets as never} />);
 
-        expect(screen.getByText('סה״כ צפוי ברבעון: $150')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button'));
+        expect(screen.getByText('סה״כ רבעוני')).toBeInTheDocument();
+        expect(screen.getAllByText('$150').length).toBeGreaterThan(0);
     });
 });

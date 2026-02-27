@@ -97,6 +97,7 @@ export function SP500Benchmark({ initialWealth }: BenchmarkProps) {
         <div className="neon-card rounded-2xl overflow-hidden transition-all duration-300 border-white/[0.08]">
             {/* Header / Summary State */}
             <button
+                data-testid="benchmark-header"
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="w-full p-4 flex justify-between items-center group active:bg-white/5"
             >
@@ -149,7 +150,7 @@ export function SP500Benchmark({ initialWealth }: BenchmarkProps) {
                                         <TrendingUp className="w-12 h-12 text-white" />
                                     </div>
                                     <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mb-1">התיק שלכם</p>
-                                    <p className={`text-xl font-black ${performance?.yoursReturn && performance.yoursReturn >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                                    <p data-testid="wealth-return" className={`text-xl font-black ${performance?.yoursReturn && performance.yoursReturn >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                                         {performance?.yoursReturn && performance.yoursReturn >= 0 ? "+" : ""}{performance?.yoursReturn}%
                                     </p>
                                 </div>

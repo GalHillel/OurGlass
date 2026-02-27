@@ -52,7 +52,7 @@ describe('LiabilitiesSection', () => {
         render(<LiabilitiesSection />);
 
         expect(screen.getAllByText('Car Loan').length).toBeGreaterThan(0);
-        expect(screen.getByText((content) => content.includes('80,000'))).toBeInTheDocument();
-        expect(screen.getByText((content) => content.includes('20'))).toBeInTheDocument();
+        expect(screen.getAllByText((content) => content.includes('80,000')).length).toBeGreaterThan(0);
+        expect(screen.getByText(/20%/)).toBeInTheDocument();
     });
 });

@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 import { Transaction } from "@/types";
 
 export function useRealtimeSync(coupleId: string | null) {
     const queryClient = useQueryClient();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient(), []);
 
     useEffect(() => {
         if (!coupleId) return;
 
-        let channel: any = null;
+        let channel: ReturnType<typeof supabase.channel> | null = null;
 
         const setupSubscription = () => {
             if (channel) return;
@@ -31,10 +31,22 @@ export function useRealtimeSync(coupleId: string | null) {
                                 if (oldData.some(tx => tx.id === newTx.id)) return oldData;
                                 return [newTx, ...oldData];
                             });
+                        } else if (payload.eventType === 'DELETE') {
+                            const oldTx = payload.old as Partial<Transaction>;
+                            if (oldTx?.id) {
+                                queryClient.setQueriesData({ queryKey: ['transactions', coupleId] }, (oldData: Transaction[] | undefined) => {
+                                    if (!oldData) return oldData;
+                                    return oldData.filter((tx) => tx.id !== oldTx.id);
+                                });
+                            } else {
+                                queryClient.invalidateQueries({ queryKey: ['transactions', coupleId] });
+                            }
                         } else {
                             queryClient.invalidateQueries({ queryKey: ['transactions', coupleId] });
                         }
                         queryClient.invalidateQueries({ queryKey: ['global-cashflow', coupleId] });
+                        queryClient.invalidateQueries({ queryKey: ['settle-up', coupleId] });
+                        queryClient.invalidateQueries({ queryKey: ['guilt-free', coupleId] });
                     }
                 )
                 .on(
@@ -55,17 +67,18 @@ export function useRealtimeSync(coupleId: string | null) {
                 )
                 .on(
                     'postgres_changes',
-                    { event: '*', schema: 'public', table: 'assets', filter: `couple_id=eq.${coupleId}` },
+                    // "goals" is the assets table in this codebase
+                    { event: '*', schema: 'public', table: 'goals', filter: `couple_id=eq.${coupleId}` },
                     () => {
-                        queryClient.invalidateQueries({ queryKey: ['assets', coupleId] });
-                        queryClient.invalidateQueries({ queryKey: ['wealth', coupleId] });
+                        queryClient.invalidateQueries({ queryKey: ['wealthData'] });
+                        queryClient.invalidateQueries({ queryKey: ['wealth-history', coupleId] });
                     }
                 )
                 .on(
                     'postgres_changes',
-                    { event: '*', schema: 'public', table: 'wishlist' },
+                    { event: '*', schema: 'public', table: 'wishlist', filter: `couple_id=eq.${coupleId}` },
                     () => {
-                        queryClient.invalidateQueries({ queryKey: ['wishlist'] });
+                        queryClient.invalidateQueries({ queryKey: ['wishlist', coupleId] });
                     }
                 )
                 .subscribe();
@@ -86,7 +99,18 @@ export function useRealtimeSync(coupleId: string | null) {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
                 setupSubscription();
-            } else {
+                // Catch-up: invalidate only known couple-scoped queries
+                queryClient.invalidateQueries({ queryKey: ['transactions', coupleId] });
+                queryClient.invalidateQueries({ queryKey: ['subscriptions', coupleId] });
+                queryClient.invalidateQueries({ queryKey: ['liabilities', coupleId] });
+                queryClient.invalidateQueries({ queryKey: ['wishlist', coupleId] });
+                queryClient.invalidateQueries({ queryKey: ['global-cashflow', coupleId] });
+                queryClient.invalidateQueries({ queryKey: ['settle-up', coupleId] });
+                queryClient.invalidateQueries({ queryKey: ['guilt-free', coupleId] });
+                queryClient.invalidateQueries({ queryKey: ['wealthData'] });
+                queryClient.invalidateQueries({ queryKey: ['wealth-history', coupleId] });
+            }
+            else {
                 tearDownSubscription();
             }
         };

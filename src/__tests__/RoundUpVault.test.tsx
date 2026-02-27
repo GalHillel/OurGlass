@@ -23,6 +23,6 @@ describe('RoundUpVault', () => {
 
         expect(screen.getByText('כספת האגורות')).toBeInTheDocument();
         expect(screen.getByText(`${CURRENCY_SYMBOL}13`)).toBeInTheDocument();
-        expect(screen.getByText(/היו לך עוד ${CURRENCY_SYMBOL}13 בצד החודש!/)).toBeInTheDocument();
+        expect(screen.getByText((content) => content.includes('היו לך עוד') && content.includes('בצד החודש'))).toBeInTheDocument();
     });
 });

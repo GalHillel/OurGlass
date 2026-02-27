@@ -30,7 +30,9 @@ export interface Category {
 /** Matches DB: transactions table. category_id is UUID FK to categories.id */
 export interface Transaction {
     id: string;
+    type: 'expense' | 'income' | 'transfer' | 'adjustment';
     amount: number;
+    idempotency_key?: string | null;
     category_id: string | null;   // DB column (uuid)
     category?: string;            // Mapped from categories.name for UI display only
     user_id: string | null;

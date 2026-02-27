@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import * as supabaseSsr from '@supabase/ssr';
 
@@ -26,6 +25,10 @@ describe('Supabase Server Utility', () => {
     });
 
     it('creates a server client correctly', async () => {
+        vi.resetModules();
+        vi.unmock('@/utils/supabase/server');
+        const { createClient } = await import('@/utils/supabase/server');
+
         const client = await createClient();
 
         expect(supabaseSsr.createServerClient).toHaveBeenCalled();

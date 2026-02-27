@@ -50,13 +50,20 @@ export default function WishlistPage() {
 
     const supabase = useRef(createClient()).current;
     const { profile } = useAuth();
+    const coupleId = profile?.couple_id ?? null;
 
     const fetchData = useCallback(async () => {
         try {
             setLoading(true);
+            if (!coupleId) {
+                setItems([]);
+                setRealNumberBalance(0);
+                return;
+            }
             const { data, error } = await supabase
                 .from('wishlist')
                 .select('*')
+                .eq('couple_id', coupleId)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -67,11 +74,21 @@ export default function WishlistPage() {
             startOfMonth.setDate(1);
             startOfMonth.setHours(0, 0, 0, 0);
 
-            const { data: txData } = await supabase.from('transactions').select('amount').gte('date', startOfMonth.toISOString());
-            const { data: subData } = await supabase.from('subscriptions').select('amount');
+            const { data: txData } = await supabase
+                .from('transactions')
+                .select('amount, type')
+                .eq('couple_id', coupleId)
+                .gte('date', startOfMonth.toISOString());
+            const { data: subData } = await supabase
+                .from('subscriptions')
+                .select('amount, active')
+                .eq('couple_id', coupleId);
 
-            const totalExpenses = txData?.reduce((sum: number, tx: { amount: number }) => sum + Number(tx.amount), 0) || 0;
-            const totalFixed = subData?.reduce((sum: number, sub: { amount: number }) => sum + Number(sub.amount), 0) || 0;
+            const totalExpenses = txData?.reduce((sum: number, tx: { amount: number; type?: string | null }) => {
+                if (tx.type !== 'expense') return sum;
+                return sum + Number(tx.amount);
+            }, 0) || 0;
+            const totalFixed = subData?.reduce((sum: number, sub: { amount: number; active?: boolean }) => sum + (sub.active === false ? 0 : Number(sub.amount)), 0) || 0;
             const budget = profile?.budget || 20000;
 
             setRealNumberBalance(budget - totalFixed - totalExpenses);
@@ -81,7 +98,7 @@ export default function WishlistPage() {
         } finally {
             setLoading(false);
         }
-    }, [supabase, profile?.budget]);
+    }, [supabase, profile?.budget, coupleId]);
 
     useEffect(() => {
         fetchData();
@@ -89,6 +106,10 @@ export default function WishlistPage() {
 
     const handleAdd = async () => {
         if (!newItemName || !newItemPrice) return;
+        if (!coupleId) {
+            toast.error("לא נמצא מזהה זוג (couple_id)");
+            return;
+        }
 
         try {
             const { error } = await supabase.from('wishlist').insert({
@@ -96,7 +117,7 @@ export default function WishlistPage() {
                 price: parseFloat(newItemPrice),
                 link: newItemLink,
                 status: 'pending',
-                couple_id: profile?.couple_id
+                couple_id: coupleId
             });
 
             if (error) throw error;
@@ -118,7 +139,7 @@ export default function WishlistPage() {
         toast.success("הפריט הוסר");
 
         try {
-            const { error } = await supabase.from('wishlist').delete().eq('id', id);
+            const { error } = await supabase.from('wishlist').delete().eq('id', id).eq('couple_id', coupleId);
             if (error) throw error;
         } catch (error: unknown) {
             const err = error as { message?: string };
@@ -130,17 +151,29 @@ export default function WishlistPage() {
     const handleDidntBuy = async (item: WishlistItem) => {
         const reward = item.price * 0.5;
         try {
+            if (!coupleId) throw new Error("Missing couple_id");
             // Optimistic UI
             setItems(prev => prev.filter(i => i.id !== item.id));
             confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
             toast.success(`ויתרת והרווחת! $${CURRENCY_SYMBOL}${reward} הועברו לחיסכון הכללי 🏆`);
 
             // Find or Create 'General Savings'
-            let { data: savings } = await supabase.from('goals').select('*').eq('name', 'General Savings').single();
+            let { data: savings } = await supabase
+                .from('goals')
+                .select('*')
+                .eq('couple_id', coupleId)
+                .eq('name', 'General Savings')
+                .single();
 
             // If explicit General Savings doesn't exist, try to find any 'cash' goal
             if (!savings) {
-                const { data: anyCash } = await supabase.from('goals').select('*').eq('type', 'cash').limit(1).single();
+                const { data: anyCash } = await supabase
+                    .from('goals')
+                    .select('*')
+                    .eq('couple_id', coupleId)
+                    .eq('type', 'cash')
+                    .limit(1)
+                    .single();
                 if (anyCash) {
                     savings = anyCash;
                 } else {
@@ -151,7 +184,7 @@ export default function WishlistPage() {
                         target_amount: 100000,
                         type: 'cash',
                         currency: 'ILS',
-                        couple_id: profile?.couple_id
+                        couple_id: coupleId
                     }).select().single();
                     if (error) throw error;
                     savings = newSavings;
@@ -162,11 +195,11 @@ export default function WishlistPage() {
             if (savings) {
                 await supabase.from('goals').update({
                     current_amount: (Number(savings.current_amount) || 0) + reward
-                }).eq('id', savings.id);
+                }).eq('id', savings.id).eq('couple_id', coupleId);
             }
 
             // Delete Wishlist Item
-            await supabase.from('wishlist').delete().eq('id', item.id);
+            await supabase.from('wishlist').delete().eq('id', item.id).eq('couple_id', coupleId);
 
         } catch (e: unknown) {
             const err = e as { message?: string };
@@ -188,6 +221,7 @@ export default function WishlistPage() {
 
     const handleMoneyMove = async (item: WishlistItem, amount: number) => {
         try {
+            if (!coupleId) throw new Error("Missing couple_id");
             const currentSaved = item.saved_amount || 0;
             const type = actionType;
             const newSaved = type === 'deposit' ? currentSaved + amount : currentSaved - amount;
@@ -198,7 +232,8 @@ export default function WishlistPage() {
             const { error: wishError } = await supabase
                 .from('wishlist')
                 .update({ saved_amount: newSaved })
-                .eq('id', item.id);
+                .eq('id', item.id)
+                .eq('couple_id', coupleId);
             if (wishError) throw wishError;
 
             // 2. Create Transaction
@@ -220,15 +255,17 @@ export default function WishlistPage() {
             // If Withdraw, `txAmount` should be NEGATIVE expense? (Add to balance).
             // Yes.
 
-            const finalTxAmount = type === 'deposit' ? amount : -amount;
+            const txType = type === 'deposit' ? 'expense' : 'income';
 
             const { error: txError } = await supabase.from('transactions').insert({
-                amount: finalTxAmount,
+                idempotency_key: crypto.randomUUID(),
+                type: txType,
+                amount,
                 description: description,
                 date: new Date().toISOString(),
                 category_id: null, // "Savings" category ideally
                 is_surprise: false,
-                couple_id: profile?.couple_id
+                couple_id: coupleId
             });
             if (txError) throw txError;
 
@@ -305,16 +342,23 @@ export default function WishlistPage() {
                                 try {
                                     // 1. Transaction (Expense)
                                     await supabase.from('transactions').insert({
+                                        idempotency_key: crypto.randomUUID(),
+                                        type: 'expense',
                                         amount: amount,
                                         description: `עיגול לטובה: ${targetItem.name}`,
                                         date: new Date().toISOString(),
                                         category_id: null,
-                                        is_surprise: false
+                                        is_surprise: false,
+                                        couple_id: coupleId
                                     });
 
                                     // 2. Wishlist Update
                                     const newSaved = (targetItem.saved_amount || 0) + amount;
-                                    await supabase.from('wishlist').update({ saved_amount: newSaved }).eq('id', targetItem.id);
+                                    await supabase
+                                        .from('wishlist')
+                                        .update({ saved_amount: newSaved })
+                                        .eq('id', targetItem.id)
+                                        .eq('couple_id', coupleId);
 
                                     toast.success(`הועברו $${CURRENCY_SYMBOL}${amount} ל-${targetItem.name}!`);
                                     confetti({ particleCount: 150, spread: 60, origin: { y: 0.6 } });

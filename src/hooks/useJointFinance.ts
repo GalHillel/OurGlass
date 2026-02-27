@@ -7,15 +7,15 @@ import { Transaction, Subscription, Liability } from "@/types";
 import { getBillingPeriodForDate } from "@/lib/billing";
 import { useTotalLiabilities } from "@/hooks/useWealthData";
 
-const supabase = createClient();
-
 /**
  * MANDATE 1: CENTRALIZED CASHFLOW ENGINE
  * Unifies Transactions, Subscriptions, and Debt Payments into a single source of truth.
  */
 export function useGlobalCashflow(viewingDate: Date = new Date()) {
+    const supabase = createClient();
     const { profile } = useAuth();
     const coupleId = profile?.couple_id;
+    console.log("[useGlobalCashflow] profile:", profile?.id, "coupleId:", coupleId);
     const { monthlyPayments: debtMonthlyPayments } = useTotalLiabilities(viewingDate);
 
     const { start, end } = getBillingPeriodForDate(viewingDate);
@@ -33,51 +33,96 @@ export function useGlobalCashflow(viewingDate: Date = new Date()) {
                 budget: profile?.budget || 20000
             };
 
-            // Fetch everything in parallel for the billing period
-            const [txsResult, subsResult] = await Promise.all([
-                supabase
-                    .from("transactions")
-                    .select("amount")
-                    .eq("couple_id", coupleId)
-                    .gte("date", start.toISOString())
-                    .lt("date", end.toISOString()),
-                supabase
-                    .from("subscriptions")
-                    .select("amount, active")
-                    .eq("couple_id", coupleId)
-            ]);
+            try {
+                // Fetch everything in parallel for the billing period
+                const [txsResult, subsResult] = await Promise.all([
+                    supabase
+                        .from("transactions")
+                        .select("*")
+                        .eq("couple_id", coupleId)
+                        .gte("date", start.toISOString())
+                        .lt("date", end.toISOString()),
+                    supabase
+                        .from("subscriptions")
+                        .select("*")
+                        .eq("couple_id", coupleId)
+                ]);
 
-            if (txsResult.error) throw txsResult.error;
-            if (subsResult.error) throw subsResult.error;
+                if (txsResult.error) {
+                    const err = txsResult.error;
+                    console.error("!!! [useGlobalCashflow] TRANSACTIONS FETCH FAILED !!!",
+                        "Message:", err.message,
+                        "Code:", err.code,
+                        "Details:", err.details,
+                        "Hint:", err.hint
+                    );
+                    throw err;
+                }
+                if (subsResult.error) {
+                    console.error("[useGlobalCashflow] subs error:", {
+                        message: subsResult.error.message,
+                        code: subsResult.error.code,
+                        details: subsResult.error.details,
+                        hint: subsResult.error.hint
+                    });
+                    throw subsResult.error;
+                }
 
-            const totalTransactions = (txsResult.data ?? []).reduce((sum: number, tx) => sum + Number(tx.amount), 0);
+                console.log("[useGlobalCashflow] data fetched:", txsResult.data?.length, "txs,", subsResult.data?.length, "subs");
 
-            const activeSubscriptions = (subsResult.data ?? []).filter((s) => s.active !== false);
-            const totalSubscriptions = activeSubscriptions.reduce((sum: number, s) => sum + Number(s.amount), 0);
+                const txs = (txsResult.data ?? []) as Array<{ amount: number | string; type?: string | null }>;
+                const totalExpenseTransactions = txs.reduce((sum: number, tx) => {
+                    const t = tx.type || 'expense';
+                    if (t === 'income' || t === 'transfer') return sum;
+                    return sum + Number(tx.amount);
+                }, 0);
+                const totalIncomeTransactions = txs.reduce((sum: number, tx) => {
+                    const t = tx.type || 'expense';
+                    if (t !== 'income') return sum;
+                    return sum + Number(tx.amount);
+                }, 0);
 
-            // THE HOLY GRAIL: Subscriptions + Debt
-            const totalFixed = totalSubscriptions + (debtMonthlyPayments || 0);
-            const totalSpent = totalTransactions + totalFixed;
+                const activeSubscriptions = (subsResult.data ?? []).filter((s) => s.active !== false);
+                const totalSubscriptions = activeSubscriptions.reduce((sum: number, s) => sum + Number(s.amount), 0);
 
-            const budget = profile?.budget || 20000;
-            const balance = Math.round((budget - totalSpent) * 100) / 100;
+                // THE HOLY GRAIL: Subscriptions + Debt
+                const totalFixed = totalSubscriptions + (debtMonthlyPayments || 0);
+                const totalSpent = totalExpenseTransactions + totalFixed;
 
-            return {
-                totalTransactions,
-                totalFixed,
-                totalSpent,
-                balance,
-                totalSubscriptions,
-                debtMonthlyPayments,
-                budget
-            };
+                const budget = profile?.budget || 20000;
+                const balance = Math.round((budget - totalSpent + totalIncomeTransactions) * 100) / 100;
+
+                return {
+                    totalTransactions: totalExpenseTransactions,
+                    totalFixed,
+                    totalSpent,
+                    balance,
+                    totalSubscriptions,
+                    totalIncome: totalIncomeTransactions,
+                    debtMonthlyPayments,
+                    budget
+                };
+            } catch (e) {
+                console.error("[useGlobalCashflow] Critical query failure, falling back to zeros:", e);
+                return {
+                    totalTransactions: 0,
+                    totalFixed: 0,
+                    totalSpent: 0,
+                    balance: 0,
+                    totalSubscriptions: 0,
+                    totalIncome: 0,
+                    debtMonthlyPayments: 0,
+                    budget: profile?.budget || 20000
+                };
+            }
         },
-        enabled: !!coupleId,
+        enabled: true,
         staleTime: 2 * 60 * 1000,
     });
 }
 
 export function useTransactions(viewingDate: Date) {
+    const supabase = createClient();
     const { profile } = useAuth();
     const coupleId = profile?.couple_id;
     const { start, end } = getBillingPeriodForDate(viewingDate);
@@ -88,20 +133,30 @@ export function useTransactions(viewingDate: Date) {
             if (!coupleId) return [];
             const { data, error } = await supabase
                 .from('transactions')
-                .select('id, amount, date, description, category, payer, is_surprise, created_at, mood_rating')
+                .select('*')
                 .eq('couple_id', coupleId)
                 .gte('date', start.toISOString())
                 .lt('date', end.toISOString())
                 .order('date', { ascending: false });
 
-            if (error) throw error;
+            if (error) {
+                console.error("!!! [useTransactions] FETCH FAILED !!!",
+                    "Message:", error.message,
+                    "Code:", error.code,
+                    "Details:", error.details,
+                    "Hint:", error.hint
+                );
+                throw error;
+            }
+            console.log("[useTransactions] fetched:", data?.length, "txs");
             return data as Transaction[];
         },
-        enabled: !!coupleId,
+        enabled: true,
     });
 }
 
 export function useSubscriptions() {
+    const supabase = createClient();
     const { profile } = useAuth();
     const coupleId = profile?.couple_id;
 
@@ -117,11 +172,12 @@ export function useSubscriptions() {
             if (error) throw error;
             return data as Subscription[];
         },
-        enabled: !!coupleId,
+        enabled: true,
     });
 }
 
 export function useLiabilities() {
+    const supabase = createClient();
     const { profile } = useAuth();
     const coupleId = profile?.couple_id;
 
@@ -137,7 +193,7 @@ export function useLiabilities() {
             if (error) throw error;
             return data as Liability[];
         },
-        enabled: !!coupleId,
+        enabled: true,
     });
 }
 
@@ -154,6 +210,7 @@ interface SettleUpData {
  * Calculate the Settle Up for a given billing period.
  */
 export function useSettleUp(viewingDate: Date = new Date()) {
+    const supabase = createClient();
     const { profile } = useAuth();
     const coupleId = profile?.couple_id;
     const splitRatio = profile?.income_split_ratio ?? 0.5;
@@ -181,7 +238,8 @@ export function useSettleUp(viewingDate: Date = new Date()) {
 
             if (error) throw error;
 
-            const txs = (data ?? []) as Transaction[];
+            const txsAll = (data ?? []) as Transaction[];
+            const txs = txsAll.filter((t) => (t.type ?? 'expense') === 'expense');
 
             const him = txs.filter((t) => t.payer === "him");
             const her = txs.filter((t) => t.payer === "her");
@@ -204,7 +262,7 @@ export function useSettleUp(viewingDate: Date = new Date()) {
                 transactions: { him, her, joint },
             };
         },
-        enabled: !!coupleId,
+        enabled: true,
         staleTime: 2 * 60 * 1000,
     });
 }
@@ -213,6 +271,7 @@ export function useSettleUp(viewingDate: Date = new Date()) {
  * Guilt-Free Wallets: Calculate remaining pocket money for each partner
  */
 export function useGuiltFreeWallets(viewingDate: Date = new Date()) {
+    const supabase = createClient();
     const { profile } = useAuth();
     const coupleId = profile?.couple_id;
     const pocketHim = profile?.pocket_him ?? 0;
@@ -231,7 +290,7 @@ export function useGuiltFreeWallets(viewingDate: Date = new Date()) {
 
             const { data, error } = await supabase
                 .from("transactions")
-                .select("amount, payer")
+                .select("amount, payer, type")
                 .eq("couple_id", coupleId)
                 .gte("date", start.toISOString())
                 .lt("date", end.toISOString())
@@ -239,9 +298,10 @@ export function useGuiltFreeWallets(viewingDate: Date = new Date()) {
 
             if (error) throw error;
 
-            const txs = (data ?? []) as unknown as Transaction[];
-            const himSpentTransactions = txs.filter((t) => t.payer === "him").reduce((s, t) => s + Number(t.amount), 0);
-            const herSpentTransactions = txs.filter((t) => t.payer === "her").reduce((s, t) => s + Number(t.amount), 0);
+            const txs = (data ?? []) as unknown as Array<{ amount: number | string; payer?: string | null; type?: string | null }>;
+            const expenses = txs.filter((t) => (t.type ?? 'expense') === 'expense');
+            const himSpentTransactions = expenses.filter((t) => t.payer === "him").reduce((s, t) => s + Number(t.amount), 0);
+            const herSpentTransactions = expenses.filter((t) => t.payer === "her").reduce((s, t) => s + Number(t.amount), 0);
 
             // Deduct personal debt payments
             const himDebtPayments = activeLiabilities
@@ -266,7 +326,7 @@ export function useGuiltFreeWallets(viewingDate: Date = new Date()) {
                 herDebtPayments
             };
         },
-        enabled: !!coupleId,
+        enabled: true,
         staleTime: 2 * 60 * 1000,
     });
 }

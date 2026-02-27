@@ -123,10 +123,9 @@ describe('detectSpendingAnomaly', () => {
 
 describe('calculateFutureWealth', () => {
     it('calculates compound growth with no monthly contribution', () => {
-        // 100,000 at 10% for 1 year ≈ 110,471
+        // 100,000 at 10% for 1 year = 110,000 (annual compounding)
         const result = calculateFutureWealth(100000, 0, 0.10, 1);
-        expect(result).toBeGreaterThan(110000);
-        expect(result).toBeLessThan(111000);
+        expect(result).toBe(110000);
     });
 
     it('calculates future value with monthly contributions', () => {

@@ -1,11 +1,25 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { createClient } from "@/utils/supabase/server";
 import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(req: Request) {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return NextResponse.json({ insights: [], error: "Unauthorized" }, { status: 401 });
+        }
+
+        const ip = getClientIp(req);
+        const rl = rateLimit({ key: `api:insights:${user.id}:${ip}`, limit: 10, windowMs: 60_000 });
+        if (!rl.ok) {
+            return NextResponse.json({ insights: [], error: "Rate limit" }, { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } });
+        }
+
         if (!process.env.GEMINI_API_KEY) {
             return NextResponse.json(
                 { error: "Gemini API key not configured" },
@@ -22,8 +36,11 @@ export async function POST(req: Request) {
         const subTotal = (subscriptions as { amount: number }[]).reduce((s: number, sub) => s + (sub.amount || 0), 0);
         const liabTotal = (liabilities as { monthly_payment: number }[]).reduce((s: number, l) => s + (l.monthly_payment || 0), 0);
         const totalFixed = subTotal + liabTotal;
-        const budgetUsage = budget > 0 ? (totalSpent / budget) * 100 : 0;
-        const savingsRate = monthlyIncome > 0 ? ((monthlyIncome - totalSpent) / monthlyIncome) * 100 : 0;
+        const budgetNum = Number(budget) || 0;
+        const incomeNum = Number(monthlyIncome) || 0;
+        const totalCommitted = totalSpent + totalFixed;
+        const budgetUsage = budgetNum > 0 ? (totalCommitted / budgetNum) * 100 : 0;
+        const savingsRate = incomeNum > 0 ? ((incomeNum - totalCommitted) / incomeNum) * 100 : 0;
 
         // Group categories securely to avoid token limit explosions
         const categoryTotals: Record<string, number> = {};
@@ -48,8 +65,8 @@ Here is their data for the month:
 - Fixed spent (subscriptions): ${CURRENCY_SYMBOL}${subTotal}
 - Debt/Loans: ${CURRENCY_SYMBOL}${liabTotal}
 - TOTAL MONTHLY COMMITMENT: ${CURRENCY_SYMBOL}${totalSpent + totalFixed} (This is what actually comes out of their wallet)
-- Budget Usage: ${((totalSpent + totalFixed) / budget * 100).toFixed(1)}%
-- Real Savings Rate: ${((monthlyIncome - (totalSpent + totalFixed)) / monthlyIncome * 100).toFixed(1)}%
+- Budget Usage: ${budgetUsage.toFixed(1)}%
+- Real Savings Rate: ${savingsRate.toFixed(1)}%
 - Spending by category (variable only): ${JSON.stringify(categoryTotals)}
 - Number of daily transactions: ${transactions.length}
 

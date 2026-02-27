@@ -27,8 +27,7 @@ describe('AppHeader', () => {
         render(<AppHeader title="Dashboard" icon={Home} />);
 
         expect(screen.getByText('Dashboard')).toBeInTheDocument();
-        // Since it's an SVG, we check for button wrapping it
-        expect(screen.getByRole('button', { name: '' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Left Icon' })).toBeInTheDocument();
     });
 
     it('renders subtitle if provided', () => {

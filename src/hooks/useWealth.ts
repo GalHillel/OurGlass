@@ -31,21 +31,34 @@ export const useWealth = () => {
             }
 
             const supabase = supabaseRef.current;
+            try {
+                await fetch("/api/yield/accrue", { method: "POST" });
+            } catch {
+                // ignore accrual failures; continue with last stored amounts
+            }
             const { data: goals, error } = await supabase
                 .from('goals')
                 .select('id, name, current_amount, type, brick_color, growth_rate, investment_type, symbol, quantity, interest_rate, last_interest_calc')
                 .order('created_at', { ascending: true });
 
-            if (error || !goals) {
-                console.error("useWealth fetch error:", error);
-                throw error || new Error("No goals found");
+            if (error) {
+                console.error("useWealth goals fetch error:", JSON.stringify(error, null, 2));
+                return {
+
+
+                    netWorth: 0,
+                    investmentsValue: 0,
+                    cashValue: 0,
+                    assets: [],
+                    usdToIls: 3.65
+                };
             }
 
-            const stockSymbols = goals
+            const stockSymbols = (goals ?? [])
                 .filter(g => g.type === 'stock' && g.symbol)
                 .map(g => g.symbol!.toUpperCase());
 
-            const hasUsdAssets = goals.some(g => g.type === 'stock' || g.type === 'foreign_currency' || g.investment_type === 'foreign_currency');
+            const hasUsdAssets = (goals ?? []).some(g => g.type === 'stock' || g.type === 'foreign_currency' || g.investment_type === 'foreign_currency');
 
             let livePrices: Record<string, { price: number; changePercent: number }> = {};
             let usdToIls = 3.65; // fallback
@@ -71,15 +84,17 @@ export const useWealth = () => {
                 }
             }
 
+            const safeGoals = (goals ?? []) as unknown as Goal[];
+
             let totalNetWorth = 0;
             let totalInvestments = 0;
             let totalCash = 0;
 
-            const calculatedAssets = (goals as unknown as Goal[]).map((asset: Goal) => {
+            const calculatedAssets = safeGoals.map((asset: Goal) => {
                 let calculatedValue = 0;
 
                 if (asset.type === 'stock' && asset.symbol) {
-                    const priceData = livePrices[asset.symbol];
+                    const priceData = livePrices[asset.symbol.toUpperCase()];
                     if (priceData && priceData.price) {
                         const quantity = Number(asset.quantity) || 0;
                         const livePriceUSD = priceData.price;
@@ -92,21 +107,6 @@ export const useWealth = () => {
                     calculatedValue = usdAmount * usdToIls;
                 } else {
                     calculatedValue = Number(asset.current_amount) || 0;
-
-                    if (asset.interest_rate && asset.interest_rate > 0 && asset.last_interest_calc) {
-                        const lastCalcDate = new Date(asset.last_interest_calc);
-                        const today = new Date();
-                        const diffMs = today.getTime() - lastCalcDate.getTime();
-
-                        // Continuous Compounding Formula: principal * (1 + annual_rate) ^ (delta_time / year_time)
-                        // This ensures that after exactly 365 days, growth is exactly interest_rate.
-                        if (diffMs > 0) {
-                            const annualRate = Number(asset.interest_rate) / 100;
-                            const msPerYear = 365 * 24 * 60 * 60 * 1000;
-                            const yearFraction = diffMs / msPerYear;
-                            calculatedValue = calculatedValue * Math.pow(1 + annualRate, yearFraction);
-                        }
-                    }
                 }
 
                 const assetValue = Math.max(0, calculatedValue);
@@ -138,10 +138,11 @@ export const useWealth = () => {
                 usdToIls
             };
         },
-        enabled: !authLoading && !!user,
-        refetchInterval: 60 * 1000, // 1 minute background polling for market data
-        staleTime: 30 * 1000, // Slightly more frequent than global default for "live" feel
+        enabled: true,
+        refetchInterval: 60 * 1000,
+        staleTime: 30 * 1000,
     });
+
 
     const defaultData = useMemo(() => ({
         netWorth: 0,

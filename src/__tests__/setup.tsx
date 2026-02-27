@@ -31,6 +31,19 @@ if (typeof window !== 'undefined') {
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://localhost:54321';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'mock-anon-key';
 
+vi.mock('next/navigation', () => ({
+    usePathname: () => '/',
+    useRouter: () => ({
+        push: vi.fn(),
+        replace: vi.fn(),
+        back: vi.fn(),
+        forward: vi.fn(),
+        refresh: vi.fn(),
+        prefetch: vi.fn(),
+    }),
+    useSearchParams: () => new URLSearchParams(),
+}));
+
 // Mock Supabase client
 vi.mock('@/utils/supabase/client', () => ({
     createClient: () => ({
@@ -63,6 +76,67 @@ vi.mock('@/utils/supabase/client', () => ({
     }),
 }));
 
+// Mock Supabase server client (Next.js request-scope APIs are unavailable in tests)
+vi.mock('@/utils/supabase/server', () => ({
+    createClient: async () => ({
+        auth: {
+            getUser: async () => ({ data: { user: { id: 'test-user' } }, error: null }),
+            getSession: async () => ({ data: { session: null }, error: null }),
+        },
+        from: () => ({
+            select: () => ({
+                eq: () => ({
+                    single: () => Promise.resolve({ data: { couple_id: 'test-couple' }, error: null }),
+                    order: () => ({
+                        limit: () => Promise.resolve({ data: [], error: null })
+                    })
+                }),
+                gte: () => ({
+                    lt: () => ({
+                        order: () => Promise.resolve({ data: [], error: null })
+                    })
+                }),
+                order: () => ({
+                    limit: () => Promise.resolve({ data: [], error: null })
+                })
+            }),
+            insert: () => ({
+                select: () => ({
+                    single: () => Promise.resolve({ data: {}, error: null }),
+                }),
+            }),
+            upsert: () => ({
+                select: () => ({
+                    single: () => Promise.resolve({ data: {}, error: null }),
+                }),
+            }),
+            update: () => ({
+                eq: () => ({
+                    eq: () => ({
+                        select: () => ({
+                            single: () => Promise.resolve({ data: {}, error: null }),
+                        }),
+                    }),
+                }),
+            }),
+            delete: () => ({
+                eq: () => ({
+                    eq: () => Promise.resolve({ error: null }),
+                }),
+            }),
+        }),
+        rpc: async () => ({ data: 0, error: null }),
+        channel: () => {
+            const channelObj = {
+                on: () => channelObj,
+                subscribe: vi.fn(),
+                unsubscribe: vi.fn()
+            };
+            return channelObj;
+        }
+    }),
+}));
+
 // Mock framer-motion components
 vi.mock('framer-motion', async (importOriginal) => {
     const actual = await importOriginal<typeof import('framer-motion')>();
@@ -74,6 +148,10 @@ vi.mock('framer-motion', async (importOriginal) => {
             span: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <span {...props}>{children}</span>,
             section: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <section {...props}>{children}</section>,
             nav: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <nav {...props}>{children}</nav>,
+            article: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <article {...props}>{children}</article>,
+            main: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <main {...props}>{children}</main>,
+            header: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <header {...props}>{children}</header>,
+            p: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => <p {...props}>{children}</p>,
         },
         AnimatePresence: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
         useScroll: () => ({ scrollYProgress: { get: () => 0 } }),

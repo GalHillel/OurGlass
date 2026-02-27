@@ -9,6 +9,7 @@ import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 import { SwipeableRow } from "@/components/SwipeableRow";
 import { EmptyState } from "@/components/EmptyState";
+import { useAuth } from "@/components/AuthProvider";
 
 interface TransactionListProps {
     transactions: Transaction[];
@@ -48,6 +49,8 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
     const isStealthMode = useAppStore(s => s.isStealthMode);
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
+    const { profile } = useAuth();
+    const coupleId = profile?.couple_id ?? null;
     const [detectedSub, setDetectedSub] = React.useState<{ name: string, amount: number } | null>(null);
 
     // === IMPROVED RECURRING CHARGE DETECTION (Optimized with useMemo) ===
@@ -147,7 +150,8 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
         setDeletedIds(prev => new Set(prev).add(id));
 
         try {
-            const { error } = await supabase.from('transactions').delete().eq('id', id);
+            if (!coupleId) throw new Error("Missing couple_id");
+            const { error } = await supabase.from('transactions').delete().eq('id', id).eq('couple_id', coupleId);
             if (error) throw error;
             toast.success("העסקה נמחקה");
             onRefresh();

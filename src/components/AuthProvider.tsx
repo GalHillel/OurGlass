@@ -63,20 +63,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
             setUser(session?.user ?? null);
             if (session?.user && !profileRef.current) {
-                const { data: profileData } = await supabase
+                const { data: profileData, error } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', session.user.id)
-                    .single();
+                    .maybeSingle();
+
                 if (profileData) {
                     setProfile(profileData);
                     profileRef.current = profileData;
+                } else if (!error) {
+                    // Fallback: Create profile if it doesn't exist (trigger should handle this, but for robustness)
+                    const { data: newProfile, error: insertError } = await supabase
+                        .from('profiles')
+                        .insert({
+                            id: session.user.id,
+                            name: session.user.user_metadata?.full_name || 'User',
+                            couple_id: crypto.randomUUID(),
+                            onboarding_completed: false
+                        })
+                        .select()
+                        .single();
+
+                    if (!insertError && newProfile) {
+                        setProfile(newProfile);
+                        profileRef.current = newProfile;
+                    }
                 }
             } else if (!session?.user) {
                 setProfile(null);
                 profileRef.current = null;
             }
         });
+
 
         return () => {
             subscription.unsubscribe();

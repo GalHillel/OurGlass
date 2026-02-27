@@ -19,9 +19,10 @@ describe('Constants', () => {
 
     it('ASSET_TYPES should have required structure and values', () => {
         expect(ASSET_TYPES).toEqual({
-            CASH: 'מזומן / חיסכון',
-            STOCK: 'מניות',
+            CASH: 'מזומן',
+            SAVINGS: 'חיסכון',
             FOREIGN_CURRENCY: 'מט״ח / דולר',
+            STOCK: 'מניות',
             REAL_ESTATE: 'נדל״ן',
             MONEY_MARKET: 'קרן כספית',
         });
@@ -30,8 +31,11 @@ describe('Constants', () => {
     it('TABS should have required structure and values', () => {
         expect(TABS).toEqual({
             ALL: 'הכל',
+            CASH: 'מזומן',
+            SAVINGS: 'חיסכון',
             INVESTMENTS: 'השקעות',
-            LIQUID: 'נזיל / חסכונות'
+            FOREIGN_CURRENCY: 'מט״ח',
+            REAL_ESTATE: 'נדל״ן'
         });
     });
 });

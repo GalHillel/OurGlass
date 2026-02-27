@@ -29,7 +29,10 @@ function generateDynamicInsight(context: FinancialContext | null, firstName: str
     const transactions = context.transactions || context.recentTransactions || [];
     const { budget, subscriptions } = context;
 
-    const totalSpent = transactions?.reduce((s: number, t: Transaction) => s + Number(t.amount), 0) || 0;
+    const totalSpent = transactions?.reduce((s: number, t: Transaction) => {
+        if ((t.type ?? 'expense') !== 'expense') return s;
+        return s + Number(t.amount);
+    }, 0) || 0;
     const budgetUsedPct = budget > 0 ? Math.round((totalSpent / budget) * 100) : 0;
     const remaining = Math.max(0, budget - totalSpent);
 
@@ -74,6 +77,12 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
         setLoading(true);
         setError(false);
         try {
+            const coupleId = profile?.couple_id;
+            if (!coupleId) {
+                setContext(null);
+                return null;
+            }
+
             const now = viewingDate;
             const { start, end } = getBillingPeriodForDate(now);
             const startOfMonth = start.toISOString();
@@ -82,6 +91,7 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
             const { data: txs, error: txError } = await supabase
                 .from('transactions')
                 .select('*')
+                .eq('couple_id', coupleId)
                 .gte('date', startOfMonth)
                 .lt('date', endOfMonth)
                 .order('date', { ascending: false });
@@ -96,12 +106,12 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
                 { data: wishlist },
                 { data: wealth }
             ] = await Promise.all([
-                supabase.from('subscriptions').select('*'),
-                supabase.from('liabilities').select('*'),
+                supabase.from('subscriptions').select('*').eq('couple_id', coupleId),
+                supabase.from('liabilities').select('*').eq('couple_id', coupleId),
                 supabase.from('profiles').select('budget, monthly_income').eq('id', profile?.id || '').single(),
                 supabase.from('categories').select('id, name'),
-                supabase.from('wishlist').select('*'),
-                supabase.from('wealth_history').select('*').order('snapshot_date', { ascending: false }).limit(1)
+                supabase.from('wishlist').select('*').eq('couple_id', coupleId),
+                supabase.from('wealth_history').select('*').eq('couple_id', coupleId).order('snapshot_date', { ascending: false }).limit(1)
             ]);
 
             const categoryMap = new Map<string, string>(
@@ -116,7 +126,10 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
             const subTotal = activeSubscriptions.reduce((acc: number, curr) => acc + Number(curr.amount), 0);
             const activeDebtObligations = ((liabs as Liability[] | null) || []).filter((liability) => isLiabilityActive(liability, now));
             const liabTotal = activeDebtObligations.reduce((acc: number, curr) => acc + Number(curr.monthly_payment), 0);
-            const monthlySpent = enrichedTransactions.reduce((acc: number, curr) => acc + Number(curr.amount), 0);
+            const monthlySpent = enrichedTransactions.reduce((acc: number, curr) => {
+                if ((curr.type ?? 'expense') !== 'expense') return acc;
+                return acc + Number(curr.amount);
+            }, 0);
             const profileBudget = toSafeNumber(profileData?.budget ?? profile?.budget);
             const profileIncome = toSafeNumber(profileData?.monthly_income ?? profile?.monthly_income);
             const resolvedBudget = Number.isFinite(profileBudget) && profileBudget > 0

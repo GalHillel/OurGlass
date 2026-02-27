@@ -61,6 +61,12 @@ export const BottomNav = () => {
         setLoading(true);
         setError(false);
         try {
+            const coupleId = profile?.couple_id;
+            if (!coupleId) {
+                setContext(null);
+                return null;
+            }
+
             const now = new Date();
             const { start, end } = getBillingPeriodForDate(now);
             const startOfMonth = start.toISOString();
@@ -69,6 +75,7 @@ export const BottomNav = () => {
             const { data: txs, error: txError } = await supabase
                 .from('transactions')
                 .select('*')
+                .eq('couple_id', coupleId)
                 .gte('date', startOfMonth)
                 .lt('date', endOfMonth)
                 .order('date', { ascending: false });
@@ -83,12 +90,12 @@ export const BottomNav = () => {
                 { data: wishlist },
                 { data: wealth }
             ] = await Promise.all([
-                supabase.from('subscriptions').select('*'),
-                supabase.from('liabilities').select('*'),
+                supabase.from('subscriptions').select('*').eq('couple_id', coupleId),
+                supabase.from('liabilities').select('*').eq('couple_id', coupleId),
                 supabase.from('profiles').select('budget, monthly_income').eq('id', profile?.id || '').single(),
                 supabase.from('categories').select('id, name'),
-                supabase.from('wishlist').select('*'),
-                supabase.from('wealth_history').select('*').order('snapshot_date', { ascending: false }).limit(1)
+                supabase.from('wishlist').select('*').eq('couple_id', coupleId),
+                supabase.from('wealth_history').select('*').eq('couple_id', coupleId).order('snapshot_date', { ascending: false }).limit(1)
             ]);
 
             const categoryMap = new Map<string, string>(
@@ -104,7 +111,10 @@ export const BottomNav = () => {
             const subTotal = activeSubscriptions.reduce((acc: number, curr) => acc + Number(curr.amount), 0);
             const activeDebtObligations = ((liabs as Liability[] | null) || []).filter((liability) => isLiabilityActive(liability, now));
             const liabTotal = activeDebtObligations.reduce((acc: number, curr) => acc + Number(curr.monthly_payment), 0);
-            const monthlySpent = enrichedTransactions.reduce((acc: number, curr) => acc + Number(curr.amount), 0);
+            const monthlySpent = enrichedTransactions.reduce((acc: number, curr) => {
+                if ((curr.type ?? 'expense') !== 'expense') return acc;
+                return acc + Number(curr.amount);
+            }, 0);
 
             const profileBudget = Number(profileData?.budget ?? profile?.budget ?? 0);
             const profileIncome = Number(profileData?.monthly_income ?? profile?.monthly_income ?? 0);
@@ -173,7 +183,7 @@ export const BottomNav = () => {
                 const baseItem = navItemsRegistry.find(n => n.id === item.id);
                 return baseItem ? { ...baseItem, ...item } : null;
             })
-            .filter((n): n is NavItem & NavItemConfig => n !== null && (!n.featureKey || (features as any)[n.featureKey]));
+            .filter((n): n is NavItem & NavItemConfig => n !== null && (!n.featureKey || features[n.featureKey] === true));
     }, [navItems, features, _hasHydrated]);
 
     const renderNavItem = (item: NavItem & NavItemConfig) => {

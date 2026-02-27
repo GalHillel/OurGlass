@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { StockPortfolio } from '@/components/StockPortfolio';
 import * as auth from '@/components/AuthProvider';
 import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 
 window.HTMLElement.prototype.scrollIntoView = vi.fn();
 
@@ -24,6 +26,11 @@ vi.mock('@/utils/supabase/client', () => ({
 global.fetch = vi.fn();
 
 describe('StockPortfolio', () => {
+    const wrapper = ({ children }: { children: ReactNode }) => {
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    };
+
     beforeEach(() => {
         vi.clearAllMocks();
         vi.spyOn(auth, 'useAuth').mockReturnValue({ profile: { couple_id: 'c1' } } as never);
@@ -31,7 +38,7 @@ describe('StockPortfolio', () => {
 
     it('renders empty state initially', () => {
         (global.fetch as Mock).mockResolvedValue({ ok: true, json: async () => ({ stocks: {} }) });
-        render(<StockPortfolio assets={[]} />);
+        render(<StockPortfolio assets={[]} />, { wrapper });
         expect(screen.getByText('אין עדיין מניות?')).toBeInTheDocument();
     });
 
@@ -48,7 +55,7 @@ describe('StockPortfolio', () => {
             })
         });
 
-        render(<StockPortfolio assets={assets as never} />);
+        render(<StockPortfolio assets={assets as never} />, { wrapper });
 
         // Wait for fetch to complete and render
         await waitFor(() => {
@@ -61,7 +68,7 @@ describe('StockPortfolio', () => {
 
     it('opens add dialog', () => {
         (global.fetch as Mock).mockResolvedValue({ ok: true, json: async () => ({ stocks: {} }) });
-        render(<StockPortfolio assets={[]} />);
+        render(<StockPortfolio assets={[]} />, { wrapper });
 
         const addButtons = screen.getAllByText(/הוסף מניה/);
         fireEvent.click(addButtons[0]);

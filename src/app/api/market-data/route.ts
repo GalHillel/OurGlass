@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { createClient } from "@/utils/supabase/server";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = 'force-dynamic';
 
@@ -162,6 +164,18 @@ async function getQuote(symbol: string): Promise<{ price: number; changePercent:
 // ============ API HANDLER ============
 export async function POST(request: Request) {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const ip = getClientIp(request);
+        const rl = rateLimit({ key: `api:market-data:${user.id}:${ip}`, limit: 60, windowMs: 60_000 });
+        if (!rl.ok) {
+            return NextResponse.json({ error: "Rate limit" }, { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } });
+        }
+
         const { symbols } = await request.json();
 
         if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {

@@ -11,7 +11,8 @@ vi.mock('ai', () => ({
     convertToModelMessages: vi.fn().mockResolvedValue([]),
     streamText: vi.fn().mockReturnValue({
         toUIMessageStreamResponse: vi.fn().mockReturnValue(new Response('streamed response'))
-    })
+    }),
+    tool: (definition: unknown) => definition,
 }));
 
 describe('Chat API', () => {
@@ -33,9 +34,8 @@ describe('Chat API', () => {
         expect(res).toBeInstanceOf(Response);
         expect(ai.streamText).toHaveBeenCalled();
         const callArgs = vi.mocked(ai.streamText).mock.calls[0][0];
-        expect(callArgs.system).toContain(`${CURRENCY_SYMBOL}10,000`);
-        expect(callArgs.system).toContain("CRITICAL MATH RULE: Do not double-count subscriptions");
-        expect(callArgs.system).toContain(`Monthly Budget (from settings): ${CURRENCY_SYMBOL}10,000`);
+        expect(callArgs.system).toContain("CRITICAL RULES FOR TOOL CALLING:");
+        expect(callArgs.system).toContain('"income": 10000');
         expect(callArgs.system).toContain('Food');
     });
 });

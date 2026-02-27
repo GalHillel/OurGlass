@@ -1,11 +1,25 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { createClient } from "@/utils/supabase/server";
 import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(req: Request) {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const ip = getClientIp(req);
+        const rl = rateLimit({ key: `api:mood-insight:${user.id}:${ip}`, limit: 10, windowMs: 60_000 });
+        if (!rl.ok) {
+            return NextResponse.json({ error: "Rate limit" }, { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } });
+        }
+
         if (!process.env.GEMINI_API_KEY) {
             return NextResponse.json(
                 { text: "מפתח Gemini חסר", type: "info" }
