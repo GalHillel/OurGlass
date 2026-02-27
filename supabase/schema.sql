@@ -24,6 +24,17 @@ returns uuid language sql stable as $$
   select public.current_couple_id();
 $$;
 
+-- Automatically update updated_at timestamp
+create or replace function public.handle_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
 
 create table if not exists public.profiles (
   id uuid references auth.users not null primary key,
@@ -34,14 +45,21 @@ create table if not exists public.profiles (
   monthly_income numeric,
   joint_account boolean default true,
   couple_id uuid,
-  partner_id uuid,
+  partner_id uuid references public.profiles(id),
   pocket_him numeric default 0,
   pocket_her numeric default 0,
   income_split_ratio numeric default 0.5,
   onboarding_completed boolean default false,
   role text check (role in ('admin', 'user')) default 'user',
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+create index if not exists profiles_couple_id_idx on public.profiles (couple_id);
+
+create trigger handle_profiles_updated_at
+  before update on public.profiles
+  for each row execute procedure public.handle_updated_at();
 
 create table if not exists public.categories (
   id uuid default uuid_generate_v4() primary key,
@@ -51,8 +69,15 @@ create table if not exists public.categories (
   type text check (type in ('fixed', 'variable')) not null,
   couple_id uuid,
   budget_limit numeric,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+create index if not exists categories_couple_id_idx on public.categories (couple_id);
+
+create trigger handle_categories_updated_at
+  before update on public.categories
+  for each row execute procedure public.handle_updated_at();
 
 create table if not exists public.transactions (
   id uuid default uuid_generate_v4() primary key,
@@ -70,13 +95,21 @@ create table if not exists public.transactions (
   surprise_reveal_date timestamp with time zone,
   mood_rating integer check (mood_rating between 1 and 5),
   receipt_url text,
+  location_lat numeric,
+  location_lng numeric,
   is_auto_generated boolean default false,
   tags text[],
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+create trigger handle_transactions_updated_at
+  before update on public.transactions
+  for each row execute procedure public.handle_updated_at();
 
 create index if not exists transactions_couple_date_idx on public.transactions (couple_id, date desc);
 create unique index if not exists transactions_couple_idempotency_key_uidx on public.transactions (couple_id, idempotency_key);
+create index if not exists transactions_category_id_idx on public.transactions (category_id);
 
 create table if not exists public.subscriptions (
   id uuid default uuid_generate_v4() primary key,
@@ -85,15 +118,22 @@ create table if not exists public.subscriptions (
   amount numeric not null check (amount >= 0),
   billing_day integer check (billing_day between 1 and 31),
   owner text check (owner in ('him', 'her', 'joint')),
+  category_id uuid references public.categories(id),
   category text,
   active boolean default true,
   status text,
   usage_rating integer,
   last_auto_transaction timestamp with time zone,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 create index if not exists subscriptions_couple_idx on public.subscriptions (couple_id);
+create index if not exists subscriptions_category_id_idx on public.subscriptions (category_id);
+
+create trigger handle_subscriptions_updated_at
+  before update on public.subscriptions
+  for each row execute procedure public.handle_updated_at();
 
 create table if not exists public.goals (
   id uuid default uuid_generate_v4() primary key,
@@ -114,10 +154,15 @@ create table if not exists public.goals (
   currency text,
   quantity numeric check (quantity is null or quantity >= 0),
   last_updated timestamp with time zone,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 create index if not exists goals_couple_idx on public.goals (couple_id);
+
+create trigger handle_goals_updated_at
+  before update on public.goals
+  for each row execute procedure public.handle_updated_at();
 
 create table if not exists public.wishlist (
   id uuid default uuid_generate_v4() primary key,
@@ -130,8 +175,15 @@ create table if not exists public.wishlist (
   approved_by uuid references public.profiles(id),
   saved_amount numeric default 0 check (saved_amount >= 0),
   priority integer default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+create index if not exists wishlist_couple_idx on public.wishlist (couple_id);
+
+create trigger handle_wishlist_updated_at
+  before update on public.wishlist
+  for each row execute procedure public.handle_updated_at();
 
 create index if not exists wishlist_couple_idx on public.wishlist (couple_id);
 
@@ -150,8 +202,15 @@ create table if not exists public.liabilities (
   principal numeric,
   current_balance numeric,
   owner text check (owner in ('him', 'her', 'joint')) default 'joint',
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+create index if not exists liabilities_couple_idx on public.liabilities (couple_id);
+
+create trigger handle_liabilities_updated_at
+  before update on public.liabilities
+  for each row execute procedure public.handle_updated_at();
 
 create index if not exists liabilities_couple_idx on public.liabilities (couple_id);
 
@@ -163,10 +222,15 @@ create table if not exists public.wealth_history (
   cash_value numeric not null default 0,
   investments_value numeric not null default 0,
   liabilities_value numeric not null default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 create index if not exists wealth_history_couple_date_idx on public.wealth_history (couple_id, snapshot_date desc);
+
+create trigger handle_wealth_history_updated_at
+  before update on public.wealth_history
+  for each row execute procedure public.handle_updated_at();
 
 -- ───────────────────────────────────────────────────────────────────────────────
 -- RLS
