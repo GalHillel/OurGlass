@@ -16,7 +16,7 @@ export interface NavItemConfig {
 
 export type FeatureKey =
     | 'enableStocks' | 'enableStocksPage' | 'enableWishlist' | 'enableSubscriptions' | 'enableSettlements' | 'enableLounge'
-    | 'showSP500Benchmark' | 'showPortfolioAllocation' | 'showRebalancingCoach'
+    | 'showSP500Benchmark' | 'showPortfolioAllocation' | 'showRebalancingCoach' | 'showDividendForecast'
     // Wealth Page Features
     | 'wealthShowHistory' | 'wealthShowInsights' | 'wealthShowAssets' | 'wealthShowPortfolio' | 'wealthShowSummaryCards'
     // Subscriptions Page Features
@@ -64,6 +64,7 @@ const DEFAULT_FEATURES: Record<FeatureKey, boolean> = {
     showSP500Benchmark: true,
     showPortfolioAllocation: true,
     showRebalancingCoach: true,
+    showDividendForecast: true,
     // Wealth
     wealthShowHistory: true,
     wealthShowInsights: true,
