@@ -82,6 +82,15 @@ import { getBillingPeriodForDate } from "@/lib/billing";
 
 import { useShallow } from 'zustand/react/shallow';
 
+const WIDE_WIDGET_IDS = new Set([
+    'reactor',
+    'ai-hub',
+    'smart-insights',
+    'monthly-roast',
+    'calendar',
+    'categories',
+]);
+
 export const HomeMosaic = React.memo(({
     balance,
     budget,
@@ -675,6 +684,7 @@ export const HomeMosaic = React.memo(({
                         activeWidgets.map((widgetValue: WidgetConfig) => (
                             <motion.div
                                 key={widgetValue.id}
+                                className={WIDE_WIDGET_IDS.has(widgetValue.id) ? 'col-span-2' : undefined}
                                 layoutId={`widget-${widgetValue.id}`}
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}

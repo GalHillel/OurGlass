@@ -21,6 +21,45 @@ export const isLiabilityActive = (liability: Liability, asOf = new Date()) => {
 // ── Wealth History (Read-only — populated by pg_cron) ──
 import { useMemo } from "react";
 
+export function sanitizeWealthSnapshots(snapshots: WealthSnapshot[]): WealthSnapshot[] {
+    const normalized = snapshots
+        .filter((snapshot) => Number.isFinite(snapshot.net_worth) && snapshot.net_worth >= 0)
+        .sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date));
+
+    if (normalized.length < 3) return normalized;
+
+    const sanitized: WealthSnapshot[] = [];
+
+    for (let i = 0; i < normalized.length; i += 1) {
+        const current = normalized[i];
+        const prev = sanitized[sanitized.length - 1];
+        const next = normalized[i + 1];
+
+        if (!prev || !next || prev.net_worth <= 0 || next.net_worth <= 0) {
+            sanitized.push(current);
+            continue;
+        }
+
+        const currentVsPrev = current.net_worth / prev.net_worth;
+        const nextVsPrev = next.net_worth / prev.net_worth;
+        const currentVsNext = current.net_worth / next.net_worth;
+        const absoluteJump = Math.abs(current.net_worth - prev.net_worth);
+
+        const looksLikeIsolatedSpikeOrDip =
+            absoluteJump > 50000 &&
+            (currentVsPrev > 1.8 || currentVsPrev < 0.55) &&
+            nextVsPrev > 0.85 &&
+            nextVsPrev < 1.15 &&
+            (currentVsNext > 1.6 || currentVsNext < 0.625);
+
+        if (!looksLikeIsolatedSpikeOrDip) {
+            sanitized.push(current);
+        }
+    }
+
+    return sanitized;
+}
+
 export function useWealthHistory(days = 90, liveNetWorth?: number) {
     const { profile } = useAuth();
     const coupleId = profile?.couple_id;
@@ -38,28 +77,7 @@ export function useWealthHistory(days = 90, liveNetWorth?: number) {
 
             if (error) throw error;
 
-            // Apply manual filter for speed/flexibility if not "ALL"
-            const normalized = ((data ?? []) as WealthSnapshot[])
-                .filter((snapshot) => Number.isFinite(snapshot.net_worth) && snapshot.net_worth >= 0)
-                .sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date));
-
-            // Drop corrupted jumps created by historical NaN/ghost-interest incidents.
-            const sanitized: WealthSnapshot[] = [];
-            for (const snapshot of normalized) {
-                const previous = sanitized[sanitized.length - 1];
-                if (!previous) {
-                    sanitized.push(snapshot);
-                    continue;
-                }
-
-                const absoluteDelta = Math.abs(snapshot.net_worth - previous.net_worth);
-                const percentDelta = previous.net_worth > 0 ? absoluteDelta / previous.net_worth : 0;
-                const looksCorrupted = absoluteDelta > 50000 && percentDelta > 0.6;
-
-                if (!looksCorrupted) {
-                    sanitized.push(snapshot);
-                }
-            }
+            const sanitized = sanitizeWealthSnapshots((data ?? []) as WealthSnapshot[]);
 
             if (days !== -1) {
                 const since = new Date();
