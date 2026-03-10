@@ -176,12 +176,12 @@ export const WishlistActionDrawer = ({ isOpen, onClose, item, mode, onConfirm }:
                             >
                                 {isDeposit ? (
                                     <>
-                                        <Sparkles className="w-6 h-6 mr-2 animate-pulse" />
+                                        <Sparkles className="w-6 h-6 ml-2 animate-pulse" />
                                         הפקד {CURRENCY_SYMBOL}{amount}
                                     </>
                                 ) : (
                                     <>
-                                        <Banknote className="w-6 h-6 mr-2" />
+                                        <Banknote className="w-6 h-6 ml-2" />
                                         משוך {CURRENCY_SYMBOL}{amount}
                                     </>
                                 )}

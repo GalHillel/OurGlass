@@ -45,10 +45,12 @@ body,
 #root,
 #__next {
   height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: hidden;
   background-color: #020617;
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
+  padding-bottom: env(safe-area-inset-bottom);
   /* A11y: Allow text selection globally, disable only on interactive elements */
 }
 

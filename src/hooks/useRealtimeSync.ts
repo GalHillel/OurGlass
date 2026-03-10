@@ -52,16 +52,34 @@ export function useRealtimeSync(coupleId: string | null) {
                 .on(
                     'postgres_changes',
                     { event: '*', schema: 'public', table: 'subscriptions', filter: `couple_id=eq.${coupleId}` },
-                    () => {
-                        queryClient.invalidateQueries({ queryKey: ['subscriptions', coupleId] });
+                    (payload) => {
+                        if (payload.eventType === 'INSERT') {
+                            const newItem = payload.new;
+                            queryClient.setQueriesData({ queryKey: ['subscriptions', coupleId] }, (old: any[] | undefined) => old ? [...old, newItem] : [newItem]);
+                        } else if (payload.eventType === 'UPDATE') {
+                            const newItem = payload.new;
+                            queryClient.setQueriesData({ queryKey: ['subscriptions', coupleId] }, (old: any[] | undefined) => old?.map(i => i.id === newItem.id ? newItem : i));
+                        } else if (payload.eventType === 'DELETE') {
+                            const oldId = payload.old.id;
+                            queryClient.setQueriesData({ queryKey: ['subscriptions', coupleId] }, (old: any[] | undefined) => old?.filter(i => i.id !== oldId));
+                        }
                         queryClient.invalidateQueries({ queryKey: ['global-cashflow', coupleId] });
                     }
                 )
                 .on(
                     'postgres_changes',
                     { event: '*', schema: 'public', table: 'liabilities', filter: `couple_id=eq.${coupleId}` },
-                    () => {
-                        queryClient.invalidateQueries({ queryKey: ['liabilities', coupleId] });
+                    (payload) => {
+                        if (payload.eventType === 'INSERT') {
+                            const newItem = payload.new;
+                            queryClient.setQueriesData({ queryKey: ['liabilities', coupleId] }, (old: any[] | undefined) => old ? [...old, newItem] : [newItem]);
+                        } else if (payload.eventType === 'UPDATE') {
+                            const newItem = payload.new;
+                            queryClient.setQueriesData({ queryKey: ['liabilities', coupleId] }, (old: any[] | undefined) => old?.map(i => i.id === newItem.id ? newItem : i));
+                        } else if (payload.eventType === 'DELETE') {
+                            const oldId = payload.old.id;
+                            queryClient.setQueriesData({ queryKey: ['liabilities', coupleId] }, (old: any[] | undefined) => old?.filter(i => i.id !== oldId));
+                        }
                         queryClient.invalidateQueries({ queryKey: ['global-cashflow', coupleId] });
                     }
                 )
@@ -69,16 +87,37 @@ export function useRealtimeSync(coupleId: string | null) {
                     'postgres_changes',
                     // "goals" is the assets table in this codebase
                     { event: '*', schema: 'public', table: 'goals', filter: `couple_id=eq.${coupleId}` },
-                    () => {
-                        queryClient.invalidateQueries({ queryKey: ['wealthData'] });
+                    (payload) => {
+                        if (payload.eventType === 'UPDATE') {
+                            const newItem = payload.new;
+                            queryClient.setQueriesData({ queryKey: ['wealthData'] }, (old: any) => {
+                                if (!old) return old;
+                                return {
+                                    ...old,
+                                    goals: old.goals?.map((g: any) => g.id === newItem.id ? newItem : g)
+                                };
+                            });
+                        } else {
+                            // INSERT/DELETE on goals might change categories significantly, safer to invalidate wealthData
+                            queryClient.invalidateQueries({ queryKey: ['wealthData'] });
+                        }
                         queryClient.invalidateQueries({ queryKey: ['wealth-history', coupleId] });
                     }
                 )
                 .on(
                     'postgres_changes',
                     { event: '*', schema: 'public', table: 'wishlist', filter: `couple_id=eq.${coupleId}` },
-                    () => {
-                        queryClient.invalidateQueries({ queryKey: ['wishlist', coupleId] });
+                    (payload) => {
+                        if (payload.eventType === 'INSERT') {
+                            const newItem = payload.new;
+                            queryClient.setQueriesData({ queryKey: ['wishlist', coupleId] }, (old: any[] | undefined) => old ? [newItem, ...old] : [newItem]);
+                        } else if (payload.eventType === 'UPDATE') {
+                            const newItem = payload.new;
+                            queryClient.setQueriesData({ queryKey: ['wishlist', coupleId] }, (old: any[] | undefined) => old?.map(i => i.id === newItem.id ? newItem : i));
+                        } else if (payload.eventType === 'DELETE') {
+                            const oldId = payload.old.id;
+                            queryClient.setQueriesData({ queryKey: ['wishlist', coupleId] }, (old: any[] | undefined) => old?.filter(i => i.id !== oldId));
+                        }
                     }
                 )
                 .subscribe();

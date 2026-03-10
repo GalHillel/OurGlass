@@ -1,125 +1,93 @@
 "use client";
 
-import { Calendar, TrendingUp, ChevronDown } from "lucide-react";
-import { useAppStore } from "@/stores/appStore";
-import { Goal } from "@/types";
-import { useMemo, useState } from "react";
-import { formatAmount, cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
-import { triggerHaptic } from "@/utils/haptics";
+import React, { useState } from 'react';
+import { Gift, TrendingUp, Info } from 'lucide-react';
+import { Goal } from '@/types';
+import { formatILS } from '@/lib/wealth-utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface DividendForecastProps {
-    assets?: Goal[];
+    assets: Goal[];
 }
 
-const seededRandom = (seed: string) => {
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-        hash = (hash << 5) - hash + seed.charCodeAt(i);
-        hash |= 0;
-    }
-    return (Math.abs(hash) % 100) / 100;
-};
+export const DividendForecast: React.FC<DividendForecastProps> = ({ assets }) => {
+    const [showTotal, setShowTotal] = useState(false);
 
-export const DividendForecast = ({ assets = [] }: DividendForecastProps) => {
-    const isStealthMode = useAppStore(s => s.isStealthMode);
-    const [isExpanded, setIsExpanded] = useState(false);
+    // Mock logic for dividend estimation based on common stock names & types
+    const stockAssets = (assets || []).filter(a => a.type === 'stock');
 
-    // Generate dividends based on actual assets
-    const upcomingDividends = useMemo(() => assets
-        .filter(a => a.type === 'stock')
-        .map(asset => {
-            const isDividendPayer = asset.name.toLowerCase().includes('apple') ||
-                asset.name.toLowerCase().includes('microsoft') ||
-                asset.name.toLowerCase().includes('etf') ||
-                asset.name.toLowerCase().includes('s&p');
+    const dividendData = stockAssets.map(asset => {
+        const name = (asset.name || '').toLowerCase();
+        let yield_rate = 0.015; // default 1.5% annual
 
-            if (!isDividendPayer && seededRandom(asset.name) > 0.3) return null;
+        if (name.includes('apple') || name.includes('aapl')) yield_rate = 0.005;
+        if (name.includes('microsoft') || name.includes('msft')) yield_rate = 0.008;
+        if (name.includes('reit') || name.includes('o')) yield_rate = 0.05;
+        if (name.includes('etf') || name.includes('s&p') || name.includes('spy')) yield_rate = 0.013;
 
-            return {
-                name: asset.name,
-                amount: Math.round(Number(asset.current_amount) * 0.005), // ~0.5% quarterly
-                date: "15/05" // Next quarter mock
-            };
-        })
-        .filter((div): div is { name: string; amount: number; date: string } => div !== null)
-        .slice(0, 3), [assets]);
+        const quarterlyYield = yield_rate / 4;
+        const forecast = (asset.calculatedValue || Number(asset.current_amount) || 0) * quarterlyYield;
 
-    const totalForecast = upcomingDividends.reduce((sum, item) => sum + (item?.amount || 0), 0);
+        return {
+            ...asset,
+            forecast,
+            yield_rate
+        };
+    }).filter(d => d.forecast > 0);
+
+    const totalQuarterly = dividendData.reduce((sum, d) => sum + d.forecast, 0);
 
     return (
-        <div className="bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] border border-white/10 relative overflow-hidden group flex flex-col transition-all duration-300">
-            {/* Header - Always Visible & Clickable */}
-            <button
-                onClick={() => {
-                    setIsExpanded(!isExpanded);
-                    triggerHaptic();
-                }}
-                className="w-full flex items-center justify-between p-4 bg-white/[0.02] hover:bg-white/[0.05] transition-colors"
-            >
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-purple-500/10 group-hover:border-purple-500/20 transition-all">
-                        <Calendar className="w-5 h-5 text-purple-400" />
-                    </div>
-                    <div className="text-right">
-                        <h3 className="text-sm font-bold text-white leading-tight">צפי דיבידנדים</h3>
-                        {totalForecast > 0 && !isExpanded && (
-                            <p className="text-[10px] text-purple-400 font-black uppercase tracking-widest mt-0.5 font-mono">
-                                {formatAmount(totalForecast, isStealthMode, '$', '***')} EST.
-                            </p>
-                        )}
-                    </div>
+        <div className="neon-card p-6 rounded-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-5">
+                <Gift className="w-24 h-24 text-blue-400" />
+            </div>
+
+            <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-2">
+                    <Gift className="w-5 h-5 text-blue-400" />
+                    <h3 className="text-sm font-bold tracking-widest uppercase text-blue-300">צפי דיבידנדים</h3>
                 </div>
-                <ChevronDown className={cn(
-                    "w-4 h-4 text-white/20 transition-transform duration-300",
-                    isExpanded && "rotate-180 text-purple-400"
-                )} />
-            </button>
+                <button
+                    onClick={() => setShowTotal(!showTotal)}
+                    className="p-2 hover:bg-white/5 rounded-full transition-colors border border-white/10"
+                    role="button"
+                >
+                    <Info className="w-4 h-4 text-white/40" />
+                </button>
+            </div>
 
-            {/* Expandable Content */}
+            <div className="space-y-4">
+                {dividendData.slice(0, 3).map((item) => (
+                    <div key={item.id} className="flex justify-between items-center border-b border-white/5 pb-2">
+                        <span className="text-sm text-white/70">{item.name}</span>
+                        <span className="text-sm font-bold text-emerald-400">+{formatILS(item.forecast)}</span>
+                    </div>
+                ))}
+
+                {dividendData.length === 0 && (
+                    <p className="text-xs text-white/40 italic">אין דיבידנדים צפויים ברבעון הקרוב</p>
+                )}
+            </div>
+
             <AnimatePresence>
-                {isExpanded && (
+                {showTotal && dividendData.length > 0 && (
                     <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="overflow-hidden"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-6 pt-4 border-t border-white/10"
                     >
-                        <div className="px-4 pb-4 space-y-4 pt-2">
-                            {upcomingDividends.length > 0 ? (
-                                <div className="space-y-3">
-                                    {upcomingDividends.map((div, idx) => (
-                                        <div key={idx} className="flex justify-between items-center p-3.5 rounded-[1.5rem] bg-white/5 border border-white/5 hover:border-white/10 transition-all group/item">
-                                            <div className="flex flex-col text-right">
-                                                <span className="text-xs font-bold text-white/90 group-hover/item:text-purple-300 transition-colors uppercase tracking-tight">{div?.name}</span>
-                                                <span className="text-[9px] text-white/30 font-black uppercase tracking-[0.1em] mt-0.5">EST. DATE: {div?.date}</span>
-                                            </div>
-                                            <div className="text-left font-mono">
-                                                <span className="text-xs font-bold text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.2)]">
-                                                    +{formatAmount(div?.amount || 0, isStealthMode, '$', '***')}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))}
+                        <div className="flex justify-between items-end">
+                            <div>
+                                <span className="text-[10px] text-white/40 font-bold uppercase block mb-1 font-inter">סה״כ רבעוני</span>
+                                <div className="text-2xl font-black text-white neon-text">
+                                    {formatILS(totalQuarterly)}
                                 </div>
-                            ) : (
-                                <div className="py-8 flex flex-col items-center justify-center text-center opacity-30">
-                                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
-                                        <TrendingUp className="w-6 h-6" />
-                                    </div>
-                                    <p className="text-xs font-medium">אין דיבידנדים צפויים ברבעון הקרוב</p>
-                                </div>
-                            )}
-
-                            {totalForecast > 0 && (
-                                <div className="pt-4 border-t border-white/5 flex items-center justify-between px-1">
-                                    <span className="text-[10px] text-white/20 font-black uppercase tracking-[0.2em]">סה״כ רבעוני</span>
-                                    <span className="text-lg font-black text-purple-400 tabular-nums font-mono drop-shadow-[0_0_15px_rgba(168,85,247,0.3)]">
-                                        {formatAmount(totalForecast, isStealthMode, '$', '***')}
-                                    </span>
-                                </div>
-                            )}
+                            </div>
+                            <div className="text-[10px] text-emerald-400 font-bold bg-emerald-400/10 px-2 py-1 rounded">
+                                +{((totalQuarterly * 4 / (assets.reduce((s, a) => s + (a.calculatedValue || Number(a.current_amount) || 0), 0) || 1)) * 100).toFixed(2)}% תשואה
+                            </div>
                         </div>
                     </motion.div>
                 )}

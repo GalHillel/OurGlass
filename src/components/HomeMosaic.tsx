@@ -22,6 +22,7 @@ import {
     ChevronLeft,
     CalendarRange
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import { BudgetHealthScore } from "@/components/BudgetHealthScore";
 import { SavingsTracker } from "@/components/SavingsTracker";
@@ -37,6 +38,7 @@ import { AIHubBanner } from "@/components/AIHubBanner";
 import { WealthTimeMachine } from "@/components/WealthTimeMachine";
 import { SmartInsights } from "@/components/SmartInsights";
 import { MonthlyRoastPraise } from "@/components/MonthlyRoastPraise";
+import { LiveAssetTicker } from "@/components/LiveAssetTicker";
 
 export interface HomeMosaicProps {
     balance: number;
@@ -66,6 +68,7 @@ export interface HomeMosaicProps {
     onViewingDateChange: (date: Date | ((prev: Date) => Date)) => void;
     onUpdateStatus?: (id: string, status: Subscription['status']) => void;
     onDeleteSubscription?: (id: string) => void;
+    totalWealth?: number;
 }
 
 import React, { useState } from "react";
@@ -104,15 +107,15 @@ export const HomeMosaic = React.memo(({
     onViewingDateChange,
     onUpdateStatus,
     onDeleteSubscription,
+    totalWealth,
 }: HomeMosaicProps) => {
+    const router = useRouter();
     const [isEditModeOpen, setIsEditModeOpen] = useState(false);
 
     const isStealthMode = useAppStore(useShallow(s => s.isStealthMode));
-    const { widgets, features, _hasHydrated } = useDashboardStore(useShallow(s => ({
-        widgets: s.widgets,
-        features: s.features,
-        _hasHydrated: s._hasHydrated
-    })));
+    const widgets = useDashboardStore(useShallow(s => s.widgets));
+    const features = useDashboardStore(useShallow(s => s.features));
+    const _hasHydrated = useDashboardStore(useShallow(s => s._hasHydrated));
 
     if (!_hasHydrated) {
         return <div className="w-full max-w-md px-4 min-h-[50vh] flex items-center justify-center">
@@ -135,6 +138,9 @@ export const HomeMosaic = React.memo(({
 
     const cashAssets = assets.filter(a => a.type === 'cash');
     const totalCash = cashAssets.reduce((sum: number, a: Asset) => sum + (Number(a.current_amount) || 0), 0);
+
+    // AUTHORITY: Use totalWealth prop from engine (Assets only)
+    const effectiveTotalWealth = totalWealth !== undefined ? totalWealth : (totalCash + stockAssets.reduce((s, a) => s + (Number(a.current_amount) || 0), 0));
 
     const activeWidgets = [...widgets].filter(w => w.enabled).sort((a, b) => a.order - b.order);
 
@@ -410,7 +416,7 @@ export const HomeMosaic = React.memo(({
                                             </div>
                                             <div className="text-right">
                                                 <div className="text-lg font-bold text-emerald-400">
-                                                    {formatAmount(Number(asset.current_amount), isStealthMode, CURRENCY_SYMBOL)}
+                                                    <LiveAssetTicker asset={asset} />
                                                 </div>
                                             </div>
                                         </div>
@@ -428,7 +434,7 @@ export const HomeMosaic = React.memo(({
                                 </div>
                                 <div className="mt-4">
                                     <WealthTimeMachine
-                                        currentNetWorth={totalCash + stockAssets.reduce((s: number, a: Asset) => s + (Number(a.current_amount) || 0), 0)}
+                                        currentNetWorth={effectiveTotalWealth}
                                         monthlySavings={Math.max(0, actualSavings)}
                                     />
                                 </div>
@@ -581,7 +587,7 @@ export const HomeMosaic = React.memo(({
                         key={key}
                         layout
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => window.location.href = '/subscriptions'}
+                        onClick={() => router.push('/subscriptions')}
                         className="aspect-[4/3] glass-panel p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
                     >
                         <div className="absolute inset-0 bg-blue-400/5 group-hover:bg-blue-400/10 transition-colors" />
@@ -605,7 +611,7 @@ export const HomeMosaic = React.memo(({
                         key={key}
                         layout
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => window.location.href = '/wishlist'}
+                        onClick={() => router.push('/wishlist')}
                         className="aspect-[4/3] glass-panel p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
                     >
                         <div className="absolute inset-0 bg-pink-400/5 group-hover:bg-pink-400/10 transition-colors" />

@@ -15,6 +15,7 @@ import { createClient } from "@/utils/supabase/client";
 import { Transaction, Subscription, Liability } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { useWealth } from "@/hooks/useWealth";
+import { useLiveTotalWealth } from "@/hooks/useLiveTotalWealth";
 import { useGlobalCashflow } from "@/hooks/useJointFinance";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isSameDay, addMonths, subMonths, format, differenceInDays, addDays } from "date-fns";
@@ -64,7 +65,9 @@ export default function Home() {
   const [isPrivacyMode] = useState(false);
 
   const { user, profile, loading: authLoading } = useAuth();
-  const { assets, usdToIls } = useWealth();
+  const { assets, usdToIls, netWorth, marketPrices } = useWealth();
+  // 3. Authority Real-Time Counter
+  const liveNetWorth = useLiveTotalWealth(assets || [], [], usdToIls, marketPrices);
   const { appIdentity } = useAppStore();
   const queryClient = useQueryClient();
 
@@ -217,6 +220,7 @@ export default function Home() {
                     usdToIls={usdToIls}
                     viewingDate={viewingDate}
                     onViewingDateChange={setViewingDate}
+                    totalWealth={netWorth}
                   />
                 </ErrorBoundary>
               </div>

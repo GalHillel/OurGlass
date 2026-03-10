@@ -13,9 +13,12 @@ import { useAppStore } from "@/stores/appStore";
 import { formatAmount } from "@/lib/utils";
 
 const PERIODS = [
-    { label: "30 יום", days: 30 },
-    { label: "90 יום", days: 90 },
+    { label: "5י", days: 5 },
+    { label: "שבוע", days: 7 },
+    { label: "חודש", days: 30 },
+    { label: "6ח׳", days: 180 },
     { label: "שנה", days: 365 },
+    { label: "הכל", days: -1 },
 ] as const;
 
 interface NetWorthHistoryProps {
@@ -23,46 +26,29 @@ interface NetWorthHistoryProps {
 }
 
 export function NetWorthHistory({ liveNetWorth }: NetWorthHistoryProps) {
-    const [period, setPeriod] = useState(90);
+    const [period, setPeriod] = useState(30);
     const [isExpanded, setIsExpanded] = useState(false);
-    const { data: snapshots = [], isLoading } = useWealthHistory(period);
+    const { data: snapshots = [], isLoading, dbValue } = useWealthHistory(period, liveNetWorth);
     const isStealthMode = useAppStore(s => s.isStealthMode);
 
     const chartData = useMemo(() => {
-        const historical = snapshots.map((s) => ({
-            date: s.snapshot_date,
-            netWorth: s.net_worth,
-            cash: s.cash_value,
-            investments: s.investments_value,
-            liabilities: s.liabilities_value,
-            label: format(parseISO(s.snapshot_date), "dd MMM", { locale: he }),
-        }));
+        if (snapshots.length === 0) return [];
 
-        // Append live net worth as today's data point to sync chart with actual value
-        if (liveNetWorth !== undefined && liveNetWorth > 0) {
-            const today = new Date().toISOString().split("T")[0];
-            const lastDate = historical.length > 0 ? historical[historical.length - 1].date : null;
+        const todayStr = new Date().toISOString().split('T')[0];
+        const liveVal = liveNetWorth ?? dbValue ?? 0;
+        const delta = Math.abs(liveVal - (dbValue ?? 0)) > 1000 ? liveVal - (dbValue ?? 0) : 0;
 
-            // Only append if today's date differs from the last snapshot OR if value differs significantly
-            if (!lastDate || lastDate !== today) {
-                historical.push({
-                    date: today,
-                    netWorth: liveNetWorth,
-                    cash: 0,
-                    investments: 0,
-                    liabilities: 0,
-                    label: format(new Date(), "dd MMM", { locale: he }),
-                });
-            } else {
-                // Replace the last point with the live value (it's today, use the accurate one)
-                historical[historical.length - 1] = {
-                    ...historical[historical.length - 1],
-                    netWorth: liveNetWorth,
-                };
-            }
-        }
-
-        return historical;
+        return snapshots.map((s) => {
+            const isLive = s.id === 'live-now' || s.snapshot_date === todayStr;
+            return {
+                date: s.snapshot_date,
+                netWorth: Math.max(0, isLive ? s.net_worth : (s.net_worth + delta)),
+                cash: s.cash_value,
+                investments: s.investments_value,
+                liabilities: s.liabilities_value,
+                label: format(parseISO(s.snapshot_date), "dd MMM", { locale: he }),
+            };
+        });
     }, [snapshots, liveNetWorth]);
 
     const trend = useMemo(() => {
@@ -95,7 +81,7 @@ export function NetWorthHistory({ liveNetWorth }: NetWorthHistoryProps) {
                         <TrendingUp className="w-5 h-5 text-blue-400" />
                     </div>
                     <div className="text-right">
-                        <h3 className="text-sm font-bold text-white/80 uppercase tracking-widest">היסטוריית שווי</h3>
+                        <h3 className="text-sm font-bold text-white/80 uppercase tracking-widest">היסטוריית הון</h3>
                         <div className="text-2xl font-black text-white mt-0.5 tabular-nums">
                             {formatAmount(displayNetWorth, isStealthMode, CURRENCY_SYMBOL)}
                         </div>
@@ -191,7 +177,7 @@ export function NetWorthHistory({ liveNetWorth }: NetWorthHistoryProps) {
                                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                 formatter={(value: any) => [
                                                     isStealthMode ? '***,***' : `${CURRENCY_SYMBOL}${Number(value).toLocaleString()}`,
-                                                    "שווי נקי"
+                                                    "סה״כ הון"
                                                 ]}
                                                 labelFormatter={(label) => String(label)}
                                             />

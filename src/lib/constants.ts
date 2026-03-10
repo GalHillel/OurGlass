@@ -16,6 +16,7 @@ export const ASSET_TYPES = {
     STOCK: "מניות",
     REAL_ESTATE: "נדל״ן",
     MONEY_MARKET: "קרן כספית",
+    MUTUAL_FUND: "קרן נאמנות",
 } as const;
 
 export const TABS = {
@@ -26,3 +27,19 @@ export const TABS = {
     FOREIGN_CURRENCY: "מט״ח",
     REAL_ESTATE: "נדל״ן"
 } as const;
+
+export const isAssetInvestment = (asset: any): boolean => {
+    // Definition: Stocks, Real Estate, Money Market, and Mutual Funds are investments.
+    // Everything else (Cash, Savings, Forex) is considered "Cash/Liquid".
+    const type = (asset.type || asset.category || "").toLowerCase();
+    const invType = (asset.investment_type || "").toLowerCase();
+
+    return (
+        type === 'stock' ||
+        type === 'money_market' ||
+        type === 'mutual_fund' ||
+        invType === 'real_estate' ||
+        invType === 'stock' ||
+        invType === 'mutual_fund'
+    );
+};

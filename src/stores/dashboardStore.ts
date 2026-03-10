@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { createClient } from '@/utils/supabase/client';
 
 export interface WidgetConfig {
     id: string;
@@ -15,7 +16,7 @@ export interface NavItemConfig {
 
 export type FeatureKey =
     | 'enableStocks' | 'enableStocksPage' | 'enableWishlist' | 'enableSubscriptions' | 'enableSettlements' | 'enableLounge'
-    | 'showSP500Benchmark' | 'showDividendForecast' | 'showRebalancingCoach'
+    | 'showSP500Benchmark' | 'showPortfolioAllocation' | 'showRebalancingCoach'
     // Wealth Page Features
     | 'wealthShowHistory' | 'wealthShowInsights' | 'wealthShowAssets' | 'wealthShowPortfolio' | 'wealthShowSummaryCards'
     // Subscriptions Page Features
@@ -61,7 +62,7 @@ const DEFAULT_FEATURES: Record<FeatureKey, boolean> = {
     enableSettlements: false,
     enableLounge: true,
     showSP500Benchmark: true,
-    showDividendForecast: true,
+    showPortfolioAllocation: true,
     showRebalancingCoach: true,
     // Wealth
     wealthShowHistory: true,
@@ -93,117 +94,88 @@ interface DashboardState {
     toggleFeature: (key: FeatureKey) => void;
     reorderWidgets: (newOrder: WidgetConfig[]) => void;
     reorderNavItems: (newOrder: NavItemConfig[]) => void;
+    initializeFromProfile: (profile: any) => void;
     _hasHydrated: boolean;
     setHasHydrated: (state: boolean) => void;
 }
 
+const supabase = createClient();
+
+const syncToDB = async (state: Partial<DashboardState>) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from('profiles').update({
+        dashboard_config: {
+            widgets: state.widgets,
+            navItems: state.navItems,
+            features: state.features
+        }
+    }).eq('id', user.id);
+};
+
 export const useDashboardStore = create<DashboardState>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             widgets: DEFAULT_WIDGETS,
             navItems: DEFAULT_NAV_ITEMS,
             features: DEFAULT_FEATURES,
-            toggleWidget: (id) =>
+            toggleWidget: (id) => {
                 set((state) => ({
                     widgets: state.widgets.map((w) =>
                         w.id === id ? { ...w, enabled: !w.enabled } : w
                     ),
-                })),
-            toggleNavItem: (id) =>
+                }));
+                syncToDB(get());
+            },
+            toggleNavItem: (id) => {
                 set((state) => ({
                     navItems: state.navItems.map((n) =>
                         n.id === id ? { ...n, enabled: !n.enabled } : n
                     ),
-                })),
-            toggleFeature: (key) =>
+                }));
+                syncToDB(get());
+            },
+            toggleFeature: (key) => {
                 set((state) => ({
                     features: {
                         ...state.features,
                         [key]: !state.features[key],
                     },
-                })),
-            reorderWidgets: (newOrder) => set({ widgets: newOrder }),
-            reorderNavItems: (newOrder) => set({ navItems: newOrder }),
+                }));
+                syncToDB(get());
+            },
+            reorderWidgets: (newOrder) => {
+                set({ widgets: newOrder });
+                syncToDB(get());
+            },
+            reorderNavItems: (newOrder) => {
+                set({ navItems: newOrder });
+                syncToDB(get());
+            },
+            initializeFromProfile: (profile) => {
+                if (profile?.dashboard_config) {
+                    const config = profile.dashboard_config;
+                    set({
+                        widgets: config.widgets || DEFAULT_WIDGETS,
+                        navItems: config.navItems || DEFAULT_NAV_ITEMS,
+                        features: config.features || DEFAULT_FEATURES,
+                        _hasHydrated: true
+                    });
+                }
+            },
             _hasHydrated: false,
             setHasHydrated: (state) => set({ _hasHydrated: state }),
         }),
         {
             name: 'ourglass-dashboard-store',
             version: 1,
-            migrate: (persistedState: unknown, version: number) => {
-                const state =
-                    persistedState && typeof persistedState === 'object'
-                        ? (persistedState as Partial<DashboardState>)
-                        : {};
-                if (version === 0) {
-                    // Version 0 was the old state. Let's ensure new segments exist.
-                    return {
-                        ...state,
-                        navItems: DEFAULT_NAV_ITEMS,
-                    };
-                }
-                return {
-                    widgets: state.widgets ?? DEFAULT_WIDGETS,
-                    navItems: state.navItems ?? DEFAULT_NAV_ITEMS,
-                    features: state.features ?? DEFAULT_FEATURES,
-                    _hasHydrated: false,
-                } as unknown as DashboardState;
-            },
             onRehydrateStorage: () => (state) => {
-                if (state) {
-                    // Self-healing: Ensure all default widgets exist in the rehydrated state
-                    const currentWidgetIds = (state.widgets || []).map(w => w.id);
-                    const missingWidgets = DEFAULT_WIDGETS.filter(w => !currentWidgetIds.includes(w.id));
-
-                    if (missingWidgets.length > 0) {
-                        state.widgets = [
-                            ...(state.widgets || []),
-                            ...missingWidgets.map(w => ({ ...w, order: (state.widgets || []).length + w.order }))
-                        ];
-                    }
-
-                    // Self-healing: Ensure all default nav items exist and Lounge is ENABLED
-                    const currentNavIds = state.navItems?.map(n => n.id) || [];
-                    const missingNavItems = DEFAULT_NAV_ITEMS.filter(n => !currentNavIds.includes(n.id));
-
-                    let updatedNavItems = state.navItems || [];
-                    if (missingNavItems.length > 0) {
-                        updatedNavItems = [...updatedNavItems, ...missingNavItems];
-                    }
-
-                    // Explicitly force lounge to be enabled if it's there
-                    updatedNavItems = updatedNavItems.map(n =>
-                        n.id === 'lounge' ? { ...n, enabled: true } : n
-                    );
-
-                    state.navItems = updatedNavItems;
-
-                    // Self-healing: Ensure all default features exist and force active key ones
-                    const currentFeatureKeys = Object.keys(state.features || {});
-                    const missingFeatures = (Object.keys(DEFAULT_FEATURES) as FeatureKey[])
-                        .filter(key => !currentFeatureKeys.includes(key));
-
-                    if (missingFeatures.length > 0 || !state.features.enableLounge) {
-                        state.features = {
-                            ...(state.features || {}),
-                            ...missingFeatures.reduce((acc, key) => ({
-                                ...acc,
-                                [key]: DEFAULT_FEATURES[key]
-                            }), {}),
-                            // Force critical features to be true if they are currently missing or false (recovery)
-                            enableLounge: true,
-                            enableWishlist: true,
-                            enableStocks: true
-                        } as Record<FeatureKey, boolean>;
-                    }
-
-                    state.setHasHydrated(true);
-                }
+                state?.setHasHydrated(true);
             }
         }
     )
 );
 
-// Helper for easier feature access
 export const useFeature = (key: FeatureKey) =>
     useDashboardStore((state) => state.features[key]);

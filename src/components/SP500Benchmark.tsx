@@ -16,36 +16,26 @@ interface BenchmarkProps {
 }
 
 export function SP500Benchmark({ initialWealth }: BenchmarkProps) {
-    const { data: snapshots = [], isLoading: isLoadingHistory } = useWealthHistory(365);
+    const { data: snapshots = [], isLoading: isLoadingHistory, dbValue } = useWealthHistory(365, initialWealth);
     const { data: sp500History = [], isLoading: isLoadingMarket } = useSP500History(365);
     const [isExpanded, setIsExpanded] = useState(false);
 
     const chartData = useMemo(() => {
         if (!initialWealth || snapshots.length === 0 || sp500History.length === 0) return [];
 
-        // 1. Reconcile snapshots with live data
-        // If the last snapshot is significantly different from initialWealth, 
-        // we assume history was missing some assets (as per user feedback).
-        const lastSnapshot = snapshots[snapshots.length - 1];
-        const lastValue = lastSnapshot.net_worth;
-        const delta = Math.abs(initialWealth - lastValue) > 1000 ? initialWealth - lastValue : 0;
-
-        // 2. Map snapshots to chart points and apply correction offset
-        const reconciledPoints = snapshots.map(s => ({
-            date: s.snapshot_date,
-            yours: Math.round(s.net_worth + delta), // Adjusted reality
-            label: format(parseISO(s.snapshot_date), "dd MMM", { locale: he })
-        }));
-
-        // 3. Add "Now" point if last snapshot isn't today
         const todayStr = new Date().toISOString().split('T')[0];
-        if (reconciledPoints[reconciledPoints.length - 1].date !== todayStr) {
-            reconciledPoints.push({
-                date: todayStr,
-                yours: initialWealth,
-                label: "היום"
-            });
-        }
+        const liveVal = initialWealth;
+        const delta = Math.abs(liveVal - (dbValue || 0)) > 1000 ? liveVal - (dbValue || 0) : 0;
+
+        // 2. Map snapshots to chart points and apply correction offset only to PAST points
+        const reconciledPoints = snapshots.map(s => {
+            const isLive = s.id === 'live-now' || s.snapshot_date === todayStr;
+            return {
+                date: s.snapshot_date,
+                yours: Math.round(isLive ? s.net_worth : (s.net_worth + delta)),
+                label: isLive ? "היום" : format(parseISO(s.snapshot_date), "dd MMM", { locale: he })
+            };
+        });
 
         // 4. Calculate S&P 500 performance relative to starting wealth
         const firstPoint = reconciledPoints[0];

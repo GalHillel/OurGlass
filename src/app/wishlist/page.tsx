@@ -37,6 +37,7 @@ export default function WishlistPage() {
     const [newItemName, setNewItemName] = useState("");
     const [newItemPrice, setNewItemPrice] = useState("");
     const [newItemLink, setNewItemLink] = useState("");
+    const [newItemDescription, setNewDescription] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isOracleOpen, setIsOracleOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<WishlistItem | null>(null);
@@ -116,6 +117,7 @@ export default function WishlistPage() {
                 name: newItemName,
                 price: parseFloat(newItemPrice),
                 link: newItemLink,
+                description: newItemDescription,
                 status: 'pending',
                 couple_id: coupleId
             });
@@ -127,6 +129,7 @@ export default function WishlistPage() {
             setNewItemName("");
             setNewItemPrice("");
             setNewItemLink("");
+            setNewDescription("");
             fetchData();
         } catch (error: unknown) {
             toast.error("שגיאה בהוספה", { description: getHebrewError(error) });
@@ -416,6 +419,14 @@ export default function WishlistPage() {
                                     />
                                 </div>
                             </div>
+                            <div className="space-y-2">
+                                <Input
+                                    placeholder="למה בא לך את זה? (תיאור קצר)"
+                                    value={newItemDescription}
+                                    onChange={(e) => setNewDescription(e.target.value)}
+                                    className="bg-slate-950/50 border-white/10 text-white h-10 text-sm focus:border-purple-500/50 transition-colors"
+                                />
+                            </div>
                             <div className="space-y-4">
                                 <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mr-2">תמונה</label>
 
@@ -539,7 +550,6 @@ export default function WishlistPage() {
                                 >
                                     <WishlistCard
                                         item={item}
-                                        onClick={() => checkOracle(item)}
                                         onAction={handleAction}
                                     />
                                 </SwipeableRow>

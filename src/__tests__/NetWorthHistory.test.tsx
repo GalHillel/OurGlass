@@ -38,14 +38,14 @@ describe('NetWorthHistory', () => {
         vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [], isLoading: false } as never);
         render(<NetWorthHistory />);
         // The collapsed accordion should show the title
-        expect(screen.getByText('היסטוריית שווי')).toBeInTheDocument();
+        expect(screen.getByText('היסטוריית הון')).toBeInTheDocument();
     });
 
     it('shows empty state message when expanded and no data exists', () => {
         vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: [], isLoading: false } as never);
         render(<NetWorthHistory />);
         // Click to expand the accordion
-        fireEvent.click(screen.getByText('היסטוריית שווי'));
+        fireEvent.click(screen.getByText('היסטוריית הון'));
         expect(screen.getByText('נתוני היסטוריה ייאספו בקרוב')).toBeInTheDocument();
     });
 
@@ -57,7 +57,7 @@ describe('NetWorthHistory', () => {
         vi.spyOn(hooks, 'useWealthHistory').mockReturnValue({ data: mockSnapshots, isLoading: false } as never);
 
         render(<NetWorthHistory />);
-        expect(screen.getByText('היסטוריית שווי')).toBeInTheDocument();
+        expect(screen.getByText('היסטוריית הון')).toBeInTheDocument();
         // (110000 - 100000) / 100000 = 10%
         expect(screen.getByText(/\+10\.0%/)).toBeInTheDocument();
     });

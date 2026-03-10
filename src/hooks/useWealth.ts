@@ -5,6 +5,9 @@ import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Goal } from "@/types";
 import { useQuery } from "@tanstack/react-query";
+import { calculateLiveBalance } from "@/lib/wealth-utils";
+import { isAssetInvestment } from "@/lib/constants";
+import { netWorthEngine } from "@/lib/networth-engine";
 
 interface SupabaseError {
     message?: string;
@@ -15,37 +18,14 @@ interface SupabaseError {
 }
 
 export const useWealth = () => {
-    const { user, loading: authLoading } = useAuth();
+    const { user, profile, loading: authLoading } = useAuth();
     const supabaseRef = useRef(createClient());
 
     const { data, isLoading, refetch } = useQuery({
-        queryKey: ['wealthData', user?.id],
+        queryKey: ['wealthData', user?.id, profile?.couple_id],
         queryFn: async () => {
-            if (!user) {
+            if (!user || !profile?.couple_id) {
                 return {
-                    netWorth: 0,
-                    investmentsValue: 0,
-                    cashValue: 0,
-                    assets: []
-                };
-            }
-
-            const supabase = supabaseRef.current;
-            try {
-                await fetch("/api/yield/accrue", { method: "POST" });
-            } catch {
-                // ignore accrual failures; continue with last stored amounts
-            }
-            const { data: goals, error } = await supabase
-                .from('goals')
-                .select('id, name, current_amount, type, brick_color, growth_rate, investment_type, symbol, quantity, interest_rate, last_interest_calc')
-                .order('created_at', { ascending: true });
-
-            if (error) {
-                console.error("useWealth goals fetch error:", JSON.stringify(error, null, 2));
-                return {
-
-
                     netWorth: 0,
                     investmentsValue: 0,
                     cashValue: 0,
@@ -54,11 +34,33 @@ export const useWealth = () => {
                 };
             }
 
+            const supabase = supabaseRef.current;
+            const coupleId = profile.couple_id;
+            try {
+                await fetch("/api/yield/accrue", { method: "POST" });
+            } catch {
+                // ignore accrual failures
+            }
+
+            // Use select('*') to be resilient to missing columns if migration hasn't run yet
+            const { data: goals, error } = await supabase
+                .from('goals')
+                .select('*')
+                .eq('couple_id', coupleId)
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+
             const stockSymbols = (goals ?? [])
                 .filter(g => g.type === 'stock' && g.symbol)
                 .map(g => g.symbol!.toUpperCase());
 
-            const hasUsdAssets = (goals ?? []).some(g => g.type === 'stock' || g.type === 'foreign_currency' || g.investment_type === 'foreign_currency');
+            const hasUsdAssets = (goals ?? []).some(g =>
+                g.type === 'stock' ||
+                g.type === 'foreign_currency' ||
+                g.investment_type === 'foreign_currency' ||
+                g.currency === 'USD'
+            );
 
             let livePrices: Record<string, { price: number; changePercent: number }> = {};
             let usdToIls = 3.65; // fallback
@@ -86,59 +88,43 @@ export const useWealth = () => {
 
             const safeGoals = (goals ?? []) as unknown as Goal[];
 
-            let totalNetWorth = 0;
+            // AUTHORITATIVE ENGINE CALCULATION
+            const { totalAssets, netWorthBeforeFees, calculatedAssets, usdToIls: engineUsdRate } = netWorthEngine(
+                safeGoals,
+                [], // useWealth only handles assets; page.tsx combines them with liabilities
+                usdToIls,
+                livePrices
+            );
+
+            // Separate totalInvestments and totalCash for UI tiles
             let totalInvestments = 0;
             let totalCash = 0;
 
-            const calculatedAssets = safeGoals.map((asset: Goal) => {
-                let calculatedValue = 0;
-
-                if (asset.type === 'stock' && asset.symbol) {
-                    const priceData = livePrices[asset.symbol.toUpperCase()];
-                    if (priceData && priceData.price) {
-                        const quantity = Number(asset.quantity) || 0;
-                        const livePriceUSD = priceData.price;
-                        calculatedValue = quantity * livePriceUSD * usdToIls;
-                    } else {
-                        calculatedValue = Number(asset.current_amount) || 0;
-                    }
-                } else if (asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency') {
-                    const usdAmount = Number(asset.current_amount) || 0;
-                    calculatedValue = usdAmount * usdToIls;
+            const finalAssets = calculatedAssets.map((asset: Goal & { calculatedValue: number }) => {
+                if (isAssetInvestment(asset)) {
+                    totalInvestments += asset.calculatedValue;
                 } else {
-                    calculatedValue = Number(asset.current_amount) || 0;
-                }
-
-                const assetValue = Math.max(0, calculatedValue);
-                totalNetWorth += assetValue;
-
-                const isInvestment =
-                    asset.type === 'stock' ||
-                    asset.investment_type === 'real_estate';
-
-                if (isInvestment) {
-                    totalInvestments += assetValue;
-                } else {
-                    totalCash += assetValue;
+                    totalCash += asset.calculatedValue;
                 }
 
                 return {
                     ...asset,
-                    calculatedValue: assetValue,
                     livePriceUSD: asset.type === 'stock' ? livePrices[(asset.symbol || '').toUpperCase()]?.price || 0 : 0,
                     changePercent: asset.type === 'stock' ? livePrices[(asset.symbol || '').toUpperCase()]?.changePercent || 0 : 0
                 };
             });
 
             return {
-                netWorth: totalNetWorth,
+                netWorth: totalAssets,
+                netWorthBeforeFees: netWorthBeforeFees,
                 investmentsValue: totalInvestments,
                 cashValue: totalCash,
-                assets: calculatedAssets,
-                usdToIls
+                assets: finalAssets,
+                usdToIls: engineUsdRate,
+                marketPrices: livePrices // Expose for the live ticker
             };
         },
-        enabled: true,
+        enabled: !!profile?.couple_id,
         refetchInterval: 60 * 1000,
         staleTime: 30 * 1000,
     });
@@ -146,10 +132,12 @@ export const useWealth = () => {
 
     const defaultData = useMemo(() => ({
         netWorth: 0,
+        netWorthBeforeFees: 0,
         investmentsValue: 0,
         cashValue: 0,
         assets: [],
-        usdToIls: 3.7
+        usdToIls: 3.7,
+        marketPrices: {}
     }), []);
 
     const wealth = data || defaultData;

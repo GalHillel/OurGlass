@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { User, AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { Profile } from "@/types";
+import { useDashboardStore } from "@/stores/dashboardStore";
 
 interface AuthContextType {
     user: User | null;
@@ -26,6 +27,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const supabaseRef = useRef(createClient());
     const profileRef = useRef<Profile | null>(null);
 
+    const initializeFromProfile = useDashboardStore(s => s.initializeFromProfile);
+
     const updateProfile = (updates: Partial<Profile>) => {
         setProfile(prev => {
             const updated = prev ? { ...prev, ...updates } : null;
@@ -33,6 +36,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             return updated;
         });
     };
+
+    useEffect(() => {
+        if (profile) {
+            initializeFromProfile(profile);
+        }
+    }, [profile, initializeFromProfile]);
 
     useEffect(() => {
         const supabase = supabaseRef.current;

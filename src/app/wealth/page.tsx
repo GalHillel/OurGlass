@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { Goal } from "@/types";
+import { Goal, Liability } from "@/types";
 import { useWealth } from "@/hooks/useWealth";
+import { useLiabilities, useTotalLiabilities } from "@/hooks/useWealthData";
+import { useLiveTotalWealth } from "@/hooks/useLiveTotalWealth";
 import { TrendingUp, PieChart, Shield, Rocket, Plus, Edit2, Building, Trash2, DollarSign } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,7 +13,9 @@ import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AddAssetDialog } from "@/components/AddAssetDialog";
+import { LiveAssetTicker } from "@/components/LiveAssetTicker";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/components/AuthProvider";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -23,37 +27,45 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { TABS, CURRENCY_SYMBOL } from "@/lib/constants";
-
-import { getRank } from "@/lib/ranks";
+import { TABS, CURRENCY_SYMBOL, isAssetInvestment } from "@/lib/constants";
 
 // Phase 3: Wealth & Investment components
 import { NetWorthHistory } from "@/components/NetWorthHistory";
 import { MonthlyStoryWrap } from "@/components/MonthlyStoryWrap";
 import { RebalancingCoach } from "@/components/RebalancingCoach";
-import { useLiabilities } from "@/hooks/useWealthData";
+import { PortfolioAllocation } from "@/components/PortfolioAllocation";
+import { SP500Benchmark } from "@/components/SP500Benchmark";
 import { useDashboardStore } from "@/stores/dashboardStore";
 import { useAppStore } from "@/stores/appStore";
-import { cn, formatAmount } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/utils/haptics";
 
 export default function WealthPage() {
     const isStealthMode = useAppStore(s => s.isStealthMode);
-    // Use the centralized wealth hook
+    const { profile, loading: authLoading } = useAuth();
+
+    // 1. Authoritative Data Fetch
     const {
         netWorth,
+        netWorthBeforeFees,
         investmentsValue,
         cashValue,
-        assets,
+        assets = [],
         usdToIls,
-        loading,
+        marketPrices = {},
+        loading: wealthLoading,
         refetch
     } = useWealth();
 
+    const { data: liabilities = [], isLoading: liabLoading } = useLiabilities();
+    const { total: totalLiabilitiesVal } = useTotalLiabilities();
+    const loading = wealthLoading || authLoading;
+
+    // 2. Dashboard Features
     const features = useDashboardStore((s) => s.features);
     const {
         showSP500Benchmark,
-        showDividendForecast,
+        showPortfolioAllocation,
         showRebalancingCoach,
         wealthShowHistory,
         wealthShowInsights,
@@ -62,11 +74,14 @@ export default function WealthPage() {
         wealthShowSummaryCards
     } = features;
 
-    // Check if all wealth micro-features are off
-    const isMinimalMode = !showSP500Benchmark && !showDividendForecast && !showRebalancingCoach && !wealthShowHistory && !wealthShowInsights && !wealthShowAssets && !wealthShowPortfolio && !wealthShowSummaryCards;
+    // Derive isMinimalMode locally
+    const isMinimalMode = !showSP500Benchmark && !showPortfolioAllocation && !showRebalancingCoach &&
+        !wealthShowHistory && !wealthShowInsights && !wealthShowAssets &&
+        !wealthShowPortfolio && !wealthShowSummaryCards;
 
-    useLiabilities();
-    const trueNetWorth = netWorth; // Gross Assets view per user request
+    // 3. Authority Real-Time Counter
+    const liveNetWorth = useLiveTotalWealth(assets || [], [], usdToIls, marketPrices);
+    const trueNetWorth = netWorth; // Mandate: Total Assets Only (Gross)
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingAsset, setEditingAsset] = useState<Goal | null>(null);
@@ -77,27 +92,19 @@ export default function WealthPage() {
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
-    // Note: Compound interest calculation has been moved to a separate function
-    // since it needs to write to DB, but it will trigger a refetch after completion
-
     const filteredAssets = useMemo(() => {
-        return assets.filter(asset => {
-            // Filter out Stocks from generic list (since they are in StockPortfolio)
-            // We only filter out "Smart Stocks" (with symbol). Manual stocks stay.
+        return (assets || []).filter((asset: Goal) => {
             if (asset.type === 'stock' && asset.symbol) return false;
 
-            // 1. Chart Filter (High Priority)
             if (chartFilter) {
                 if (chartFilter === 'real_estate') return asset.investment_type === 'real_estate';
                 if (chartFilter === 'stock') return asset.type === 'stock';
                 if (chartFilter === 'cash') return asset.type === 'cash';
                 if (chartFilter === 'foreign_currency') return asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency';
                 if (chartFilter === 'other') return asset.type !== 'stock' && asset.type !== 'cash' && asset.type !== 'foreign_currency' && !asset.investment_type;
-                // Fallback
                 return true;
             }
 
-            // 2. Tab Filter (Standard)
             if (activeTab === TABS.ALL) return true;
 
             if (activeTab === TABS.CASH) return asset.investment_type === 'cash' || (asset.type === 'cash' && !asset.investment_type && !asset.interest_rate);
@@ -113,7 +120,7 @@ export default function WealthPage() {
     const visibleTabs = useMemo(() => {
         const hasData = (tab: string) => {
             if (tab === TABS.ALL) return true;
-            return assets.some(asset => {
+            return (assets || []).some((asset: Goal) => {
                 if (asset.type === 'stock' && asset.symbol) return false;
                 if (tab === TABS.CASH) return asset.investment_type === 'cash' || (asset.type === 'cash' && !asset.investment_type && !asset.interest_rate);
                 if (tab === TABS.SAVINGS) return asset.investment_type === 'savings' || (asset.type === 'cash' && (asset.interest_rate || 0) > 0);
@@ -126,25 +133,82 @@ export default function WealthPage() {
         return Object.values(TABS).filter(hasData);
     }, [assets]);
 
-
-
     const handleDelete = async (id: string) => {
         try {
             const { error } = await supabase.from('goals').delete().eq('id', id);
             if (error) throw error;
             toast.success("הנכס הוסר");
-            refetch(); // Refetch from hook
+            refetch();
         } catch {
             toast.error("שגיאה במחיקה");
         }
     };
 
-    // Calculate Rank using hook's netWorth
-    getRank(trueNetWorth);
+    const liveNetWorthRef = useRef(liveNetWorth);
+    useEffect(() => { liveNetWorthRef.current = liveNetWorth; }, [liveNetWorth]);
+
+    useEffect(() => {
+        if (!loading && (assets?.length || 0) > 0 && liveNetWorthRef.current > 0 && profile?.couple_id) {
+            const syncSnapshot = async () => {
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
+
+                const { count, error: countError } = await supabase
+                    .from('wealth_history')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('couple_id', profile.couple_id);
+
+                const needsBackfill = !countError && count !== null && count < 2;
+                const currentNetWorth = liveNetWorthRef.current;
+
+                let snapshotCash = 0;
+                let snapshotInvest = 0;
+                assets.forEach((asset: Goal & { calculatedValue?: number }) => {
+                    const val = asset.calculatedValue || Number(asset.current_amount) || 0;
+                    if (isAssetInvestment(asset)) {
+                        snapshotInvest += val;
+                    } else {
+                        snapshotCash += val;
+                    }
+                });
+
+                if (needsBackfill) {
+                    const backfillData: any[] = [];
+                    for (let i = 7; i >= 1; i--) {
+                        const d = new Date();
+                        d.setDate(d.getDate() - i);
+                        backfillData.push({
+                            couple_id: profile.couple_id,
+                            snapshot_date: d.toISOString().split('T')[0],
+                            net_worth: currentNetWorth,
+                            cash_value: snapshotCash,
+                            investments_value: snapshotInvest,
+                            liabilities_value: totalLiabilitiesVal
+                        });
+                    }
+                    await supabase.from('wealth_history').upsert(backfillData);
+                }
+
+                await supabase.from('wealth_history').upsert({
+                    couple_id: profile.couple_id,
+                    snapshot_date: todayStr,
+                    net_worth: currentNetWorth,
+                    cash_value: snapshotCash,
+                    investments_value: snapshotInvest,
+                    liabilities_value: totalLiabilitiesVal,
+                }, {
+                    onConflict: 'couple_id,snapshot_date'
+                });
+            };
+
+            const timer = setTimeout(syncSnapshot, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [liveNetWorth, assets?.length, loading, profile?.couple_id, totalLiabilitiesVal]);
+
 
     return (
         <div className="min-h-screen bg-slate-950 text-white px-4 space-y-6 pt-6">
-
             <div className="mx-2 p-4 neon-card rounded-2xl flex flex-col items-center justify-center relative overflow-hidden group min-h-[160px]">
                 <div className="absolute top-0 right-0 p-4 opacity-10">
                     <TrendingUp className="w-32 h-32 text-blue-500" />
@@ -154,7 +218,7 @@ export default function WealthPage() {
                     <Skeleton className="h-12 w-48 bg-white/10" />
                 ) : (
                     <div className="text-5xl font-black text-white neon-text relative z-10 flex items-center gap-1">
-                        <AnimatedCounter value={trueNetWorth} currencySymbol={CURRENCY_SYMBOL} />
+                        <AnimatedCounter value={liveNetWorth} currencySymbol={CURRENCY_SYMBOL} />
                     </div>
                 )}
 
@@ -163,7 +227,7 @@ export default function WealthPage() {
                 </AnimatePresence>
             </div>
 
-            {/* Row 2: SIDE BY SIDE Cards */}
+            {/* Row 2: Summary Cards */}
             {wealthShowSummaryCards && (
                 <div className="grid grid-cols-2 gap-4">
                     <div className="neon-card p-4 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden group">
@@ -193,7 +257,7 @@ export default function WealthPage() {
 
             {/* Row 3: History & Coach */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {wealthShowHistory && <NetWorthHistory liveNetWorth={trueNetWorth} />}
+                {wealthShowHistory && <NetWorthHistory liveNetWorth={liveNetWorth} />}
                 <AnimatePresence>
                     {showRebalancingCoach && wealthShowInsights && (
                         <motion.div
@@ -202,13 +266,17 @@ export default function WealthPage() {
                             exit={{ opacity: 0, height: 0 }}
                             className="overflow-hidden"
                         >
-                            <RebalancingCoach assets={assets} totalWealth={trueNetWorth} />
+                            <RebalancingCoach assets={assets} totalWealth={liveNetWorth} />
                         </motion.div>
                     )}
                 </AnimatePresence>
             </div>
 
-            {/* Row 4: SP500 & Dividend Forecast - REMOVED (Moved to Stocks Page) */}
+            {/* Row 4: S&P 500 & Allocation */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {showSP500Benchmark && <SP500Benchmark initialWealth={liveNetWorth} />}
+                {showPortfolioAllocation && <PortfolioAllocation assets={assets} />}
+            </div>
 
             {/* Minimal Mode Fallback */}
             {isMinimalMode && (
@@ -234,8 +302,6 @@ export default function WealthPage() {
                     </Button>
                 </motion.div>
             )}
-
-            {/* Live Portfolio - REMOVED (Moved to Stocks Page) */}
 
             {/* Filter Tabs */}
             <div className="mx-2 mb-2 p-1.5 bg-slate-900/50 backdrop-blur-xl rounded-[2rem] border border-white/5 flex gap-1 items-center justify-center">
@@ -310,30 +376,25 @@ export default function WealthPage() {
                                                 <div className="flex justify-between items-start">
                                                     <div>
                                                         <h3 className="font-bold text-white text-lg">{asset.name}</h3>
+                                                        {(asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency') && (
+                                                            <div className="flex flex-col gap-0.5 mt-0.5">
+                                                                <span className="text-[10px] text-blue-300 font-bold bg-blue-500/10 px-1.5 py-0.5 rounded-full inline-block self-start">
+                                                                    ${Number(asset.current_amount).toLocaleString()}
+                                                                </span>
+                                                                <span className="text-[9px] text-white/30 font-mono pr-1">שער: ₪{(usdToIls || 3.7).toFixed(2)}</span>
+                                                            </div>
+                                                        )}
                                                         {asset.type === 'stock' && asset.symbol && (
                                                             <span className="text-xs text-slate-400 font-mono tracking-wider">{asset.symbol} • {asset.quantity} יח׳</span>
                                                         )}
                                                     </div>
                                                     <div className="text-left">
                                                         <div className="font-black text-xl tracking-tight neon-text">
-                                                            {formatAmount(asset.calculatedValue || asset.current_amount, isStealthMode, CURRENCY_SYMBOL)}
+                                                            <LiveAssetTicker asset={asset} />
                                                         </div>
-                                                        {(asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency') && (
-                                                            <div className="flex justify-end gap-1">
-                                                                <span className="text-[10px] bg-green-500/20 text-green-200 px-1.5 py-0.5 rounded border border-green-500/30">
-                                                                    {formatAmount(asset.current_amount, isStealthMode, '$')}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {asset.type === 'stock' && (
-                                                            <div className="flex justify-end">
-                                                                <span className="text-[10px] bg-purple-500/20 text-purple-200 px-1.5 py-0.5 rounded border border-purple-500/30">חי</span>
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 </div>
 
-                                                {/* Action Buttons (Always Visible) */}
                                                 <div className="flex gap-2 mt-2 justify-end">
                                                     <button
                                                         onClick={() => { setEditingAsset(asset); setIsDialogOpen(true); }}
@@ -341,7 +402,6 @@ export default function WealthPage() {
                                                     >
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
-
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
                                                             <button className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-white/50 hover:text-red-400 transition-colors">
@@ -384,7 +444,6 @@ export default function WealthPage() {
                 usdToIls={usdToIls}
             />
 
-            {/* Final bottom spacer for edge-to-edge layout accessibility */}
             <div className="h-32 w-full" />
         </div>
     );

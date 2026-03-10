@@ -13,6 +13,7 @@ export interface Profile {
     income_split_ratio: number | null;
     onboarding_completed: boolean;
     role: 'admin' | 'user';
+    dashboard_config?: any;
     created_at: string;
 }
 
@@ -73,7 +74,7 @@ export interface Goal {
     target_amount: number;
     current_amount: number;
     brick_color: string | null;
-    type: 'cash' | 'stock' | 'pocket_him' | 'pocket_her' | 'money_market' | 'foreign_currency' | 'wish';
+    type: 'cash' | 'stock' | 'pocket_him' | 'pocket_her' | 'money_market' | 'mutual_fund' | 'savings' | 'foreign_currency' | 'wish';
     growth_rate: number;
     couple_id: string | null;
     deep_freeze: boolean;
@@ -89,6 +90,12 @@ export interface Goal {
     investment_type?: string;
     last_updated?: string;
     calculatedValue?: number;
+    initial_amount: number;
+    start_date: string;
+    annual_interest_percent: number;
+    tax_rate_percent: number | null;
+    exit_dates: { date: string; amount: number }[] | null;
+    last_accrual_timestamp?: string;
 }
 
 export type Asset = Goal;
@@ -103,6 +110,7 @@ export interface WishlistItem {
     requested_by: string | null;
     approved_by: string | null;
     saved_amount: number;
+    description?: string | null;
     priority: number;
     created_at: string;
 }
@@ -126,6 +134,8 @@ export interface Liability {
     principal?: number;
     current_balance?: number;
     start_date?: string | null;
+    estimated_end_date?: string | null;
+    estimated_months_to_payoff?: number;
     owner: 'him' | 'her' | 'joint';
     created_at: string;
 }

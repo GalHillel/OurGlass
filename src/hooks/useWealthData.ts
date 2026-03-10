@@ -19,32 +19,73 @@ export const isLiabilityActive = (liability: Liability, asOf = new Date()) => {
 };
 
 // ── Wealth History (Read-only — populated by pg_cron) ──
+import { useMemo } from "react";
 
-export function useWealthHistory(days = 90) {
+export function useWealthHistory(days = 90, liveNetWorth?: number) {
     const { profile } = useAuth();
     const coupleId = profile?.couple_id;
 
-    return useQuery<WealthSnapshot[]>({
+    const query = useQuery<WealthSnapshot[]>({
         queryKey: ["wealth-history", coupleId, days],
         queryFn: async () => {
             if (!coupleId) return [];
-
-            const since = new Date();
-            since.setDate(since.getDate() - days);
 
             const { data, error } = await supabase
                 .from("wealth_history")
                 .select("*")
                 .eq("couple_id", coupleId)
-                .gte("snapshot_date", since.toISOString().split("T")[0])
                 .order("snapshot_date", { ascending: true });
 
             if (error) throw error;
+
+            // Apply manual filter for speed/flexibility if not "ALL"
+            if (days !== -1) {
+                const since = new Date();
+                since.setDate(since.getDate() - days);
+                const sinceIso = since.toISOString().split("T")[0];
+                return (data ?? []).filter(s => s.snapshot_date >= sinceIso) as WealthSnapshot[];
+            }
+
             return (data ?? []) as WealthSnapshot[];
         },
         enabled: !!coupleId,
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: 5 * 60 * 1000,
     });
+
+    const dataWithLive = useMemo(() => {
+        if (!query.data || query.data.length === 0) return { snapshots: [], dbValue: 0 };
+
+        const rawSnapshots = [...query.data];
+        const lastDbPoint = rawSnapshots[rawSnapshots.length - 1];
+        const dbValue = lastDbPoint.net_worth;
+        const snapshots = [...rawSnapshots];
+
+        if (liveNetWorth !== undefined && liveNetWorth > 0) {
+            const today = new Date().toISOString().split("T")[0];
+            const lastSnapshot = snapshots[snapshots.length - 1];
+
+            if (!lastSnapshot || lastSnapshot.snapshot_date !== today) {
+                snapshots.push({
+                    id: 'live-now',
+                    couple_id: coupleId || '',
+                    snapshot_date: today,
+                    net_worth: liveNetWorth,
+                    cash_value: 0,
+                    investments_value: 0,
+                    liabilities_value: 0,
+                    created_at: new Date().toISOString()
+                });
+            } else {
+                snapshots[snapshots.length - 1] = {
+                    ...lastSnapshot,
+                    net_worth: liveNetWorth
+                };
+            }
+        }
+        return { snapshots, dbValue };
+    }, [query.data, liveNetWorth, coupleId]);
+
+    return { ...query, data: dataWithLive.snapshots, dbValue: dataWithLive.dbValue };
 }
 
 export function useSP500History(days = 365) {
@@ -60,6 +101,8 @@ export function useSP500History(days = 365) {
 }
 
 // ── Liabilities CRUD ──
+
+import { calculateDynamicBalance, estimatePayoffDate } from "@/lib/debt-utils";
 
 export function useLiabilities() {
     const { profile } = useAuth();
@@ -77,7 +120,36 @@ export function useLiabilities() {
                 .order("remaining_amount", { ascending: false });
 
             if (error) throw error;
-            return (data ?? []) as Liability[];
+
+            // Map to dynamic balance
+            const mapped = (data ?? []).map((l: any) => {
+                let currentBalance = l.remaining_amount;
+
+                if (l.start_date && l.total_amount && l.monthly_payment) {
+                    currentBalance = calculateDynamicBalance(
+                        Number(l.total_amount),
+                        Number(l.monthly_payment),
+                        Number(l.interest_rate || 0),
+                        l.start_date
+                    );
+                }
+
+                const estimatedEndDate = estimatePayoffDate(
+                    currentBalance,
+                    Number(l.monthly_payment),
+                    Number(l.interest_rate || 0)
+                );
+
+                return {
+                    ...l,
+                    current_balance: currentBalance,
+                    remaining_amount: currentBalance, // Sync for older UI
+                    estimated_end_date: estimatedEndDate?.toISOString() || l.end_date,
+                };
+            }) as Liability[];
+
+            // Filter out closed liabilities (balance <= 0)
+            return mapped.filter(l => (l.current_balance || 0) > 0);
         },
         enabled: true,
     });
@@ -93,15 +165,23 @@ export function useAddLiability() {
 
             const normalizedPayload = {
                 ...liability,
-                total_amount: Number(liability.total_amount ?? liability.amount ?? 0),
-                remaining_amount: Number(liability.remaining_amount ?? liability.amount ?? 0),
+                total_amount: Number(liability.total_amount ?? liability.current_balance ?? 0),
+                remaining_amount: Number(liability.remaining_amount ?? liability.current_balance ?? 0),
                 monthly_payment: Number(liability.monthly_payment ?? 0),
                 interest_rate: Number(liability.interest_rate ?? 0),
             };
 
+            const {
+                principal,
+                current_balance,
+                estimated_end_date,
+                estimated_months_to_payoff,
+                ...dbPayload
+            } = { ...normalizedPayload, couple_id: liability.couple_id ?? profile.couple_id } as any;
+
             const { data, error } = await supabase
                 .from("liabilities")
-                .insert({ ...normalizedPayload, couple_id: liability.couple_id ?? profile.couple_id })
+                .insert(dbPayload)
                 .select()
                 .single();
 
@@ -119,9 +199,17 @@ export function useUpdateLiability() {
 
     return useMutation({
         mutationFn: async ({ id, ...updates }: Partial<Liability> & { id: string }) => {
+            const {
+                principal,
+                current_balance,
+                estimated_end_date,
+                estimated_months_to_payoff,
+                ...dbUpdates
+            } = updates as any;
+
             const { data, error } = await supabase
                 .from("liabilities")
-                .update(updates)
+                .update(dbUpdates)
                 .eq("id", id)
                 .select()
                 .single();
@@ -157,19 +245,19 @@ export function useDeleteLiability() {
 export function useTotalLiabilities(asOf?: Date) {
     const { data: liabilities = [] } = useLiabilities();
 
-    const activeLiabilities = liabilities.filter((liability) => isLiabilityActive(liability, asOf));
+    const activeLiabilities = liabilities; // Already filtered in hook
 
-    const total = liabilities.reduce((sum, l) => sum + Number(l.remaining_amount ?? l.amount ?? l.current_balance ?? 0), 0);
+    const total = liabilities.reduce((sum, l) => sum + (l.current_balance ?? l.remaining_amount ?? 0), 0);
     const monthlyPayments = activeLiabilities.reduce((sum, l) => sum + Number(l.monthly_payment || 0), 0);
 
     // Enhanced Debt Spread Logic
     const liabilitiesWithEstimation = activeLiabilities.map(l => {
-        const remaining = Number(l.remaining_amount ?? l.amount ?? 0);
+        const remaining = l.current_balance ?? l.remaining_amount ?? 0;
         const payment = Number(l.monthly_payment ?? 0);
         let estimatedMonths = 0;
 
-        if (l.end_date) {
-            const end = new Date(l.end_date);
+        if (l.estimated_end_date) {
+            const end = new Date(l.estimated_end_date);
             const now = new Date();
             estimatedMonths = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.44));
         } else if (payment > 0) {

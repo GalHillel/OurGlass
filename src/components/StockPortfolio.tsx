@@ -146,6 +146,7 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
                 type: 'stock',
                 symbol: symbolInput.toUpperCase(),
                 quantity: quantity,
+                currency: 'USD',
                 name: `Stock ${symbolInput.toUpperCase()}`,
                 target_amount: 0, // <--- CRITICAL FIX: Satisfy NOT NULL constraint
                 brick_color: '#8B5CF6'
