@@ -71,7 +71,7 @@ export interface HomeMosaicProps {
     totalWealth?: number;
 }
 
-import React, { useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useDashboardStore, WidgetConfig } from "@/stores/dashboardStore";
 import { useAppStore } from "@/stores/appStore";
 import { triggerHaptic } from "@/utils/haptics";
@@ -142,9 +142,12 @@ export const HomeMosaic = React.memo(({
     // AUTHORITY: Use totalWealth prop from engine (Assets only)
     const effectiveTotalWealth = totalWealth !== undefined ? totalWealth : (totalCash + stockAssets.reduce((s, a) => s + (Number(a.current_amount) || 0), 0));
 
-    const activeWidgets = [...widgets].filter(w => w.enabled).sort((a, b) => a.order - b.order);
+    const activeWidgets = useMemo(
+        () => [...widgets].filter(w => w.enabled).sort((a, b) => a.order - b.order),
+        [widgets]
+    );
 
-    const renderWidget = (id: string, key: string) => {
+    const renderWidget = useCallback((id: string, key: string) => {
         switch (id) {
             case 'reactor':
                 return (
@@ -632,14 +635,55 @@ export const HomeMosaic = React.memo(({
             default:
                 return null;
         }
-    };
+    }, [
+        monthlyIncome,
+        budget,
+        totalExpenses,
+        balance,
+        burnRateStatus,
+        cycleStart,
+        cycleEnd,
+        onViewingDateChange,
+        safeViewingDate,
+        transactions,
+        subscriptions,
+        liabilities,
+        healthStatus,
+        savingsRate,
+        assets,
+        stockAssets,
+        isStealthMode,
+        totalCash,
+        effectiveTotalWealth,
+        onQuickAdd,
+        selectedDate,
+        onDateSelect,
+        selectedFilterCategory,
+        onCategorySelect,
+        viewingDate,
+        onUpdateStatus,
+        onDeleteSubscription,
+        router,
+        usdToIls,
+    ]);
 
     return (
         <div className="w-full max-w-md space-y-4">
             <div className="grid grid-cols-2 gap-3 w-full px-4 perspective-1000">
                 <AnimatePresence mode="popLayout">
                     {activeWidgets.length > 0 ? (
-                        activeWidgets.map((widgetValue: WidgetConfig) => renderWidget(widgetValue.id, widgetValue.id))
+                        activeWidgets.map((widgetValue: WidgetConfig) => (
+                            <motion.div
+                                key={widgetValue.id}
+                                layoutId={`widget-${widgetValue.id}`}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                            >
+                                {renderWidget(widgetValue.id, widgetValue.id)}
+                            </motion.div>
+                        ))
                     ) : (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
@@ -659,4 +703,3 @@ export const HomeMosaic = React.memo(({
 });
 
 HomeMosaic.displayName = 'HomeMosaic';
-

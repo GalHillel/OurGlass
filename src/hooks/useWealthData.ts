@@ -39,14 +39,36 @@ export function useWealthHistory(days = 90, liveNetWorth?: number) {
             if (error) throw error;
 
             // Apply manual filter for speed/flexibility if not "ALL"
+            const normalized = ((data ?? []) as WealthSnapshot[])
+                .filter((snapshot) => Number.isFinite(snapshot.net_worth) && snapshot.net_worth >= 0)
+                .sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date));
+
+            // Drop corrupted jumps created by historical NaN/ghost-interest incidents.
+            const sanitized: WealthSnapshot[] = [];
+            for (const snapshot of normalized) {
+                const previous = sanitized[sanitized.length - 1];
+                if (!previous) {
+                    sanitized.push(snapshot);
+                    continue;
+                }
+
+                const absoluteDelta = Math.abs(snapshot.net_worth - previous.net_worth);
+                const percentDelta = previous.net_worth > 0 ? absoluteDelta / previous.net_worth : 0;
+                const looksCorrupted = absoluteDelta > 50000 && percentDelta > 0.6;
+
+                if (!looksCorrupted) {
+                    sanitized.push(snapshot);
+                }
+            }
+
             if (days !== -1) {
                 const since = new Date();
                 since.setDate(since.getDate() - days);
                 const sinceIso = since.toISOString().split("T")[0];
-                return (data ?? []).filter(s => s.snapshot_date >= sinceIso) as WealthSnapshot[];
+                return sanitized.filter(s => s.snapshot_date >= sinceIso);
             }
 
-            return (data ?? []) as WealthSnapshot[];
+            return sanitized;
         },
         enabled: !!coupleId,
         staleTime: 5 * 60 * 1000,
