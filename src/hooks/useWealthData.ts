@@ -21,6 +21,59 @@ export const isLiabilityActive = (liability: Liability, asOf = new Date()) => {
 // ── Wealth History (Read-only — populated by pg_cron) ──
 import { useMemo } from "react";
 
+export function sanitizeWealthSnapshots(snapshots: WealthSnapshot[]): WealthSnapshot[] {
+    const normalized = snapshots
+        .map((snapshot) => {
+            const netWorth = Number(snapshot.net_worth);
+            const cash = Number(snapshot.cash_value ?? 0);
+            const investments = Number(snapshot.investments_value ?? 0);
+            const liabilities = Number(snapshot.liabilities_value ?? 0);
+
+            return {
+                ...snapshot,
+                net_worth: Number.isFinite(netWorth) ? netWorth : NaN,
+                cash_value: Number.isFinite(cash) ? cash : 0,
+                investments_value: Number.isFinite(investments) ? investments : 0,
+                liabilities_value: Number.isFinite(liabilities) ? liabilities : 0,
+            };
+        })
+        .filter((snapshot) => Number.isFinite(snapshot.net_worth) && snapshot.net_worth >= 0)
+        .sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date));
+
+    if (normalized.length < 3) return normalized;
+
+    const sanitized: WealthSnapshot[] = [];
+
+    for (let i = 0; i < normalized.length; i += 1) {
+        const current = normalized[i];
+        const prev = sanitized[sanitized.length - 1];
+        const next = normalized[i + 1];
+
+        if (!prev || !next || prev.net_worth <= 0 || next.net_worth <= 0) {
+            sanitized.push(current);
+            continue;
+        }
+
+        const currentVsPrev = current.net_worth / prev.net_worth;
+        const nextVsPrev = next.net_worth / prev.net_worth;
+        const currentVsNext = current.net_worth / next.net_worth;
+        const absoluteJump = Math.abs(current.net_worth - prev.net_worth);
+
+        const looksLikeIsolatedSpikeOrDip =
+            absoluteJump > 50000 &&
+            (currentVsPrev > 1.8 || currentVsPrev < 0.55) &&
+            nextVsPrev > 0.85 &&
+            nextVsPrev < 1.15 &&
+            (currentVsNext > 1.6 || currentVsNext < 0.625);
+
+        if (!looksLikeIsolatedSpikeOrDip) {
+            sanitized.push(current);
+        }
+    }
+
+    return sanitized;
+}
+
 export function useWealthHistory(days = 90, liveNetWorth?: number) {
     const { profile } = useAuth();
     const coupleId = profile?.couple_id;
@@ -38,15 +91,16 @@ export function useWealthHistory(days = 90, liveNetWorth?: number) {
 
             if (error) throw error;
 
-            // Apply manual filter for speed/flexibility if not "ALL"
+            const sanitized = sanitizeWealthSnapshots((data ?? []) as WealthSnapshot[]);
+
             if (days !== -1) {
                 const since = new Date();
                 since.setDate(since.getDate() - days);
                 const sinceIso = since.toISOString().split("T")[0];
-                return (data ?? []).filter(s => s.snapshot_date >= sinceIso) as WealthSnapshot[];
+                return sanitized.filter(s => s.snapshot_date >= sinceIso);
             }
 
-            return (data ?? []) as WealthSnapshot[];
+            return sanitized;
         },
         enabled: !!coupleId,
         staleTime: 5 * 60 * 1000,
