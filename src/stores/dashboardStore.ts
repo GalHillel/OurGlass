@@ -15,15 +15,29 @@ export interface NavItemConfig {
 }
 
 export type FeatureKey =
-    | 'enableStocks' | 'enableStocksPage' | 'enableWishlist' | 'enableSubscriptions' | 'enableSettlements' | 'enableLounge'
-    | 'showSP500Benchmark' | 'showPortfolioAllocation' | 'showRebalancingCoach' | 'showDividendForecast'
-    // Wealth Page Features
-    | 'wealthShowHistory' | 'wealthShowInsights' | 'wealthShowAssets' | 'wealthShowPortfolio' | 'wealthShowSummaryCards'
-    // Subscriptions Page Features
-    | 'subsShowIndicator' | 'subsShowLiabilities' | 'subsShowGhost' | 'subsShowKiller' | 'subsShowSummary'
-    // Lounge Page Features
-    | 'loungeShowVibe' | 'loungeShowRoulette' | 'loungeShowTinder'
-    // Wishlist Page Features
+    | 'enableStocks'
+    | 'enableStocksPage'
+    | 'enableWishlist'
+    | 'enableSubscriptions'
+    | 'enableSettlements'
+    | 'enableLounge'
+    | 'showSP500Benchmark'
+    | 'showPortfolioAllocation'
+    | 'showRebalancingCoach'
+    | 'showDividendForecast'
+    | 'wealthShowHistory'
+    | 'wealthShowInsights'
+    | 'wealthShowAssets'
+    | 'wealthShowPortfolio'
+    | 'wealthShowSummaryCards'
+    | 'subsShowIndicator'
+    | 'subsShowLiabilities'
+    | 'subsShowGhost'
+    | 'subsShowKiller'
+    | 'subsShowSummary'
+    | 'loungeShowVibe'
+    | 'loungeShowRoulette'
+    | 'loungeShowTinder'
     | 'wishlistShowHarvester'
     | 'homeShowQuickActions';
 
