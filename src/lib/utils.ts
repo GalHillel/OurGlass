@@ -97,7 +97,7 @@ export function calculateFutureWealth(currentWealth: number, monthlySavings: num
 /**
  * Formats a date safely for SSR, avoiding RangeError with specific locales.
  */
-export function formatDate(date: Date | string | number | null, locale: string = 'he-IL') {
+export function formatDate(date: Date | string | number | null, locale: string = 'en-US') {
   if (!date) return '';
   const d = new Date(date);
   if (isNaN(d.getTime())) return '';

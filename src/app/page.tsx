@@ -105,6 +105,11 @@ export default function Home() {
     return calculateBurnRate(currentBalance, daysRemaining, avgDaily);
   }, [viewingDate, cashflow, transactions, subscriptions, liabilities]);
 
+  const handleQuickAdd = useCallback((label: string) => {
+    setSelectedCategory(label);
+    setIsDrawerOpen(true);
+  }, []);
+
   const handleTransactionAdded = () => {
     setIsDrawerOpen(false);
     setEditingTransaction(null);
@@ -208,10 +213,7 @@ export default function Home() {
                     cycleStart={getBillingPeriodForDate(viewingDate).start}
                     cycleEnd={getBillingPeriodForDate(viewingDate).end}
                     // Quick Actions
-                    onQuickAdd={(label) => {
-                      setSelectedCategory(label);
-                      setIsDrawerOpen(true);
-                    }}
+                    onQuickAdd={handleQuickAdd}
                     // Calendar & Categories
                     selectedDate={selectedDate}
                     onDateSelect={setSelectedDate}

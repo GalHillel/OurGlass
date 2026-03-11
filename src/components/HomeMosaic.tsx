@@ -238,7 +238,7 @@ export const HomeMosaic = React.memo(({
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
-                                layout
+                                layout="position"
                                 whileTap={{ scale: 0.95 }}
                                 className="aspect-[4/3] bg-black/20 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
                             >
@@ -283,7 +283,7 @@ export const HomeMosaic = React.memo(({
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
-                                layout
+                                layout="position"
                                 whileTap={{ scale: 0.95 }}
                                 className="aspect-[4/3] glass-panel p-6 relative overflow-hidden flex flex-col justify-between group cursor-pointer"
                             >
@@ -322,7 +322,7 @@ export const HomeMosaic = React.memo(({
                     return (
                         <motion.div
                             key={key}
-                            layout
+                            layout="position"
                             whileTap={{ scale: 0.95 }}
                             className="aspect-[4/3] glass-panel p-6 flex flex-col items-center justify-center gap-2 text-center opacity-60"
                         >
@@ -338,7 +338,7 @@ export const HomeMosaic = React.memo(({
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
-                                layout
+                                layout="position"
                                 whileTap={{ scale: 0.95 }}
                                 className="aspect-[4/3] glass-panel p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
@@ -369,7 +369,7 @@ export const HomeMosaic = React.memo(({
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
-                                layout
+                                layout="position"
                                 whileTap={{ scale: 0.95 }}
                                 className="aspect-[4/3] glass-panel p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
@@ -447,7 +447,7 @@ export const HomeMosaic = React.memo(({
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
-                                layout
+                                layout="position"
                                 whileTap={{ scale: 0.95 }}
                                 className="aspect-[4/3] glass-panel p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
@@ -477,7 +477,7 @@ export const HomeMosaic = React.memo(({
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
-                                layout
+                                layout="position"
                                 whileTap={{ scale: 0.95 }}
                                 className="aspect-[4/3] glass-panel p-6 relative overflow-hidden flex flex-col items-center justify-center gap-3 group text-center cursor-pointer"
                             >
@@ -507,7 +507,7 @@ export const HomeMosaic = React.memo(({
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
-                                layout
+                                layout="position"
                                 whileTap={{ scale: 0.95 }}
                                 className="col-span-2 glass-panel p-6 relative overflow-hidden flex items-center justify-between group cursor-pointer"
                             >
@@ -543,7 +543,7 @@ export const HomeMosaic = React.memo(({
                     <Dialog key={key}>
                         <DialogTrigger asChild>
                             <motion.div
-                                layout
+                                layout="position"
                                 whileTap={{ scale: 0.95 }}
                                 className="col-span-2 glass-panel p-6 relative overflow-hidden flex items-center justify-between group cursor-pointer"
                             >
@@ -637,7 +637,7 @@ export const HomeMosaic = React.memo(({
     return (
         <div className="w-full max-w-md space-y-4">
             <div className="grid grid-cols-2 gap-3 w-full px-4 perspective-1000">
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence mode="sync">
                     {activeWidgets.length > 0 ? (
                         activeWidgets.map((widgetValue: WidgetConfig) => renderWidget(widgetValue.id, widgetValue.id))
                     ) : (

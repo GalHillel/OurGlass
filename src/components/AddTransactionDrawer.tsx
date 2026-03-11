@@ -85,7 +85,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
     const [moodRating, setMoodRating] = useState<number | null>(null);
     const [payer, setPayer] = useState<'him' | 'her' | 'joint'>('him');
     const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
-    const [time, setTime] = useState<string>(new Date().toLocaleTimeString('he-IL', { hour12: false, hour: '2-digit', minute: '2-digit' }));
+    const [time, setTime] = useState<string>(new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }));
     const [installments, setInstallments] = useState<number>(1);
     const [loading, setLoading] = useState(false);
 
@@ -332,7 +332,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                 setPayer(initialData.payer || 'him');
                 const dt = new Date(initialData.date);
                 setDate(dt.toISOString().split('T')[0]);
-                setTime(dt.toLocaleTimeString('he-IL', { hour12: false, hour: '2-digit', minute: '2-digit' }));
+                setTime(dt.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }));
                 setMoodRating(initialData.mood_rating || null);
             } else {
                 setAmountStr("");
@@ -350,7 +350,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
 
                 const now = new Date();
                 setDate(now.toISOString().split("T")[0]);
-                setTime(now.toLocaleTimeString('he-IL', { hour12: false, hour: '2-digit', minute: '2-digit' }));
+                setTime(now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }));
                 setInstallments(1);
             }
         }

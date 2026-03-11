@@ -1,5 +1,5 @@
 export const CURRENCY_SYMBOL = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || "₪";
-export const LOCALE = process.env.NEXT_PUBLIC_LOCALE || "he-IL";
+export const LOCALE = process.env.NEXT_PUBLIC_LOCALE || "en-US";
 
 export const APP_NAME = "OurGlass";
 
