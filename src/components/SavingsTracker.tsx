@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useAppStore } from "@/stores/appStore";
 import { TrendingDown, Wallet, PiggyBank, Target, AlertTriangle, CheckCircle, Sparkles } from "lucide-react";
 import { cn, formatAmount } from "@/lib/utils";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 interface SavingsTrackerProps {
     monthlyIncome: number;    // Total income this month

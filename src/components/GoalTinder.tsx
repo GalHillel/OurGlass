@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useAppStore } from "@/stores/appStore";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { Heart, X, Sparkles, ShoppingBag } from "lucide-react";
@@ -8,7 +8,8 @@ import { createClient } from "@/utils/supabase/client";
 import { WishlistItem } from "@/types";
 import { triggerHaptic } from "@/utils/haptics";
 import { toast } from "sonner";
-import { cn, formatAmount } from "@/lib/utils";
+import { formatAmount } from "@/lib/utils";
+import Image from "next/image";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/AuthProvider";
@@ -90,10 +91,12 @@ export function GoalTinder() {
                             {/* Image Area */}
                             <div className="h-2/3 flex items-center justify-center relative bg-slate-800">
                                 {activeItem.link && activeItem.link.includes('http') ? (
-                                    <img
+                                    <Image
                                         src={activeItem.link}
                                         alt={activeItem.name}
-                                        className="absolute inset-0 w-full h-full object-cover"
+                                        fill
+                                        className="object-cover"
+                                        sizes="(max-width: 768px) 100vw, 400px"
                                     />
                                 ) : (
                                     <ShoppingBag className="w-20 h-20 text-white/10" />

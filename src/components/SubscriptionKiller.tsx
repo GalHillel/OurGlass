@@ -2,15 +2,11 @@
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Scissors, Star, StarOff, Trash2, Copy, AlertTriangle, Zap } from "lucide-react";
+import { Scissors, StarOff, Trash2, Copy } from "lucide-react";
 import { Subscription } from "@/types";
 import { EmptyState } from "@/components/EmptyState";
 import CountUp from "react-countup";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
-import { useAppStore } from "@/stores/appStore";
-import { cn, formatAmount } from "@/lib/utils";
-
-import { useDashboardStore } from "@/stores/dashboardStore";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 interface DuplicateGroup {
     name: string;
@@ -25,7 +21,6 @@ interface SubscriptionKillerProps {
 }
 
 export function SubscriptionKiller({ subscriptions, onDelete, onUpdateStatus }: SubscriptionKillerProps) {
-    const isStealthMode = useAppStore(s => s.isStealthMode);
 
     const savedThisMonth = useMemo(() => {
         return subscriptions

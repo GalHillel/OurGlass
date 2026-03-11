@@ -10,7 +10,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 import { hapticSuccess } from "@/utils/haptics";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { PAYERS, CURRENCY_SYMBOL } from "@/lib/constants";
 
 interface OnboardingData {
     name: string;
@@ -120,10 +120,10 @@ export function FinancialOnboarding({ onComplete }: { onComplete: () => void }) 
                         <div
                             key={i}
                             className={`h-2 rounded-full transition-all duration-300 ${i === step
-                                    ? "w-8 bg-blue-500"
-                                    : i < step
-                                        ? "w-2 bg-blue-500/60"
-                                        : "w-2 bg-white/20"
+                                ? "w-8 bg-blue-500"
+                                : i < step
+                                    ? "w-2 bg-blue-500/60"
+                                    : "w-2 bg-white/20"
                                 }`}
                         />
                     ))}

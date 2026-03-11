@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Check, Sparkles, Plus, Minus, ChevronDown, ChevronUp, Clock, Target, User } from "lucide-react";
+import { Check, Sparkles, Plus, Minus, ChevronDown, ChevronUp, Clock, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WishlistItem } from "@/types";
 import { triggerHaptic } from "@/utils/haptics";
 import { cn, formatAmount, formatDate } from "@/lib/utils";
-import CountUp from 'react-countup';
+import Image from 'next/image';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { differenceInHours } from 'date-fns';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 import { useAppStore } from "@/stores/appStore";
 
 interface WishlistCardProps {
@@ -77,10 +77,12 @@ export const WishlistCard = ({ item, onAction, onClick }: WishlistCardProps) => 
             <div className="absolute inset-0 z-0">
                 {item.link ? (
                     <>
-                        <img
+                        <Image
                             src={item.link}
                             alt=""
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-30 group-hover:opacity-50"
+                            fill
+                            className="object-cover transition-transform duration-700 group-hover:scale-110 opacity-30 group-hover:opacity-50"
+                            sizes="100vw"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
                     </>
@@ -101,7 +103,13 @@ export const WishlistCard = ({ item, onAction, onClick }: WishlistCardProps) => 
                             : "group-hover:scale-105 group-hover:rotate-2"
                     )}>
                         {item.link ? (
-                            <img src={item.link} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
+                            <Image
+                                src={item.link}
+                                alt={item.name}
+                                fill
+                                className="object-cover"
+                                sizes="64px"
+                            />
                         ) : (
                             <div className="w-full h-full bg-white/5 flex items-center justify-center">
                                 {isFullyFunded ? <Check className="w-8 h-8 text-emerald-400" /> : <Sparkles className="w-7 h-7 text-purple-400" />}

@@ -17,7 +17,6 @@ import { cn, formatAmount, formatDate } from "@/lib/utils";
 import { EmptyState } from "@/components/EmptyState";
 import { useAuth } from "@/components/AuthProvider";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { SwipeableRow } from "@/components/SwipeableRow";
 import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 

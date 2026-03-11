@@ -100,7 +100,9 @@ const DEFAULT_FEATURES: Record<FeatureKey, boolean> = {
     homeShowQuickActions: true,
 };
 
-interface DashboardState {
+import { Profile } from '@/types';
+
+export interface DashboardState {
     widgets: WidgetConfig[];
     navItems: NavItemConfig[];
     features: Record<FeatureKey, boolean>;
@@ -109,7 +111,7 @@ interface DashboardState {
     toggleFeature: (key: FeatureKey) => void;
     reorderWidgets: (newOrder: WidgetConfig[]) => void;
     reorderNavItems: (newOrder: NavItemConfig[]) => void;
-    initializeFromProfile: (profile: any) => void;
+    initializeFromProfile: (profile: Profile) => void;
     _hasHydrated: boolean;
     setHasHydrated: (state: boolean) => void;
 }

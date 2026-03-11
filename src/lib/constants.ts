@@ -28,10 +28,12 @@ export const TABS = {
     REAL_ESTATE: "נדל״ן"
 } as const;
 
-export const isAssetInvestment = (asset: any): boolean => {
+import { Goal } from "@/types";
+
+export const isAssetInvestment = (asset: Goal): boolean => {
     // Definition: Stocks, Real Estate, Money Market, and Mutual Funds are investments.
     // Everything else (Cash, Savings, Forex) is considered "Cash/Liquid".
-    const type = (asset.type || asset.category || "").toLowerCase();
+    const type = (asset.type || "").toLowerCase();
     const invType = (asset.investment_type || "").toLowerCase();
 
     return (

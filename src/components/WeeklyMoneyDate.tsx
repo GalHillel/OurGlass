@@ -1,9 +1,8 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Sparkles, TrendingUp, TrendingDown, CheckCircle2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { formatAmount } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { triggerHaptic } from "@/utils/haptics";
 

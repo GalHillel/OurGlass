@@ -1,22 +1,24 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { SpendingBreakdown } from '@/components/SpendingBreakdown';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
+
+import { Transaction } from '@/types';
 
 describe('SpendingBreakdown', () => {
     it('shows empty state if no transactions', () => {
-        render(<SpendingBreakdown transactions={[]} />);
+        render(<SpendingBreakdown transactions={[]} subscriptions={[]} liabilities={[]} />);
         expect(screen.getByText('אין נתונים זמינים')).toBeInTheDocument();
     });
 
     it('renders breakdowns correctly grouped and sorted', () => {
-        const transactions = [
-            { category: 'אוכל', amount: 300 },
-            { category: 'תחבורה', amount: 50 },
-            { category: 'אוכל', amount: 200 }, // Total food = 500
+        const transactions: Partial<Transaction>[] = [
+            { category: 'אוכל', amount: 300, date: new Date().toISOString() },
+            { category: 'תחבורה', amount: 50, date: new Date().toISOString() },
+            { category: 'אוכל', amount: 200, date: new Date().toISOString() }, // Total food = 500
         ];
 
-        render(<SpendingBreakdown transactions={transactions as never} />);
+        render(<SpendingBreakdown transactions={transactions as Transaction[]} subscriptions={[]} liabilities={[]} />);
 
         expect(screen.getByText('אוכל')).toBeInTheDocument();
         expect(screen.getByText(`${CURRENCY_SYMBOL}500`)).toBeInTheDocument();

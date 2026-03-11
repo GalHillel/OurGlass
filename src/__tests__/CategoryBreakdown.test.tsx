@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { CategoryBreakdown, normalizeCategory } from '@/components/CategoryBreakdown';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import {  CURRENCY_SYMBOL} from "@/lib/constants";
 
 describe('CategoryBreakdown', () => {
     it('normalizes categories properly', () => {
@@ -56,4 +56,4 @@ describe('CategoryBreakdown', () => {
         expect(screen.getByText('AmPm')).toBeInTheDocument();
         expect(screen.getByText(`${CURRENCY_SYMBOL}100`)).toBeInTheDocument();
     });
-});
+});

@@ -1,4 +1,3 @@
-import React from "react";
 import { PAYERS } from "@/lib/constants";
 
 // Here we define a mapping from ID to the actual component it renders.
@@ -36,4 +35,4 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetDefinition> = {
     'partner-stats': { id: 'partner-stats', title: 'חלוקה', description: `${PAYERS.HIM} / ${PAYERS.HER} / ${PAYERS.JOINT}` },
     'calendar': { id: 'calendar', title: 'לוח הוצאות', description: 'פריסה חודשית של הוצאות' },
     'categories': { id: 'categories', title: 'קטגוריות', description: 'פילוח הוצאות מפורט' },
-};
+};

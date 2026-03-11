@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { DeepFreezeDialog } from '@/components/DeepFreezeDialog';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { PAYERS, CURRENCY_SYMBOL} from "@/lib/constants";
 
 describe('DeepFreezeDialog', () => {
     it('renders correctly when open', () => {
@@ -69,4 +69,4 @@ describe('DeepFreezeDialog', () => {
         fireEvent.click(screen.getByRole('button', { name: new RegExp('לא, ' + PAYERS.HIM + ' חייב', 'i') }));
         expect(onBuyAnyway).toHaveBeenCalledTimes(1);
     });
-});
+});

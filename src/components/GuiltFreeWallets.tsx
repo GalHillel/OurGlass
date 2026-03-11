@@ -5,7 +5,7 @@ import { Wallet, User } from "lucide-react";
 import { useGuiltFreeWallets } from "@/hooks/useJointFinance";
 import { Skeleton } from "@/components/ui/skeleton";
 import CountUp from "react-countup";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { PAYERS, CURRENCY_SYMBOL } from "@/lib/constants";
 
 export function GuiltFreeWallets({ viewingDate = new Date() }: { viewingDate?: Date }) {
     const { data, isLoading } = useGuiltFreeWallets(viewingDate);

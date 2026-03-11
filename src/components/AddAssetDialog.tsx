@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/AuthProvider";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
-import { Slider } from "@/components/ui/slider";
 
 const assetSchema = z.object({
     name: z.string().min(2, "שם הנכס חייב להכיל לפחות 2 תווים"),
@@ -152,7 +151,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData, usdToI
             const validated = assetSchema.parse(validationData);
             setLoading(true);
 
-            const payload: any = {
+            const payload: Partial<Goal> = {
                 name: validated.name,
                 current_amount: parseFloat(amount) || 0,
                 quantity: validated.quantity || 0,
@@ -167,7 +166,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData, usdToI
                 start_date: validated.start_date,
                 tax_rate_percent: validated.tax_rate_percent,
                 exit_dates: validated.exit_dates,
-                symbol: validated.symbol || null,
+                symbol: validated.symbol ?? undefined,
             };
 
             if (initialData) {
@@ -187,11 +186,12 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData, usdToI
             onSuccess();
             onClose();
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             if (error instanceof z.ZodError) {
                 toast.error(error.issues[0].message);
             } else {
-                toast.error("שגיאה בשמירה", { description: error.message || "Unknown error" });
+                const message = error instanceof Error ? error.message : "Unknown error";
+                toast.error("שגיאה בשמירה", { description: message });
             }
         } finally {
             setLoading(false);

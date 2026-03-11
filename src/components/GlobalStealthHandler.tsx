@@ -15,7 +15,7 @@ export function GlobalStealthHandler() {
         let lastTapTime = 0;
         const TRIPLE_TAP_DELAY = 500; // Total window for 3 taps
 
-        const handleTap = (e: MouseEvent | TouchEvent) => {
+        const handleTap = () => {
             const currentTime = new Date().getTime();
 
             if (currentTime - lastTapTime > TRIPLE_TAP_DELAY) {

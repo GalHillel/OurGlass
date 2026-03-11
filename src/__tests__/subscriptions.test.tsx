@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SubscriptionsPage from '@/app/subscriptions/page';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import {  CURRENCY_SYMBOL} from "@/lib/constants";
 
 vi.mock('@/components/AuthProvider', () => ({
     useAuth: () => ({ profile: { budget: 20000, couple_id: 'couple-1' } })
@@ -31,4 +31,4 @@ describe('Subscriptions Page', () => {
         expect(await screen.findByText('Netflix')).toBeInTheDocument();
         expect(screen.getByText(`${CURRENCY_SYMBOL}50`)).toBeInTheDocument();
     });
-});
+});

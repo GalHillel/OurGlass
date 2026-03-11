@@ -34,16 +34,11 @@ const getIcon = (description: string | null) => {
 };
 
 import React, { memo, useRef, useMemo } from 'react';
-
-// ... imports ...
-
 import { motion } from "framer-motion";
 import { ActivePress } from "@/components/ui/ActivePress";
 import { SurpriseReveal } from "./SurpriseReveal";
-import { cn, formatAmount } from "@/lib/utils";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
-
-// ... imports ...
+import {  formatAmount } from "@/lib/utils";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 export const TransactionList = memo(({ transactions, subscriptions = [], onRefresh, onEdit, activeFilter, activeDateFilter, currentPayer = 'him' }: TransactionListProps) => {
     const isStealthMode = useAppStore(s => s.isStealthMode);
@@ -317,4 +312,4 @@ export const TransactionList = memo(({ transactions, subscriptions = [], onRefre
     );
 });
 
-TransactionList.displayName = "TransactionList";
+TransactionList.displayName = "TransactionList";

@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 import { AnimatePresence, motion } from "framer-motion";
 import {
     HeartPulse,
@@ -13,10 +15,7 @@ import {
     Users,
     CalendarDays,
     PieChart,
-    Settings2,
-    Plus,
     LayoutGrid,
-    Sparkles,
     Gift,
     CreditCard,
     ChevronLeft,
@@ -66,16 +65,13 @@ export interface HomeMosaicProps {
     usdToIls?: number;
     viewingDate: Date;
     onViewingDateChange: (date: Date | ((prev: Date) => Date)) => void;
-    onUpdateStatus?: (id: string, status: Subscription['status']) => void;
-    onDeleteSubscription?: (id: string) => void;
     totalWealth?: number;
 }
 
-import React, { useState } from "react";
 import { useDashboardStore, WidgetConfig } from "@/stores/dashboardStore";
 import { useAppStore } from "@/stores/appStore";
 import { triggerHaptic } from "@/utils/haptics";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { PAYERS, CURRENCY_SYMBOL } from "@/lib/constants";
 import { format, subMonths, addMonths } from "date-fns";
 import { he } from "date-fns/locale";
 import { getBillingPeriodForDate } from "@/lib/billing";
@@ -101,16 +97,12 @@ export const HomeMosaic = React.memo(({
     onDateSelect,
     selectedFilterCategory,
     onCategorySelect,
-    onRefresh,
     usdToIls,
     viewingDate,
     onViewingDateChange,
-    onUpdateStatus,
-    onDeleteSubscription,
     totalWealth,
 }: HomeMosaicProps) => {
     const router = useRouter();
-    const [isEditModeOpen, setIsEditModeOpen] = useState(false);
 
     const isStealthMode = useAppStore(useShallow(s => s.isStealthMode));
     const widgets = useDashboardStore(useShallow(s => s.widgets));
@@ -654,4 +646,4 @@ export const HomeMosaic = React.memo(({
 });
 
 HomeMosaic.displayName = 'HomeMosaic';
-
+

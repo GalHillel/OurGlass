@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Flame, Target } from "lucide-react";
 import { useAppStore } from "@/stores/appStore";
-import { cn, formatAmount } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 

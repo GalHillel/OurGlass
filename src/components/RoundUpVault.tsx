@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { Transaction } from "@/types";
 import { PiggyBank, ArrowRight, Coins } from "lucide-react";
 import { motion } from "framer-motion";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 interface RoundUpVaultProps {
     transactions: Transaction[];

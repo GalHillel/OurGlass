@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import { WishlistItem } from "@/types";
-import { Plus, Sparkles, Hourglass, AlertTriangle } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { useDashboardStore } from "@/stores/dashboardStore";
 import { EmptyState } from "@/components/EmptyState";
 
@@ -17,8 +18,6 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-    DialogFooter,
-    DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,7 +26,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { SwipeableRow } from "@/components/SwipeableRow";
 import { motion, AnimatePresence } from "framer-motion";
 import { getHebrewError } from "@/lib/utils";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 export default function WishlistPage() {
     const { features } = useDashboardStore();
@@ -39,9 +38,6 @@ export default function WishlistPage() {
     const [newItemLink, setNewItemLink] = useState("");
     const [newItemDescription, setNewDescription] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isOracleOpen, setIsOracleOpen] = useState(false);
-    const [selectedItem, setSelectedItem] = useState<WishlistItem | null>(null);
-    const [oracleData, setOracleData] = useState<{ hours: number; affordable: boolean; missing: number } | null>(null);
     const [realNumberBalance, setRealNumberBalance] = useState(0);
 
     // Smart Action State
@@ -290,20 +286,6 @@ export default function WishlistPage() {
         }
     };
 
-    const checkOracle = (item: WishlistItem) => {
-        const hourlyWage = profile?.hourly_wage || 60;
-        const hoursNeeded = item.price / hourlyWage;
-        const affordable = realNumberBalance >= item.price;
-        const missing = item.price - realNumberBalance;
-
-        setSelectedItem(item);
-        setOracleData({ hours: hoursNeeded, affordable, missing });
-        setIsOracleOpen(true);
-
-        if (affordable) {
-            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-        }
-    };
 
     return (
         <div className="flex flex-col gap-6 w-full mx-auto pt-8 pb-0 px-4 shadow-none" dir="rtl">
@@ -493,7 +475,14 @@ export default function WishlistPage() {
                                         animate={{ opacity: 1, scale: 1 }}
                                         className="mt-2 rounded-[1.5rem] overflow-hidden h-40 border border-white/10 relative group"
                                     >
-                                        <img src={newItemLink} alt="תצוגה מקדימה" className="w-full h-full object-cover" />
+                                        <div className="relative w-full h-full">
+                                            <Image
+                                                src={newItemLink}
+                                                alt="תצוגה מקדימה"
+                                                fill
+                                                className="object-cover"
+                                            />
+                                        </div>
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                         <span className="absolute bottom-2 right-3 text-[10px] font-black text-white/60 uppercase tracking-widest">תצוגה מקדימה</span>
                                     </motion.div>
@@ -559,53 +548,6 @@ export default function WishlistPage() {
                 )}
             </div>
 
-            {/* Oracle Dialog */}
-            <Dialog open={isOracleOpen} onOpenChange={setIsOracleOpen}>
-                <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 text-white max-w-sm rounded-[2rem] text-right" dir="rtl">
-                    <DialogHeader>
-                        <DialogTitle className="text-center text-2xl">
-                            {oracleData?.affordable ? "יש אישור! 🚀" : "רגע, בואו נחשוב..."}
-                        </DialogTitle>
-                        <DialogDescription className="text-center text-white/60">
-                            {selectedItem?.name} - {CURRENCY_SYMBOL}{selectedItem?.price}
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="py-6 space-y-6">
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-2 animate-pulse">
-                                <Hourglass className="w-8 h-8 text-blue-400 animate-spin-slow" />
-                            </div>
-                            <p className="text-lg font-medium">מחיר בזמן עבודה</p>
-                            <p className="text-4xl font-black text-blue-200 neon-text">
-                                {oracleData?.hours.toFixed(1)} <span className="text-lg text-white/50">שעות</span>
-                            </p>
-                            <p className="text-xs text-white/40">לפי שכר של {CURRENCY_SYMBOL}{profile?.hourly_wage || 60}/שעה</p>
-                        </div>
-
-                        {!oracleData?.affordable && (
-                            <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-start gap-3">
-                                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="font-bold text-red-200">חורג מהתקציב</p>
-                                    <p className="text-sm text-red-200/70">
-                                        חסרים לכם {CURRENCY_SYMBOL}{oracleData?.missing.toFixed(0)}.
-                                        {oracleData?.missing && oracleData.missing > 0 && (
-                                            <span> נסו לחסוך עוד קצת!</span>
-                                        )}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <DialogFooter>
-                        <Button onClick={() => setIsOracleOpen(false)} className="w-full bg-white/10 hover:bg-white/20 text-white rounded-xl h-12">
-                            הבנתי, תודה
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
             {/* Smart Action Drawer */}
             <WishlistActionDrawer

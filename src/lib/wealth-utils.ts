@@ -1,4 +1,4 @@
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 /**
  * Wealth Utilities — Money Market Fund & Compound Interest Calculations
  *

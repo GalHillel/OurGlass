@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { he } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 
 interface BenchmarkProps {
@@ -53,7 +53,7 @@ export function SP500Benchmark({ initialWealth }: BenchmarkProps) {
                 sp500: Math.round(firstPoint.yours * marketReturn)
             };
         });
-    }, [snapshots, sp500History, initialWealth]);
+    }, [snapshots, sp500History, initialWealth, dbValue]);
 
     const performance = useMemo(() => {
         if (chartData.length < 2) return null;

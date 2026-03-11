@@ -3,7 +3,7 @@ import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { createClient } from "@/utils/supabase/server";
 import { subMonths } from "date-fns";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "edge";

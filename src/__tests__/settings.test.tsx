@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SettingsPage from '@/app/settings/page';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import {  CURRENCY_SYMBOL} from "@/lib/constants";
 
 vi.mock('next/navigation', () => ({
     useRouter: () => ({ push: vi.fn(), refresh: vi.fn() })
@@ -56,4 +56,4 @@ describe('Settings Page', () => {
             expect(mockUpdateProfile).toHaveBeenCalled();
         });
     });
-});
+});

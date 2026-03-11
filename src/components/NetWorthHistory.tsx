@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { he } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { useAppStore } from "@/stores/appStore";
 import { formatAmount } from "@/lib/utils";
 
@@ -49,7 +49,7 @@ export function NetWorthHistory({ liveNetWorth }: NetWorthHistoryProps) {
                 label: format(parseISO(s.snapshot_date), "dd MMM", { locale: he }),
             };
         });
-    }, [snapshots, liveNetWorth]);
+    }, [snapshots, liveNetWorth, dbValue]);
 
     const trend = useMemo(() => {
         if (chartData.length < 2) return null;

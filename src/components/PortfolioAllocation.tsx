@@ -86,7 +86,7 @@ export function PortfolioAllocation({ assets }: PortfolioAllocationProps) {
                             }}
                             formatter={(value: number | undefined) => [
                                 formatAmount(value || 0, isStealthMode, CURRENCY_SYMBOL),
-                                "" as any
+                                ""
                             ]}
                         />
                     </PieChart>

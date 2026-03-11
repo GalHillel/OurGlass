@@ -104,7 +104,7 @@ export function useSP500History(days = 365) {
 
 import { calculateDynamicBalance, estimatePayoffDate } from "@/lib/debt-utils";
 
-export function useLiabilities() {
+export function useLiabilities(asOf: Date = new Date()) {
     const { profile } = useAuth();
     const coupleId = profile?.couple_id;
 
@@ -122,7 +122,7 @@ export function useLiabilities() {
             if (error) throw error;
 
             // Map to dynamic balance
-            const mapped = (data ?? []).map((l: any) => {
+            const mapped = (data ?? []).map((l) => {
                 let currentBalance = l.remaining_amount;
 
                 if (l.start_date && l.total_amount && l.monthly_payment) {
@@ -130,7 +130,8 @@ export function useLiabilities() {
                         Number(l.total_amount),
                         Number(l.monthly_payment),
                         Number(l.interest_rate || 0),
-                        l.start_date
+                        l.start_date,
+                        asOf
                     );
                 }
 
@@ -145,8 +146,8 @@ export function useLiabilities() {
                     current_balance: currentBalance,
                     remaining_amount: currentBalance, // Sync for older UI
                     estimated_end_date: estimatedEndDate?.toISOString() || l.end_date,
-                };
-            }) as Liability[];
+                } as Liability;
+            });
 
             // Filter out closed liabilities (balance <= 0)
             return mapped.filter(l => (l.current_balance || 0) > 0);
@@ -172,12 +173,8 @@ export function useAddLiability() {
             };
 
             const {
-                principal,
-                current_balance,
-                estimated_end_date,
-                estimated_months_to_payoff,
                 ...dbPayload
-            } = { ...normalizedPayload, couple_id: liability.couple_id ?? profile.couple_id } as any;
+            } = { ...normalizedPayload, couple_id: liability.couple_id ?? profile.couple_id };
 
             const { data, error } = await supabase
                 .from("liabilities")
@@ -200,12 +197,8 @@ export function useUpdateLiability() {
     return useMutation({
         mutationFn: async ({ id, ...updates }: Partial<Liability> & { id: string }) => {
             const {
-                principal,
-                current_balance,
-                estimated_end_date,
-                estimated_months_to_payoff,
                 ...dbUpdates
-            } = updates as any;
+            } = updates;
 
             const { data, error } = await supabase
                 .from("liabilities")
@@ -242,8 +235,8 @@ export function useDeleteLiability() {
 }
 
 // ── Derived: Total Liabilities ──
-export function useTotalLiabilities(asOf?: Date) {
-    const { data: liabilities = [] } = useLiabilities();
+export function useTotalLiabilities(asOf: Date = new Date()) {
+    const { data: liabilities = [] } = useLiabilities(asOf);
 
     const activeLiabilities = liabilities; // Already filtered in hook
 
@@ -276,4 +269,4 @@ export function useTotalLiabilities(asOf?: Date) {
         count: liabilities.length,
         activeLiabilities: liabilitiesWithEstimation
     };
-}
+}

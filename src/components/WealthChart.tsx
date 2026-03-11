@@ -2,8 +2,8 @@ import { useMemo } from "react";
 import { useAppStore } from "@/stores/appStore";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Goal } from "@/types";
-import { cn, formatAmount } from "@/lib/utils";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import {  formatAmount } from "@/lib/utils";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 interface WealthChartProps {
     assets: Goal[];
@@ -124,4 +124,4 @@ export const WealthChart = ({ assets, selectedType, onSelect }: WealthChartProps
             </div> */}
         </div>
     );
-};
+};

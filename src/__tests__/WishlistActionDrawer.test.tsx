@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { WishlistActionDrawer } from '@/components/WishlistActionDrawer';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import {  CURRENCY_SYMBOL} from "@/lib/constants";
 
 vi.mock('@/utils/haptics', () => ({ triggerHaptic: vi.fn() }));
 
@@ -49,4 +49,4 @@ describe('WishlistActionDrawer', () => {
 
         expect(onConfirm).toHaveBeenCalledWith(mockItem, 150);
     });
-});
+});

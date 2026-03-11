@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { HomeMosaic, type HomeMosaicProps } from '@/components/HomeMosaic';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 vi.mock('@/utils/supabase/client', () => ({
     createClient: () => ({

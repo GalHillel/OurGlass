@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { DeepFreezeApproval, DeepFreezeToggle } from '@/components/DeepFreezeApproval';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import {  CURRENCY_SYMBOL} from "@/lib/constants";
 
 vi.mock('sonner', () => ({
     toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() })
@@ -83,4 +83,4 @@ describe('DeepFreezeToggle', () => {
         expect(screen.getByText('הקפאה')).toBeInTheDocument();
         expect(screen.getByRole('button')).toHaveClass('bg-white/5');
     });
-});
+});

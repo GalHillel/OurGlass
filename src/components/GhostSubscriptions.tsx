@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Ghost, AlertCircle, Plus, Sparkles, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { SwipeableRow } from "./SwipeableRow";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { useAppStore } from "@/stores/appStore";
 import { formatAmount } from "@/lib/utils";
 

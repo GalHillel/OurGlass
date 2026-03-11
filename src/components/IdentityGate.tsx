@@ -6,7 +6,7 @@ import { useAppStore } from "@/stores/appStore";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { hapticSuccess } from "@/utils/haptics";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { PAYERS } from "@/lib/constants";
 
 export const IdentityGate = ({ children }: { children: React.ReactNode }) => {
     const { user, loading } = useAuth();

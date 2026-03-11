@@ -4,7 +4,6 @@ import { AIChatButton } from '@/components/AIChatButton';
 import { useAuth } from '@/components/AuthProvider';
 import { useAppStore } from '@/stores/appStore';
 import { useWealth } from '@/hooks/useWealth';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 vi.mock('next/navigation', () => ({
     usePathname: vi.fn(() => '/')

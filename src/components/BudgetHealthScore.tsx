@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Wallet, Target, PiggyBank } from "lucide-react";
 import { useAppStore } from "@/stores/appStore";
 import { cn, formatAmount } from "@/lib/utils";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 interface BudgetHealthScoreProps {
     balance: number;           // Current remaining balance (what's left to spend)

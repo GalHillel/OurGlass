@@ -1,4 +1,3 @@
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 /**
  * Smart Haptic Feedback System
  * Maps different financial actions to distinct vibration patterns
@@ -57,4 +56,4 @@ export const hapticForAmount = (amount: number) => {
     } else {
         return vibrate(PATTERNS.light);
     }
-};
+};

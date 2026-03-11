@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Subscription } from "@/types";
 import { useTotalLiabilities } from "@/hooks/useWealthData";
@@ -18,11 +18,11 @@ import { useAuth } from "@/components/AuthProvider";
 import { SubscriptionKiller } from "@/components/SubscriptionKiller";
 import { GhostSubscriptions } from "@/components/GhostSubscriptions";
 import { LiabilitiesSection } from "@/components/LiabilitiesSection";
-import { useSubscriptions, useGlobalCashflow } from "@/hooks/useJointFinance";
+import { useSubscriptions } from "@/hooks/useJointFinance";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { AddSubscriptionDialog, CATEGORIES } from "@/components/AddSubscriptionDialog";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 export default function SubscriptionsPage() {
     const isStealthMode = useAppStore(s => s.isStealthMode);

@@ -8,7 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Banknote, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/utils/haptics";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 interface WishlistActionDrawerProps {
     isOpen: boolean;

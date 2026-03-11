@@ -40,7 +40,6 @@ export function RebalancingCoach({ assets, totalWealth }: RebalancingCoachProps)
         };
 
         assets.forEach((asset) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const val = Number(asset.calculatedValue || asset.current_amount || 0);
 
             if (asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency') buckets.foreign_currency += val;

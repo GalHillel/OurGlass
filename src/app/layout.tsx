@@ -9,7 +9,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { LiquidBackground } from "@/components/LiquidBackground";
 import { IdentityGate } from "@/components/IdentityGate";
-import { AIChatButton } from "@/components/AIChatButton";
+// import { AIChatButton } from "@/components/AIChatButton";
 import { GlobalStealthHandler } from "@/components/GlobalStealthHandler";
 
 const heebo = Heebo({

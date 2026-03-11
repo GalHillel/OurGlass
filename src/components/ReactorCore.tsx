@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { cn, formatAmount } from "@/lib/utils";
 import { triggerHaptic } from "@/utils/haptics";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 interface ReactorCoreProps {
     income: number;

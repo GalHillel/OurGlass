@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { User, Users, Heart } from "lucide-react";
 import { cn, formatAmount } from "@/lib/utils";
 import { isLiabilityActive } from "@/hooks/useWealthData";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { PAYERS, CURRENCY_SYMBOL } from "@/lib/constants";
 import { useAppStore } from "@/stores/appStore";
 
 interface PartnerStatsProps {

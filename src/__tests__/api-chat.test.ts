@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { POST } from '@/app/api/chat/route';
 import * as ai from 'ai';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 vi.mock('@ai-sdk/google', () => ({
     google: vi.fn().mockReturnValue('mock-gemini')
@@ -38,4 +37,4 @@ describe('Chat API', () => {
         expect(callArgs.system).toContain('"income": 10000');
         expect(callArgs.system).toContain('Food');
     });
-});
+});

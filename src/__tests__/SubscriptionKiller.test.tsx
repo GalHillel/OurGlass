@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { SubscriptionKiller } from '@/components/SubscriptionKiller';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 describe('SubscriptionKiller', () => {
     it('shows empty state initially', () => {
@@ -39,4 +38,4 @@ describe('SubscriptionKiller', () => {
 
         expect(screen.getByText('אין מנויים לביטול כרגע ✨')).toBeInTheDocument();
     });
-});
+});

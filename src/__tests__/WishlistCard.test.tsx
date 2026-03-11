@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { WishlistCard } from '@/components/WishlistCard';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { PAYERS, CURRENCY_SYMBOL} from "@/lib/constants";
 
 
 vi.mock('@/utils/haptics', () => ({ triggerHaptic: vi.fn() }));
@@ -43,4 +43,4 @@ describe('WishlistCard', () => {
         fireEvent.click(screen.getByTitle('ויתרתי על זה (הוסף לחיסכון)'));
         expect(onAction).toHaveBeenCalledWith(standardItem, 'didnt_buy');
     });
-});
+});

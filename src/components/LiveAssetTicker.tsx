@@ -5,7 +5,6 @@ import { Goal } from "@/types";
 import { formatAmount } from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface LiveAssetTickerProps {
     asset: Goal;

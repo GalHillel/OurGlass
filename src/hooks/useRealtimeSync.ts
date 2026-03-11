@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
-import { Transaction } from "@/types";
+import { Transaction, Subscription, Liability, WishlistItem, FinancialContext, Goal } from "@/types";
 
 export function useRealtimeSync(coupleId: string | null) {
     const queryClient = useQueryClient();
@@ -54,14 +54,14 @@ export function useRealtimeSync(coupleId: string | null) {
                     { event: '*', schema: 'public', table: 'subscriptions', filter: `couple_id=eq.${coupleId}` },
                     (payload) => {
                         if (payload.eventType === 'INSERT') {
-                            const newItem = payload.new;
-                            queryClient.setQueriesData({ queryKey: ['subscriptions', coupleId] }, (old: any[] | undefined) => old ? [...old, newItem] : [newItem]);
+                            const newItem = payload.new as Subscription;
+                            queryClient.setQueriesData({ queryKey: ['subscriptions', coupleId] }, (old: Subscription[] | undefined) => old ? [...old, newItem] : [newItem]);
                         } else if (payload.eventType === 'UPDATE') {
-                            const newItem = payload.new;
-                            queryClient.setQueriesData({ queryKey: ['subscriptions', coupleId] }, (old: any[] | undefined) => old?.map(i => i.id === newItem.id ? newItem : i));
+                            const newItem = payload.new as Subscription;
+                            queryClient.setQueriesData({ queryKey: ['subscriptions', coupleId] }, (old: Subscription[] | undefined) => old?.map(i => i.id === newItem.id ? newItem : i));
                         } else if (payload.eventType === 'DELETE') {
-                            const oldId = payload.old.id;
-                            queryClient.setQueriesData({ queryKey: ['subscriptions', coupleId] }, (old: any[] | undefined) => old?.filter(i => i.id !== oldId));
+                            const oldId = (payload.old as Partial<Subscription>).id;
+                            queryClient.setQueriesData({ queryKey: ['subscriptions', coupleId] }, (old: Subscription[] | undefined) => old?.filter(i => i.id !== oldId));
                         }
                         queryClient.invalidateQueries({ queryKey: ['global-cashflow', coupleId] });
                     }
@@ -71,14 +71,14 @@ export function useRealtimeSync(coupleId: string | null) {
                     { event: '*', schema: 'public', table: 'liabilities', filter: `couple_id=eq.${coupleId}` },
                     (payload) => {
                         if (payload.eventType === 'INSERT') {
-                            const newItem = payload.new;
-                            queryClient.setQueriesData({ queryKey: ['liabilities', coupleId] }, (old: any[] | undefined) => old ? [...old, newItem] : [newItem]);
+                            const newItem = payload.new as Liability;
+                            queryClient.setQueriesData({ queryKey: ['liabilities', coupleId] }, (old: Liability[] | undefined) => old ? [...old, newItem] : [newItem]);
                         } else if (payload.eventType === 'UPDATE') {
-                            const newItem = payload.new;
-                            queryClient.setQueriesData({ queryKey: ['liabilities', coupleId] }, (old: any[] | undefined) => old?.map(i => i.id === newItem.id ? newItem : i));
+                            const newItem = payload.new as Liability;
+                            queryClient.setQueriesData({ queryKey: ['liabilities', coupleId] }, (old: Liability[] | undefined) => old?.map(i => i.id === newItem.id ? newItem : i));
                         } else if (payload.eventType === 'DELETE') {
-                            const oldId = payload.old.id;
-                            queryClient.setQueriesData({ queryKey: ['liabilities', coupleId] }, (old: any[] | undefined) => old?.filter(i => i.id !== oldId));
+                            const oldId = (payload.old as Partial<Liability>).id;
+                            queryClient.setQueriesData({ queryKey: ['liabilities', coupleId] }, (old: Liability[] | undefined) => old?.filter(i => i.id !== oldId));
                         }
                         queryClient.invalidateQueries({ queryKey: ['global-cashflow', coupleId] });
                     }
@@ -89,12 +89,15 @@ export function useRealtimeSync(coupleId: string | null) {
                     { event: '*', schema: 'public', table: 'goals', filter: `couple_id=eq.${coupleId}` },
                     (payload) => {
                         if (payload.eventType === 'UPDATE') {
-                            const newItem = payload.new;
-                            queryClient.setQueriesData({ queryKey: ['wealthData'] }, (old: any) => {
+                            const newItem = payload.new as Goal;
+                            queryClient.setQueriesData({ queryKey: ['wealthData'] }, (old: FinancialContext | undefined) => {
                                 if (!old) return old;
                                 return {
                                     ...old,
-                                    goals: old.goals?.map((g: any) => g.id === newItem.id ? newItem : g)
+                                    assets: {
+                                        ...old.assets,
+                                        raw: old.assets.raw?.map((g: Goal) => g.id === newItem.id ? newItem : g)
+                                    }
                                 };
                             });
                         } else {
@@ -109,14 +112,14 @@ export function useRealtimeSync(coupleId: string | null) {
                     { event: '*', schema: 'public', table: 'wishlist', filter: `couple_id=eq.${coupleId}` },
                     (payload) => {
                         if (payload.eventType === 'INSERT') {
-                            const newItem = payload.new;
-                            queryClient.setQueriesData({ queryKey: ['wishlist', coupleId] }, (old: any[] | undefined) => old ? [newItem, ...old] : [newItem]);
+                            const newItem = payload.new as WishlistItem;
+                            queryClient.setQueriesData({ queryKey: ['wishlist', coupleId] }, (old: WishlistItem[] | undefined) => old ? [newItem, ...old] : [newItem]);
                         } else if (payload.eventType === 'UPDATE') {
-                            const newItem = payload.new;
-                            queryClient.setQueriesData({ queryKey: ['wishlist', coupleId] }, (old: any[] | undefined) => old?.map(i => i.id === newItem.id ? newItem : i));
+                            const newItem = payload.new as WishlistItem;
+                            queryClient.setQueriesData({ queryKey: ['wishlist', coupleId] }, (old: WishlistItem[] | undefined) => old?.map(i => i.id === newItem.id ? newItem : i));
                         } else if (payload.eventType === 'DELETE') {
-                            const oldId = payload.old.id;
-                            queryClient.setQueriesData({ queryKey: ['wishlist', coupleId] }, (old: any[] | undefined) => old?.filter(i => i.id !== oldId));
+                            const oldId = (payload.old as Partial<WishlistItem>).id;
+                            queryClient.setQueriesData({ queryKey: ['wishlist', coupleId] }, (old: WishlistItem[] | undefined) => old?.filter(i => i.id !== oldId));
                         }
                     }
                 )

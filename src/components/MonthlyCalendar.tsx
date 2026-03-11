@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useAppStore } from "@/stores/appStore";
 import { cn, formatAmount } from "@/lib/utils";
 import { Transaction } from "@/types";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 interface CalendarProps {
     transactions: Transaction[];

@@ -1,21 +1,21 @@
 "use client";
 
-import { Home, Sparkles, Settings, CreditCard, Gem, Gift, Rocket, Plus, X, RefreshCw } from "lucide-react";
+import { Home, Sparkles, Settings, CreditCard, Gem, Gift, Rocket, RefreshCw } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { triggerHaptic } from "@/utils/haptics";
 import { cn } from "@/lib/utils";
 import { useDashboardStore, FeatureKey, NavItemConfig } from "@/stores/dashboardStore";
 import { useAppStore } from "@/stores/appStore";
-import { useMemo, useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { useShallow } from 'zustand/react/shallow';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ChatInterface } from "./ChatInterface";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useWealth } from "@/hooks/useWealth";
-import { FinancialContext, Goal, Liability, Transaction, Subscription, WishlistItem, WealthSnapshot } from "@/types";
+import { FinancialContext, Liability, Transaction, Subscription, WishlistItem, WealthSnapshot } from "@/types";
 import { isLiabilityActive } from "@/hooks/useWealthData";
 import { getBillingPeriodForDate } from "@/lib/billing";
 import { PAYERS } from "@/lib/constants";
@@ -53,7 +53,7 @@ export const BottomNav = () => {
     const [error, setError] = useState(false);
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
-    const { profile, user } = useAuth();
+    const { profile } = useAuth();
     const { appIdentity } = useAppStore();
     const { netWorth: liveNetWorth, assets: wealthAssets } = useWealth();
 
@@ -123,7 +123,7 @@ export const BottomNav = () => {
             const daysInMonth = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
             const burnRateDaily = (monthlySpent + subTotal + liabTotal) / daysElapsed;
 
-            const assetsSummary = (wealthAssets || []).reduce((acc, asset: Goal) => {
+            const assetsSummary = (wealthAssets || []).reduce((acc, asset) => {
                 const valueInIls = Number(asset.calculatedValue ?? asset.current_amount ?? 0);
                 if (asset.type === 'stock' || asset.investment_type === 'real_estate') acc.stocksInvestments += valueInIls;
                 else if (asset.investment_type === 'foreign_currency' || asset.type === 'foreign_currency') {
@@ -183,7 +183,7 @@ export const BottomNav = () => {
                 const baseItem = navItemsRegistry.find(n => n.id === item.id);
                 return baseItem ? { ...baseItem, ...item } : null;
             })
-            .filter((n): n is NavItem & NavItemConfig => n !== null && (!n.featureKey || features[n.featureKey] === true));
+            .filter((n): n is NavItem & { id: string; enabled: boolean; order: number } => n !== null && (!n.featureKey || features[n.featureKey] === true));
     }, [navItems, features, _hasHydrated]);
 
     const renderNavItem = (item: NavItem & NavItemConfig) => {

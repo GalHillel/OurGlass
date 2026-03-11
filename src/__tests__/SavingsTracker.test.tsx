@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { SavingsTracker } from '@/components/SavingsTracker';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import {  CURRENCY_SYMBOL} from "@/lib/constants";
 
 describe('SavingsTracker', () => {
     it('shows excellent status when actual savings >= target', () => {
@@ -47,4 +47,4 @@ describe('SavingsTracker', () => {
 
         expect(screen.getByText('הוצאות גבוהות מההכנסות!')).toBeInTheDocument();
     });
-});
+});

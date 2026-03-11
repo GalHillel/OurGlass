@@ -10,8 +10,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { LogOut, Save, User, Smartphone } from "lucide-react";
 import { useAppStore } from "@/stores/appStore";
-import { useDashboardStore, FeatureKey } from "@/stores/dashboardStore";
-import { Switch } from "@/components/ui/switch";
 import {
     Drawer,
     DrawerContent,
@@ -20,7 +18,7 @@ import {
     DrawerTrigger,
 } from "@/components/ui/drawer";
 import { triggerHaptic } from "@/utils/haptics";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { PAYERS, CURRENCY_SYMBOL } from "@/lib/constants";
 import { CustomizationManager } from "@/components/CustomizationManager";
 
 export default function SettingsPage() {
@@ -35,8 +33,6 @@ export default function SettingsPage() {
     const [income, setIncome] = useState("");
     const [loading, setLoading] = useState(false);
     const { appIdentity, setAppIdentity } = useAppStore();
-    const features = useDashboardStore((s) => s.features);
-    const toggleFeature = useDashboardStore((s) => s.toggleFeature);
 
     const [isLoaded, setIsLoaded] = useState(false);
 
@@ -285,4 +281,4 @@ export default function SettingsPage() {
             <div className="h-32 w-full" />
         </div>
     );
-}
+}

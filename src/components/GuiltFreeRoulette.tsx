@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, useAnimate, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Gift, Zap, Utensils, Coffee, Camera, Plane, Music, Sparkles, Heart } from "lucide-react";
 import { triggerHaptic } from "@/utils/haptics";
@@ -20,7 +20,6 @@ const TREATS = [
 export function GuiltFreeRoulette() {
     const [isSpinning, setIsSpinning] = useState(false);
     const [result, setResult] = useState<typeof TREATS[0] | null>(null);
-    const [, animate] = useAnimate();
 
     const spin = async () => {
         if (isSpinning) return;

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { cn, formatAmount } from "@/lib/utils";
 import { isLiabilityActive } from "@/hooks/useWealthData";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 // Combined icon map from various sources for consistency
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {

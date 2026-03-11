@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Gift, TrendingUp, Info } from 'lucide-react';
+import { Gift, Info } from 'lucide-react';
 import { Goal } from '@/types';
 import { formatILS } from '@/lib/wealth-utils';
 import { motion, AnimatePresence } from 'framer-motion';

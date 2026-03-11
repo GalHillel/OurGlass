@@ -1,7 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FinancialOnboarding } from '@/components/FinancialOnboarding';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 // Mock dependencies
 const mockUpdateProfile = vi.fn();
@@ -81,4 +80,4 @@ describe('FinancialOnboarding', () => {
             expect(onComplete).toHaveBeenCalled();
         });
     });
-});
+});

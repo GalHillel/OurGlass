@@ -299,9 +299,6 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
                 <AnimatePresence mode="popLayout">
                     {stocks.map((stock) => {
                         const isPositive = stock.changePercent >= 0;
-                        const prevValueILS = stock.totalValueILS / (1 + stock.changePercent / 100);
-                        const dailyProfitILS = stock.totalValueILS - prevValueILS;
-                        const isProfitPositive = dailyProfitILS > 0;
 
                         return (
                             <motion.div

@@ -8,10 +8,11 @@ export function calculateDynamicBalance(
     totalAmount: number,
     monthlyPayment: number,
     interestRateYearly: number,
-    startDate: string | Date
+    startDate: string | Date,
+    targetDate: Date = new Date()
 ): number {
     const start = new Date(startDate);
-    const now = new Date();
+    const now = targetDate;
 
     if (isNaN(start.getTime())) return totalAmount;
 

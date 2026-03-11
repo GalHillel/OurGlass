@@ -7,30 +7,25 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { HomeMosaicSkeleton } from "@/components/HomeMosaicSkeleton";
 import { normalizeCategory } from "@/components/CategoryBreakdown";
 import { getBillingPeriodForDate } from "@/lib/billing";
-import { calculateBurnRate, cn } from "@/lib/utils";
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { calculateBurnRate } from "@/lib/utils";
+import { useState } from "react";
 
 
-import { createClient } from "@/utils/supabase/client";
-import { Transaction, Subscription, Liability } from "@/types";
+import { Transaction } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { useWealth } from "@/hooks/useWealth";
-import { useLiveTotalWealth } from "@/hooks/useLiveTotalWealth";
+import { useAppStore } from "@/stores/appStore";
+import { GuiltFreeWallets } from "@/components/GuiltFreeWallets";
+import { motion, LayoutGroup } from "framer-motion";
 import { useGlobalCashflow } from "@/hooks/useJointFinance";
 import { Skeleton } from "@/components/ui/skeleton";
-import { isSameDay, addMonths, subMonths, format, differenceInDays, addDays } from "date-fns";
+import { format, isSameDay, differenceInDays } from "date-fns";
 import { he } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, CalendarRange, Calendar, X } from "lucide-react";
-import { toast } from "sonner";
+import { Calendar, X } from "lucide-react";
+import { useMemo, useCallback } from "react";
+import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTransactions, useSubscriptions, useLiabilities } from "@/hooks/useJointFinance";
-
-import { motion, LayoutGroup } from "framer-motion";
-import { Loader2 } from "lucide-react";
-import { useAppStore } from "@/stores/appStore";
-
-// Phase 4-6 components
-import { GuiltFreeWallets } from "@/components/GuiltFreeWallets";
 
 // Simplified PullToRefresh Component that doesn't block scroll
 const PullToRefresh = ({ children }: { children: React.ReactNode, onRefresh: () => Promise<void> }) => {
@@ -43,7 +38,7 @@ const PullToRefresh = ({ children }: { children: React.ReactNode, onRefresh: () 
       {isRefreshing && (
         <div className="flex justify-center h-10 items-center hidden">
           {/* Spinner hidden per user request to remove "semicircle" */}
-          <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+          {/* <Loader2 className="w-5 h-5 text-blue-500 animate-spin" /> */}
         </div>
       )}
       {children}
@@ -64,10 +59,8 @@ export default function Home() {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isPrivacyMode] = useState(false);
 
-  const { user, profile, loading: authLoading } = useAuth();
-  const { assets, usdToIls, netWorth, marketPrices } = useWealth();
-  // 3. Authority Real-Time Counter
-  const liveNetWorth = useLiveTotalWealth(assets || [], [], usdToIls, marketPrices);
+  const { profile, loading: authLoading } = useAuth();
+  const { netWorth, assets, usdToIls } = useWealth();
   const { appIdentity } = useAppStore();
   const queryClient = useQueryClient();
 
@@ -129,40 +122,6 @@ export default function Home() {
     queryClient.invalidateQueries({ queryKey: ['global-cashflow', profile?.couple_id] });
   };
 
-  const handleUpdateSubscriptionStatus = async (id: string, status: Subscription['status']) => {
-    try {
-      if (!profile?.couple_id) throw new Error("Missing couple_id");
-      const { error } = await createClient()
-        .from('subscriptions')
-        .update({ status })
-        .eq('id', id)
-        .eq('couple_id', profile.couple_id);
-      if (error) throw error;
-      toast.success("סטטוס המנוי עודכן");
-      queryClient.invalidateQueries({ queryKey: ['subscriptions', profile?.couple_id] });
-      queryClient.invalidateQueries({ queryKey: ['global-cashflow', profile?.couple_id] });
-    } catch {
-      toast.error("שגיאה בעדכון הסטטוס");
-    }
-  };
-
-  const handleDeleteSubscription = async (id: string) => {
-    try {
-      if (!profile?.couple_id) throw new Error("Missing couple_id");
-      const { error } = await createClient()
-        .from('subscriptions')
-        .delete()
-        .eq('id', id)
-        .eq('couple_id', profile.couple_id);
-      if (error) throw error;
-      toast.success("המנוי נמחק");
-      queryClient.invalidateQueries({ queryKey: ['subscriptions', profile?.couple_id] });
-      queryClient.invalidateQueries({ queryKey: ['global-cashflow', profile?.couple_id] });
-    } catch {
-      toast.error("שגיאה במחיקה");
-    }
-  };
-
   const filteredTransactions = useMemo(() => {
     let result = transactions;
     if (selectedDate) {
@@ -218,8 +177,6 @@ export default function Home() {
                     transactions={transactions}
                     subscriptions={subscriptions}
                     liabilities={liabilities}
-                    onUpdateStatus={handleUpdateSubscriptionStatus}
-                    onDeleteSubscription={handleDeleteSubscription}
                     // Reactor Props
                     burnRateStatus={burnRateData.status}
                     cycleStart={getBillingPeriodForDate(viewingDate).start}
@@ -320,4 +277,4 @@ export default function Home() {
       />
     </div>
   );
-}
+}

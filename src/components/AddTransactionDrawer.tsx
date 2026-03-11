@@ -22,7 +22,6 @@ import {
     Heart,
     Home,
     Calendar as CalendarIcon,
-    ChevronDown,
     Fuel,
     Car,
     GraduationCap,
@@ -44,7 +43,7 @@ import { Transaction } from "@/types";
 import { cn } from "@/lib/utils";
 import { NumericKeypad } from "./NumericKeypad";
 import { useAppStore } from "@/stores/appStore";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { PAYERS, CURRENCY_SYMBOL } from "@/lib/constants";
 
 interface AddTransactionDrawerProps {
     isOpen: boolean;

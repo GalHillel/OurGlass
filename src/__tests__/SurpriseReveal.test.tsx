@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SurpriseReveal } from '@/components/SurpriseReveal';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 vi.mock('@/utils/haptics', () => ({ triggerHaptic: vi.fn(), hapticSuccess: vi.fn(), hapticHeavy: vi.fn() }));
 

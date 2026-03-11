@@ -5,17 +5,10 @@ import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Goal } from "@/types";
 import { useQuery } from "@tanstack/react-query";
-import { calculateLiveBalance } from "@/lib/wealth-utils";
 import { isAssetInvestment } from "@/lib/constants";
 import { netWorthEngine } from "@/lib/networth-engine";
 
-interface SupabaseError {
-    message?: string;
-    details?: string;
-    hint?: string;
-    code?: string;
-    stack?: string;
-}
+
 
 export const useWealth = () => {
     const { user, profile, loading: authLoading } = useAuth();

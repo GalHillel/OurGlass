@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { StockPortfolio } from '@/components/StockPortfolio';
 import * as auth from '@/components/AuthProvider';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import {  CURRENCY_SYMBOL} from "@/lib/constants";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 
@@ -76,4 +76,4 @@ describe('StockPortfolio', () => {
         expect(screen.getByText('הוספת מניה לתיק')).toBeInTheDocument();
         expect(screen.getByText('סימול (Ticker)')).toBeInTheDocument();
     });
-});
+});

@@ -4,9 +4,8 @@ import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { Clock } from "lucide-react";
-import CountUp from "react-countup";
 import { calculateFutureWealth } from "@/lib/utils";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 import { useAppStore } from "@/stores/appStore";
 import { formatAmount } from "@/lib/utils";
@@ -125,4 +124,4 @@ export const WealthTimeMachine = ({ currentNetWorth, monthlySavings = 5000 }: We
             </DialogContent>
         </Dialog>
     );
-};
+};

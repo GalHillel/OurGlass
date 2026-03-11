@@ -26,7 +26,7 @@ import { Transaction, Subscription, Liability } from "@/types";
 import { useAppStore } from "@/stores/appStore";
 import { cn, formatAmount } from "@/lib/utils";
 import { isLiabilityActive } from "@/hooks/useWealthData";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 // Single unified category icons (same for both transactions and subscriptions)
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {

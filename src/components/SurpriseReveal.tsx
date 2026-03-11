@@ -6,7 +6,7 @@ import { Gift, EyeOff, PartyPopper } from "lucide-react";
 import { Transaction } from "@/types";
 import { cn, formatDate } from "@/lib/utils";
 import { hapticSuccess, hapticHeavy } from "@/utils/haptics";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
 
 const generateParticles = () =>
     Array.from({ length: 24 }).map((_, i) => ({

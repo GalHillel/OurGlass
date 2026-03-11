@@ -3,7 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getBillingPeriodForDate } from "@/lib/billing";
 import { primaryModel } from "@/lib/ai-router";
 import { NextResponse } from "next/server";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "edge";

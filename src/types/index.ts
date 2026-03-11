@@ -1,3 +1,9 @@
+export interface DashboardConfig {
+    widgets: { id: string; enabled: boolean; order: number }[];
+    navItems: { id: string; enabled: boolean; order: number }[];
+    features: Record<string, boolean>;
+}
+
 export interface Profile {
     id: string;
     name: string | null;
@@ -13,7 +19,7 @@ export interface Profile {
     income_split_ratio: number | null;
     onboarding_completed: boolean;
     role: 'admin' | 'user';
-    dashboard_config?: any;
+    dashboard_config?: DashboardConfig | null;
     created_at: string;
 }
 

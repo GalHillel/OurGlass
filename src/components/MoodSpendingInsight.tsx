@@ -7,7 +7,7 @@ import { Sparkles } from "lucide-react";
 import { Transaction, Subscription, Liability } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 interface MoodInsight {
     type: "info" | "warning" | "success";

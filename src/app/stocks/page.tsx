@@ -1,15 +1,12 @@
 "use client";
 
-import { TrendingUp, Rocket, Calendar } from "lucide-react";
 import { useWealth } from "@/hooks/useWealth";
 import { StockPortfolio } from "@/components/StockPortfolio";
 import { DividendForecast } from "@/components/DividendForecast";
 import { SP500Benchmark } from "@/components/SP500Benchmark";
-import { useAppStore } from "@/stores/appStore";
 
 export default function StocksPage() {
-    const { assets, usdToIls, loading } = useWealth();
-    const isStealthMode = useAppStore(s => s.isStealthMode);
+    const { assets, usdToIls } = useWealth();
 
     return (
         <div className="min-h-screen bg-slate-950 text-white px-4 space-y-6 pt-6">

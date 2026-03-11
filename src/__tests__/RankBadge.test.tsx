@@ -5,11 +5,12 @@ import { Trophy } from 'lucide-react';
 
 describe('RankBadge', () => {
     const mockRank = {
-        level: 1,
+        id: 'newbie',
         name: 'Newbie',
-        color: 'text-blue-500',
+        minWealth: 0,
         icon: Trophy,
-        minScore: 0
+        color: 'text-blue-500',
+        description: 'New to the game'
     };
 
     it('renders correctly without name', () => {

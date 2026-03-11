@@ -211,7 +211,7 @@ export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date 
         } finally {
             setLoading(false);
         }
-    }, [supabase, profile, identityName, liveNetWorth, wealthAssets, viewingDate]);
+    }, [supabase, profile, identityName, liveNetWorth, wealthAssets, viewingDate, pathname]);
 
     // Dynamic proactive bubble — fetch data, then generate insight
     useEffect(() => {

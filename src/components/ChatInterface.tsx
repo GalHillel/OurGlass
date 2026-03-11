@@ -5,7 +5,7 @@ import { useChat } from '@ai-sdk/react';
 import { type UIMessage } from 'ai';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { Send, Sparkles, X, ArrowDown, Trash2, PieChart, AlertCircle, Wallet } from "lucide-react";
+import { Send, Sparkles, X, ArrowDown, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FinancialContext, Transaction } from "@/types";
 import { useAppStore } from "@/stores/appStore";

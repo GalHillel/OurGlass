@@ -3,12 +3,12 @@
 * Supports Push Notifications and basic caching
 */
 
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
     console.log('[Service Worker] Install');
     self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
+self.addEventListener('activate', () => {
     console.log('[Service Worker] Activate');
 });
 

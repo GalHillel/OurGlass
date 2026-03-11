@@ -131,7 +131,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
       description: 'Add a new transaction (expense or income).',
       inputSchema: addTransactionParams,
       async execute(
-        { idempotency_key, amount, description, category, type, payer, emoji, installments, date, mood_rating },
+        { idempotency_key, amount, description, category, type, payer, emoji, date, mood_rating },
       ) {
         try {
           const { data, error } = await supabase
@@ -280,7 +280,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
     addSubscription: tool({
       description: 'Add a recurring subscription.',
       inputSchema: addSubscriptionParams,
-      async execute({ name, emoji, amount, billing_cycle, payer, category }) {
+      async execute({ name, emoji, amount, payer, category }) {
         try {
           const payload = {
             name: `${emoji} ${name}`,

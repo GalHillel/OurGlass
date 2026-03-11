@@ -2,9 +2,9 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { Goal, Liability } from "@/types";
+import { Goal, WealthSnapshot } from "@/types";
 import { useWealth } from "@/hooks/useWealth";
-import { useLiabilities, useTotalLiabilities } from "@/hooks/useWealthData";
+import { useTotalLiabilities } from "@/hooks/useWealthData";
 import { useLiveTotalWealth } from "@/hooks/useLiveTotalWealth";
 import { TrendingUp, PieChart, Shield, Rocket, Plus, Edit2, Building, Trash2, DollarSign } from "lucide-react";
 
@@ -36,18 +36,15 @@ import { RebalancingCoach } from "@/components/RebalancingCoach";
 import { PortfolioAllocation } from "@/components/PortfolioAllocation";
 import { SP500Benchmark } from "@/components/SP500Benchmark";
 import { useDashboardStore } from "@/stores/dashboardStore";
-import { useAppStore } from "@/stores/appStore";
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/utils/haptics";
 
 export default function WealthPage() {
-    const isStealthMode = useAppStore(s => s.isStealthMode);
+    // const isStealthMode = useAppStore(s => s.isStealthMode);
     const { profile, loading: authLoading } = useAuth();
 
     // 1. Authoritative Data Fetch
     const {
-        netWorth,
-        netWorthBeforeFees,
         investmentsValue,
         cashValue,
         assets = [],
@@ -57,7 +54,6 @@ export default function WealthPage() {
         refetch
     } = useWealth();
 
-    const { data: liabilities = [], isLoading: liabLoading } = useLiabilities();
     const { total: totalLiabilitiesVal } = useTotalLiabilities();
     const loading = wealthLoading || authLoading;
 
@@ -81,7 +77,6 @@ export default function WealthPage() {
 
     // 3. Authority Real-Time Counter
     const liveNetWorth = useLiveTotalWealth(assets || [], [], usdToIls, marketPrices);
-    const trueNetWorth = netWorth; // Mandate: Total Assets Only (Gross)
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingAsset, setEditingAsset] = useState<Goal | null>(null);
@@ -163,8 +158,8 @@ export default function WealthPage() {
 
                 let snapshotCash = 0;
                 let snapshotInvest = 0;
-                assets.forEach((asset: Goal & { calculatedValue?: number }) => {
-                    const val = asset.calculatedValue || Number(asset.current_amount) || 0;
+                assets.forEach((asset) => {
+                    const val = (asset as Goal & { calculatedValue?: number }).calculatedValue || Number(asset.current_amount) || 0;
                     if (isAssetInvestment(asset)) {
                         snapshotInvest += val;
                     } else {
@@ -173,12 +168,12 @@ export default function WealthPage() {
                 });
 
                 if (needsBackfill) {
-                    const backfillData: any[] = [];
+                    const backfillData: Omit<WealthSnapshot, "id" | "created_at">[] = [];
                     for (let i = 7; i >= 1; i--) {
                         const d = new Date();
                         d.setDate(d.getDate() - i);
                         backfillData.push({
-                            couple_id: profile.couple_id,
+                            couple_id: profile.couple_id!,
                             snapshot_date: d.toISOString().split('T')[0],
                             net_worth: currentNetWorth,
                             cash_value: snapshotCash,
@@ -204,7 +199,7 @@ export default function WealthPage() {
             const timer = setTimeout(syncSnapshot, 3000);
             return () => clearTimeout(timer);
         }
-    }, [liveNetWorth, assets?.length, loading, profile?.couple_id, totalLiabilitiesVal]);
+    }, [assets, loading, profile?.couple_id, totalLiabilitiesVal, supabase]);
 
 
     return (
@@ -447,4 +442,4 @@ export default function WealthPage() {
             <div className="h-32 w-full" />
         </div>
     );
-}
+}

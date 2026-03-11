@@ -7,7 +7,7 @@ import { Transaction, Subscription, Liability } from "@/types";
 import { getBillingPeriodForDate, getDaysRemainingInCycle } from "@/lib/billing";
 import { differenceInDays, addDays, format, isSameDay } from "date-fns";
 import { he } from "date-fns/locale";
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 interface PredictiveCashflowProps {
     balance: number;

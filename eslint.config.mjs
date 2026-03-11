@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Root-level Node.js utility scripts
+    "auto_fix.js",
+    "get_lint.js",
+    "parse_lint.js",
+    "*.js"
   ]),
 ]);
 

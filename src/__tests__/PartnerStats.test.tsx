@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { PartnerStats } from '@/components/PartnerStats';
-import { PAYERS, CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
+import { PAYERS, CURRENCY_SYMBOL} from "@/lib/constants";
 
 describe('PartnerStats', () => {
     it('returns null if total is 0', () => {
@@ -36,4 +36,4 @@ describe('PartnerStats', () => {
         expect(screen.getByText(PAYERS.HER)).toBeInTheDocument();
         expect(screen.getByText(`${CURRENCY_SYMBOL}300`)).toBeInTheDocument();
     });
-});
+});
