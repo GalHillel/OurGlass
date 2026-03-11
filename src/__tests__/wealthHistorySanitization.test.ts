@@ -34,4 +34,26 @@ describe('sanitizeWealthSnapshots', () => {
 
     expect(sanitized).toHaveLength(4);
   });
+
+  it('normalizes numeric-string snapshots from Supabase', () => {
+    const raw = [
+      {
+        ...base('2026-03-01', 0),
+        net_worth: '100000' as unknown as number,
+        cash_value: '50000' as unknown as number,
+      },
+      {
+        ...base('2026-03-02', 0),
+        net_worth: '101500' as unknown as number,
+        investments_value: '51500' as unknown as number,
+      },
+    ];
+
+    const sanitized = sanitizeWealthSnapshots(raw);
+
+    expect(sanitized).toHaveLength(2);
+    expect(sanitized[0].net_worth).toBe(100000);
+    expect(sanitized[0].cash_value).toBe(50000);
+    expect(sanitized[1].investments_value).toBe(51500);
+  });
 });

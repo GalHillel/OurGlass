@@ -23,6 +23,20 @@ import { useMemo } from "react";
 
 export function sanitizeWealthSnapshots(snapshots: WealthSnapshot[]): WealthSnapshot[] {
     const normalized = snapshots
+        .map((snapshot) => {
+            const netWorth = Number(snapshot.net_worth);
+            const cash = Number(snapshot.cash_value ?? 0);
+            const investments = Number(snapshot.investments_value ?? 0);
+            const liabilities = Number(snapshot.liabilities_value ?? 0);
+
+            return {
+                ...snapshot,
+                net_worth: Number.isFinite(netWorth) ? netWorth : NaN,
+                cash_value: Number.isFinite(cash) ? cash : 0,
+                investments_value: Number.isFinite(investments) ? investments : 0,
+                liabilities_value: Number.isFinite(liabilities) ? liabilities : 0,
+            };
+        })
         .filter((snapshot) => Number.isFinite(snapshot.net_worth) && snapshot.net_worth >= 0)
         .sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date));
 
