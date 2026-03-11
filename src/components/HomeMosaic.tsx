@@ -71,7 +71,7 @@ export interface HomeMosaicProps {
     totalWealth?: number;
 }
 
-import React, { useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useDashboardStore, WidgetConfig } from "@/stores/dashboardStore";
 import { useAppStore } from "@/stores/appStore";
 import { triggerHaptic } from "@/utils/haptics";
@@ -81,6 +81,15 @@ import { he } from "date-fns/locale";
 import { getBillingPeriodForDate } from "@/lib/billing";
 
 import { useShallow } from 'zustand/react/shallow';
+
+const WIDE_WIDGET_IDS = new Set([
+    'reactor',
+    'ai-hub',
+    'smart-insights',
+    'monthly-roast',
+    'calendar',
+    'categories',
+]);
 
 export const HomeMosaic = React.memo(({
     balance,
@@ -142,13 +151,16 @@ export const HomeMosaic = React.memo(({
     // AUTHORITY: Use totalWealth prop from engine (Assets only)
     const effectiveTotalWealth = totalWealth !== undefined ? totalWealth : (totalCash + stockAssets.reduce((s, a) => s + (Number(a.current_amount) || 0), 0));
 
-    const activeWidgets = [...widgets].filter(w => w.enabled).sort((a, b) => a.order - b.order);
+    const activeWidgets = useMemo(
+        () => [...widgets].filter(w => w.enabled).sort((a, b) => a.order - b.order),
+        [widgets]
+    );
 
-    const renderWidget = (id: string, key: string) => {
+    const renderWidget = useCallback((id: string) => {
         switch (id) {
             case 'reactor':
                 return (
-                    <div key={key} className="col-span-2 mb-2">
+                    <div className="col-span-2 mb-2">
                         <div className="glass-panel overflow-hidden relative">
                             <div className="absolute inset-0 bg-blue-500/5 pointer-events-none" />
                             <ReactorCore
@@ -197,7 +209,7 @@ export const HomeMosaic = React.memo(({
                 );
             case 'ai-hub':
                 return (
-                    <div key={key} className="col-span-2">
+                    <div className="col-span-2">
                         <AIHubBanner
                             transactions={transactions}
                             subscriptions={subscriptions}
@@ -210,7 +222,7 @@ export const HomeMosaic = React.memo(({
                 );
             case 'smart-insights':
                 return (
-                    <div key={key} className="col-span-2">
+                    <div className="col-span-2">
                         <SmartInsights
                             transactions={transactions}
                             subscriptions={subscriptions}
@@ -222,7 +234,7 @@ export const HomeMosaic = React.memo(({
                 );
             case 'monthly-roast':
                 return (
-                    <div key={key} className="col-span-2">
+                    <div className="col-span-2">
                         <MonthlyRoastPraise
                             transactions={transactions}
                             subscriptions={subscriptions}
@@ -235,7 +247,7 @@ export const HomeMosaic = React.memo(({
                 );
             case 'health':
                 return (
-                    <Dialog key={key}>
+                    <Dialog>
                         <DialogTrigger asChild>
                             <motion.div
                                 layout
@@ -280,7 +292,7 @@ export const HomeMosaic = React.memo(({
                 );
             case 'savings':
                 return (
-                    <Dialog key={key}>
+                    <Dialog>
                         <DialogTrigger asChild>
                             <motion.div
                                 layout
@@ -321,7 +333,7 @@ export const HomeMosaic = React.memo(({
                 if (!features.enableStocks) {
                     return (
                         <motion.div
-                            key={key}
+                           
                             layout
                             whileTap={{ scale: 0.95 }}
                             className="aspect-[4/3] glass-panel p-6 flex flex-col items-center justify-center gap-2 text-center opacity-60"
@@ -335,7 +347,7 @@ export const HomeMosaic = React.memo(({
                     );
                 }
                 return (
-                    <Dialog key={key}>
+                    <Dialog>
                         <DialogTrigger asChild>
                             <motion.div
                                 layout
@@ -366,7 +378,7 @@ export const HomeMosaic = React.memo(({
                 );
             case 'vault':
                 return (
-                    <Dialog key={key}>
+                    <Dialog>
                         <DialogTrigger asChild>
                             <motion.div
                                 layout
@@ -444,7 +456,7 @@ export const HomeMosaic = React.memo(({
                 );
             case 'quick-action':
                 return (
-                    <Dialog key={key}>
+                    <Dialog>
                         <DialogTrigger asChild>
                             <motion.div
                                 layout
@@ -474,7 +486,7 @@ export const HomeMosaic = React.memo(({
                 );
             case 'partner-stats':
                 return (
-                    <Dialog key={key}>
+                    <Dialog>
                         <DialogTrigger asChild>
                             <motion.div
                                 layout
@@ -504,7 +516,7 @@ export const HomeMosaic = React.memo(({
                 );
             case 'calendar':
                 return (
-                    <Dialog key={key}>
+                    <Dialog>
                         <DialogTrigger asChild>
                             <motion.div
                                 layout
@@ -540,7 +552,7 @@ export const HomeMosaic = React.memo(({
                 );
             case 'categories':
                 return (
-                    <Dialog key={key}>
+                    <Dialog>
                         <DialogTrigger asChild>
                             <motion.div
                                 layout
@@ -584,7 +596,7 @@ export const HomeMosaic = React.memo(({
             case 'subscriptions':
                 return (
                     <motion.div
-                        key={key}
+                       
                         layout
                         whileTap={{ scale: 0.95 }}
                         onClick={() => router.push('/subscriptions')}
@@ -608,7 +620,7 @@ export const HomeMosaic = React.memo(({
             case 'wishlist':
                 return (
                     <motion.div
-                        key={key}
+                       
                         layout
                         whileTap={{ scale: 0.95 }}
                         onClick={() => router.push('/wishlist')}
@@ -632,14 +644,56 @@ export const HomeMosaic = React.memo(({
             default:
                 return null;
         }
-    };
+    }, [
+        monthlyIncome,
+        budget,
+        totalExpenses,
+        balance,
+        burnRateStatus,
+        cycleStart,
+        cycleEnd,
+        onViewingDateChange,
+        safeViewingDate,
+        transactions,
+        subscriptions,
+        liabilities,
+        healthStatus,
+        savingsRate,
+        assets,
+        stockAssets,
+        isStealthMode,
+        totalCash,
+        effectiveTotalWealth,
+        onQuickAdd,
+        selectedDate,
+        onDateSelect,
+        selectedFilterCategory,
+        onCategorySelect,
+        viewingDate,
+        onUpdateStatus,
+        onDeleteSubscription,
+        router,
+        usdToIls,
+    ]);
 
     return (
         <div className="w-full max-w-md space-y-4">
             <div className="grid grid-cols-2 gap-3 w-full px-4 perspective-1000">
                 <AnimatePresence mode="popLayout">
                     {activeWidgets.length > 0 ? (
-                        activeWidgets.map((widgetValue: WidgetConfig) => renderWidget(widgetValue.id, widgetValue.id))
+                        activeWidgets.map((widgetValue: WidgetConfig) => (
+                            <motion.div
+                                key={widgetValue.id}
+                                className={WIDE_WIDGET_IDS.has(widgetValue.id) ? 'col-span-2' : undefined}
+                                layoutId={`widget-${widgetValue.id}`}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                            >
+                                {renderWidget(widgetValue.id)}
+                            </motion.div>
+                        ))
                     ) : (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
@@ -659,4 +713,3 @@ export const HomeMosaic = React.memo(({
 });
 
 HomeMosaic.displayName = 'HomeMosaic';
-

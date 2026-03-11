@@ -28,28 +28,26 @@ interface NetWorthHistoryProps {
 export function NetWorthHistory({ liveNetWorth }: NetWorthHistoryProps) {
     const [period, setPeriod] = useState(30);
     const [isExpanded, setIsExpanded] = useState(false);
-    const { data: snapshots = [], isLoading, dbValue } = useWealthHistory(period, liveNetWorth);
+    const { data: snapshots = [], isLoading } = useWealthHistory(period, liveNetWorth);
     const isStealthMode = useAppStore(s => s.isStealthMode);
 
     const chartData = useMemo(() => {
         if (snapshots.length === 0) return [];
 
         const todayStr = new Date().toISOString().split('T')[0];
-        const liveVal = liveNetWorth ?? dbValue ?? 0;
-        const delta = Math.abs(liveVal - (dbValue ?? 0)) > 1000 ? liveVal - (dbValue ?? 0) : 0;
 
         return snapshots.map((s) => {
             const isLive = s.id === 'live-now' || s.snapshot_date === todayStr;
             return {
                 date: s.snapshot_date,
-                netWorth: Math.max(0, isLive ? s.net_worth : (s.net_worth + delta)),
+                netWorth: Math.max(0, s.net_worth),
                 cash: s.cash_value,
                 investments: s.investments_value,
                 liabilities: s.liabilities_value,
                 label: format(parseISO(s.snapshot_date), "dd MMM", { locale: he }),
             };
         });
-    }, [snapshots, liveNetWorth]);
+    }, [snapshots]);
 
     const trend = useMemo(() => {
         if (chartData.length < 2) return null;

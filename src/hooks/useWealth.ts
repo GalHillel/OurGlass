@@ -127,6 +127,7 @@ export const useWealth = () => {
         enabled: !!profile?.couple_id,
         refetchInterval: 60 * 1000,
         staleTime: 30 * 1000,
+        placeholderData: (previousData) => previousData,
     });
 
 

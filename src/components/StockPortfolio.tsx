@@ -74,6 +74,7 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
     }, [assets]);
 
     const handleRefresh = async () => {
+        if (isRefreshing) return;
         setIsRefreshing(true);
         triggerHaptic();
         await queryClient.invalidateQueries({ queryKey: ['wealthData'] });
@@ -99,13 +100,15 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
     // CRUD Operations
     // CRUD Operations
     const handleSave = async () => {
+        if (loading) return;
+
         if (!symbolInput || !sharesInput) {
             toast.error("נא למלא את כל השדות");
             return;
         }
 
         const quantity = parseFloat(sharesInput);
-        if (isNaN(quantity) || quantity <= 0) {
+        if (!Number.isFinite(quantity) || quantity <= 0) {
             toast.error("כמות לא תקינה");
             return;
         }
@@ -137,7 +140,7 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
                 const stockData = data.stocks[symbolInput.toUpperCase()];
                 const rate = data.usdToIls || 3.65;
                 const price = stockData?.price || 0;
-                initialValueILS = price * quantity * rate;
+                initialValueILS = Number.isFinite(price * quantity * rate) ? (price * quantity * rate) : 0;
             }
 
             const payload = {
@@ -226,7 +229,7 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
     return (
         <div className="w-full space-y-6">
             {/* 1. Header Card - Compact & Powerful (Refined & Centered) */}
-            <div className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-xl shadow-2xl group touch-pan-y">
+            <div className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl group touch-pan-y">
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-transparent to-blue-600/5 opacity-30" />
 
                 <div className="p-8 relative z-10 flex flex-col items-center text-center">
@@ -280,7 +283,7 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
 
                     <div className="flex flex-col items-center gap-4 w-full">
                         <div className="text-[10px] text-white/30 font-mono font-black uppercase tracking-[0.2em]">
-                            שער חליפין: {CURRENCY_SYMBOL}{usdToIls.toFixed(2)}
+                            שער חליפין: {CURRENCY_SYMBOL}{(Number.isFinite(usdToIls) ? usdToIls : 3.65).toFixed(2)}
                         </div>
                     </div>
                 </div>
@@ -295,7 +298,7 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
                 <div className="col-span-4 text-left">שווי (₪)</div>
             </div>
 
-            <div className="space-y-2 pb-10">
+            <div className="space-y-2 pb-10 touch-pan-y">
                 <AnimatePresence mode="popLayout">
                     {stocks.map((stock) => {
                         const isPositive = stock.changePercent >= 0;
@@ -309,7 +312,7 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
                                 layout
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="group relative overflow-hidden rounded-[1.5rem] bg-slate-900/40 border border-white/5 hover:border-white/20 transition-all"
+                                className="group relative overflow-hidden rounded-[1.5rem] bg-black/40 border border-white/5 hover:border-white/20 transition-all"
                             >
                                 {/* Sparkline Background Effect */}
                                 <div className={cn(
@@ -401,7 +404,7 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
 
             {/* Dialog for Add/Edit */}
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 text-white max-w-sm rounded-[2rem]">
+                <DialogContent className="bg-black/60 backdrop-blur-xl border border-white/10 text-white max-w-sm rounded-3xl">
                     <DialogHeader>
                         <DialogTitle>{editingStock ? 'עריכת החזקה' : 'הוספת מניה לתיק'}</DialogTitle>
                     </DialogHeader>
@@ -412,7 +415,7 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
                                 placeholder="AAPL, NVDA..."
                                 value={symbolInput}
                                 onChange={e => setSymbolInput(e.target.value.toUpperCase())}
-                                className="bg-white/5 border-white/10 text-white font-mono uppercase text-lg tracking-widest"
+                                className="bg-black/50 border-white/10 text-white font-mono uppercase text-lg tracking-widest"
                             />
                         </div>
                         <div className="space-y-2">
@@ -423,7 +426,7 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
                                 placeholder="0.00"
                                 value={sharesInput}
                                 onChange={e => setSharesInput(e.target.value)}
-                                className="bg-white/5 border-white/10 text-white text-lg"
+                                className="bg-black/50 border-white/10 text-white text-lg"
                             />
                         </div>
                         {/* Cost input removed for auto-calculation */}

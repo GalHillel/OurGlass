@@ -159,12 +159,14 @@ export default function WealthPage() {
                     .eq('couple_id', profile.couple_id);
 
                 const needsBackfill = !countError && count !== null && count < 2;
-                const currentNetWorth = liveNetWorthRef.current;
+                const currentNetWorth = Number(liveNetWorthRef.current ?? 0);
+                if (!Number.isFinite(currentNetWorth) || currentNetWorth < 0) return;
 
                 let snapshotCash = 0;
                 let snapshotInvest = 0;
                 assets.forEach((asset: Goal & { calculatedValue?: number }) => {
-                    const val = asset.calculatedValue || Number(asset.current_amount) || 0;
+                    const val = Number(asset.calculatedValue ?? asset.current_amount ?? 0);
+                    if (!Number.isFinite(val) || val < 0) return;
                     if (isAssetInvestment(asset)) {
                         snapshotInvest += val;
                     } else {
@@ -183,7 +185,7 @@ export default function WealthPage() {
                             net_worth: currentNetWorth,
                             cash_value: snapshotCash,
                             investments_value: snapshotInvest,
-                            liabilities_value: totalLiabilitiesVal
+                            liabilities_value: Number(totalLiabilitiesVal ?? 0)
                         });
                     }
                     await supabase.from('wealth_history').upsert(backfillData);
@@ -195,7 +197,7 @@ export default function WealthPage() {
                     net_worth: currentNetWorth,
                     cash_value: snapshotCash,
                     investments_value: snapshotInvest,
-                    liabilities_value: totalLiabilitiesVal,
+                    liabilities_value: Number(totalLiabilitiesVal ?? 0),
                 }, {
                     onConflict: 'couple_id,snapshot_date'
                 });
@@ -208,7 +210,7 @@ export default function WealthPage() {
 
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white px-4 space-y-6 pt-6">
+        <div className="w-full text-white space-y-6 pt-6 pb-[calc(7rem+env(safe-area-inset-bottom))]">
             <div className="mx-2 p-4 neon-card rounded-2xl flex flex-col items-center justify-center relative overflow-hidden group min-h-[160px]">
                 <div className="absolute top-0 right-0 p-4 opacity-10">
                     <TrendingUp className="w-32 h-32 text-blue-500" />
