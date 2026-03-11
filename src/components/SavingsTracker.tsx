@@ -37,7 +37,7 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
         statusIcon = <CheckCircle className="w-4 h-4" />;
     } else if (actualSavings > 0 && isOverBudget) {
         status = "warning";
-        statusMessage = isStealthMode ? `חרגתם אך עדיין חוסכים` : `חרגתם ב-${CURRENCY_SYMBOL}${overBudgetAmount.toLocaleString()} אך עדיין חוסכים`;
+        statusMessage = isStealthMode ? `חרגתם אך עדיין חוסכים` : `חרגתם ב-${CURRENCY_SYMBOL}${overBudgetAmount.toLocaleString('en-US')} אך עדיין חוסכים`;
         statusIcon = <AlertTriangle className="w-4 h-4" />;
     } else {
         status = "overspent";
@@ -127,7 +127,7 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
                     <span className="text-white/50">ניצול תקציב</span>
                     <span className={cn(isOverBudget ? "text-red-400" : "text-white/70")}>
                         {isStealthMode ? '**%' : `${Math.round(budgetUsagePercent)}%`}
-                        {isOverBudget && !isStealthMode && ` (חריגה של ${CURRENCY_SYMBOL}${overBudgetAmount.toLocaleString()})`}
+                        {isOverBudget && !isStealthMode && ` (חריגה של ${CURRENCY_SYMBOL}${overBudgetAmount.toLocaleString('en-US')})`}
                     </span>
                 </div>
                 <div className="h-2 bg-white/10 rounded-full overflow-hidden">
@@ -162,7 +162,7 @@ export const SavingsTracker = ({ monthlyIncome, budget, totalSpent }: SavingsTra
                         <span className="text-white/50">חיסכון בפועל:</span>
                         <span className={cn("font-medium", actualSavings >= targetSavings ? "text-emerald-400" : "text-amber-400")}>
                             {formatAmount(actualSavings, isStealthMode, CURRENCY_SYMBOL, '***')}
-                            {actualSavings >= targetSavings ? " ✓" : !isStealthMode ? ` (חסרים ${CURRENCY_SYMBOL}${(targetSavings - actualSavings).toLocaleString()})` : ""}
+                            {actualSavings >= targetSavings ? " ✓" : !isStealthMode ? ` (חסרים ${CURRENCY_SYMBOL}${(targetSavings - actualSavings).toLocaleString('en-US')})` : ""}
                         </span>
                     </div>
                 </div>

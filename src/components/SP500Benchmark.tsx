@@ -150,7 +150,7 @@ export function SP500Benchmark({ initialWealth }: BenchmarkProps) {
                                         {performance?.alpha && performance.alpha >= 0 ? "+" : ""}{performance?.alpha}%
                                     </p>
                                     <p className="text-[9px] text-white/40 font-mono">
-                                        {CURRENCY_SYMBOL}{Math.abs(performance?.deltaValue || 0).toLocaleString()} {performance?.beating ? "מעל" : "מתחת"} לשוק
+                                        {CURRENCY_SYMBOL}{Math.abs(performance?.deltaValue || 0).toLocaleString('en-US')} {performance?.beating ? "מעל" : "מתחת"} לשוק
                                     </p>
                                 </div>
                             </div>
@@ -184,7 +184,7 @@ export function SP500Benchmark({ initialWealth }: BenchmarkProps) {
                                                 boxShadow: "0 10px 40px rgba(0,0,0,0.4)"
                                             }}
                                             formatter={(value: unknown, name: string | undefined) => [
-                                                `${CURRENCY_SYMBOL}${Number(value).toLocaleString()}`,
+                                                `${CURRENCY_SYMBOL}${Number(value).toLocaleString('en-US')}`,
                                                 name === "yours" ? "אתם" : "S&P 500",
                                             ]}
                                         />

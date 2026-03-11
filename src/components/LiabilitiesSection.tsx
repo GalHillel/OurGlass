@@ -214,7 +214,7 @@ function LiabilityCard({
                         <div className="mt-3 space-y-1.5">
                             <div className="flex items-center justify-between text-[11px] text-white/60">
                                 <span>
-                                    {isStealthMode ? '***' : `${CURRENCY_SYMBOL}${paid.toLocaleString()}`} שולם מתוך {formatAmount(total, isStealthMode, CURRENCY_SYMBOL, '***')}
+                                    {isStealthMode ? '***' : `${CURRENCY_SYMBOL}${paid.toLocaleString('en-US')}`} שולם מתוך {formatAmount(total, isStealthMode, CURRENCY_SYMBOL, '***')}
                                 </span>
                                 {!isStealthMode && <span>{progress.toFixed(0)}%</span>}
                             </div>

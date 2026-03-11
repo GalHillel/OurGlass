@@ -84,5 +84,5 @@ export function calculateLiveBalance(
  * Format {CURRENCY_SYMBOL} currency with proper locale & decimals
  */
 export function formatILS(amount: number, decimals: number = 0): string {
-    return `${CURRENCY_SYMBOL}${amount.toLocaleString(LOCALE, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+    return `${CURRENCY_SYMBOL}${amount.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
 }

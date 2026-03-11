@@ -154,7 +154,7 @@ export function PredictiveCashflow({ balance, budget, transactions, subscription
                 <div className="bg-white/5 rounded-xl p-2 text-center">
                     <p className="text-[9px] text-white/40">צפי סוף חודש</p>
                     <p className={`text-sm font-bold ${chartData.projectedEndBalance > 0 ? "text-emerald-400" : "text-red-400"}`}>
-                        {CURRENCY_SYMBOL}{chartData.projectedEndBalance.toLocaleString()}
+                        {CURRENCY_SYMBOL}{chartData.projectedEndBalance.toLocaleString('en-US')}
                     </p>
                 </div>
                 <div className="bg-white/5 rounded-xl p-2 text-center">
@@ -196,7 +196,7 @@ export function PredictiveCashflow({ balance, budget, transactions, subscription
                                 fontSize: "11px",
                             }}
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            formatter={(value: any) => [`${CURRENCY_SYMBOL}${Number(value).toLocaleString()}`, ""]}
+                            formatter={(value: any) => [`${CURRENCY_SYMBOL}${Number(value).toLocaleString('en-US')}`, ""]}
                         />
                         <ReferenceLine y={0} stroke="rgba(239,68,68,0.3)" strokeDasharray="3 3" />
                         <Area type="monotone" dataKey="actual" stroke="#3b82f6" strokeWidth={2} fill="url(#cashflowGrad)" dot={false} />

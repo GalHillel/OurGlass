@@ -128,7 +128,7 @@ export function MoodSpendingInsight({ transactions, subscriptions, liabilities }
                                 fontSize: "11px",
                             }}
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            formatter={(value: any) => [`${CURRENCY_SYMBOL}${Number(value).toLocaleString()} `, "ממוצע להוצאה"]}
+                            formatter={(value: any) => [`${CURRENCY_SYMBOL}${Number(value).toLocaleString('en-US')} `, "ממוצע להוצאה"]}
                             labelFormatter={() => ""}
                         />
                         <Bar dataKey="avgSpend" radius={[6, 6, 0, 0]}>

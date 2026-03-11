@@ -176,7 +176,7 @@ export function NetWorthHistory({ liveNetWorth }: NetWorthHistoryProps) {
                                                 }}
                                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                 formatter={(value: any) => [
-                                                    isStealthMode ? '***,***' : `${CURRENCY_SYMBOL}${Number(value).toLocaleString()}`,
+                                                    isStealthMode ? '***,***' : `${CURRENCY_SYMBOL}${Number(value).toLocaleString('en-US')}`,
                                                     "סה״כ הון"
                                                 ]}
                                                 labelFormatter={(label) => String(label)}

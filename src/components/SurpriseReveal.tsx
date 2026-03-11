@@ -167,7 +167,7 @@ export function SurpriseReveal({ transaction, isRecipient }: SurpriseRevealProps
                     </div>
                     <div className="text-left">
                         <p className="font-black text-lg text-purple-300">
-                            {CURRENCY_SYMBOL}{transaction.amount.toLocaleString()}
+                            {CURRENCY_SYMBOL}{transaction.amount.toLocaleString('en-US')}
                         </p>
                     </div>
                 </div>

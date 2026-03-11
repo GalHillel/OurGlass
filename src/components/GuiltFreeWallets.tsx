@@ -112,8 +112,8 @@ function WalletCard({
             </div>
 
             <div className="flex justify-between text-[9px] text-white/30 font-black uppercase tracking-[0.1em] relative z-10">
-                <span>בוזבז: {CURRENCY_SYMBOL}{spent.toLocaleString()}</span>
-                <span>מתוך {CURRENCY_SYMBOL}{total.toLocaleString()}</span>
+                <span>בוזבז: {CURRENCY_SYMBOL}{spent.toLocaleString('en-US')}</span>
+                <span>מתוך {CURRENCY_SYMBOL}{total.toLocaleString('en-US')}</span>
             </div>
         </div>
     );

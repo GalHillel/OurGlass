@@ -110,7 +110,7 @@ const StockItem = ({ stock }: { stock: StockData }) => {
                 {isUp ? '+' : ''}{stock.changePercent.toFixed(2)}%
             </span>
             <span className="text-white/60 text-xs font-mono">
-                ${stock.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ${stock.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
         </div>
     );

@@ -129,7 +129,7 @@ export const WishlistCard = ({ item, onAction, onClick }: WishlistCardProps) => 
                                     {isStealthMode ? (
                                         <span>{CURRENCY_SYMBOL}***</span>
                                     ) : (
-                                        <><span className="text-xs mr-0.5 opacity-40 font-sans">{CURRENCY_SYMBOL}</span>{saved.toLocaleString()}</>
+                                        <><span className="text-xs mr-0.5 opacity-40 font-sans">{CURRENCY_SYMBOL}</span>{saved.toLocaleString('en-US')}</>
                                     )}
                                 </span>
                                 <span className="text-[8px] text-white/30 font-black uppercase tracking-[0.2em]">

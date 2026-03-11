@@ -60,7 +60,7 @@ export function WeeklyMoneyDate({ isOpen, onClose, win, drift }: WeeklyMoneyDate
                                 <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">הניצחון של השבוע</span>
                             </div>
                             <h4 className="text-xl font-bold text-white">{win.category}</h4>
-                            <p className="text-sm text-white/60">חסכתם {CURRENCY_SYMBOL}{win.diff.toLocaleString()} לעומת שבוע שעבר</p>
+                            <p className="text-sm text-white/60">חסכתם {CURRENCY_SYMBOL}{win.diff.toLocaleString('en-US')} לעומת שבוע שעבר</p>
                         </motion.div>
 
                         {/* Weekly Drift */}
@@ -77,7 +77,7 @@ export function WeeklyMoneyDate({ isOpen, onClose, win, drift }: WeeklyMoneyDate
                                 <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest">איפה קצת נסחפנו</span>
                             </div>
                             <h4 className="text-xl font-bold text-white">{drift.category}</h4>
-                            <p className="text-sm text-white/60">חריגה של {CURRENCY_SYMBOL}{drift.diff.toLocaleString()} מעל הממוצע</p>
+                            <p className="text-sm text-white/60">חריגה של {CURRENCY_SYMBOL}{drift.diff.toLocaleString('en-US')} מעל הממוצע</p>
                         </motion.div>
                     </div>
 

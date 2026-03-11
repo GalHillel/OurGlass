@@ -85,7 +85,7 @@ export function SubscriptionKiller({ subscriptions, onDelete, onUpdateStatus }: 
                     {analysis.totalSaving > 0 && (
                         <div className="mt-3 px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-full">
                             <p className="text-[10px] font-bold text-orange-400">
-                                פוטנציאל לחיסכון נוסף: {CURRENCY_SYMBOL}{analysis.totalSaving.toLocaleString()}
+                                פוטנציאל לחיסכון נוסף: {CURRENCY_SYMBOL}{analysis.totalSaving.toLocaleString('en-US')}
                             </p>
                         </div>
                     )}

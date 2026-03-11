@@ -110,6 +110,18 @@ export default function Home() {
     setIsDrawerOpen(true);
   }, []);
 
+  const handleViewingDateChange = useCallback((date: Date | ((prev: Date) => Date)) => {
+    setViewingDate(date);
+  }, []);
+
+  const handleDateSelect = useCallback((date: Date | null) => {
+    setSelectedDate(date);
+  }, []);
+
+  const handleCategorySelect = useCallback((category: string | null) => {
+    setSelectedFilterCategory(category);
+  }, []);
+
   const handleTransactionAdded = () => {
     setIsDrawerOpen(false);
     setEditingTransaction(null);
@@ -216,12 +228,12 @@ export default function Home() {
                     onQuickAdd={handleQuickAdd}
                     // Calendar & Categories
                     selectedDate={selectedDate}
-                    onDateSelect={setSelectedDate}
+                    onDateSelect={handleDateSelect}
                     selectedFilterCategory={selectedFilterCategory}
-                    onCategorySelect={setSelectedFilterCategory}
+                    onCategorySelect={handleCategorySelect}
                     usdToIls={usdToIls}
                     viewingDate={viewingDate}
-                    onViewingDateChange={setViewingDate}
+                    onViewingDateChange={handleViewingDateChange}
                     totalWealth={netWorth}
                   />
                 </ErrorBoundary>
