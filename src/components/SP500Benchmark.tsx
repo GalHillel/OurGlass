@@ -16,7 +16,7 @@ interface BenchmarkProps {
 }
 
 export function SP500Benchmark({ initialWealth }: BenchmarkProps) {
-    const { data: snapshots = [], isLoading: isLoadingHistory, dbValue } = useWealthHistory(365, initialWealth);
+    const { data: snapshots = [], isLoading: isLoadingHistory } = useWealthHistory(365, initialWealth);
     const { data: sp500History = [], isLoading: isLoadingMarket } = useSP500History(365);
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -24,15 +24,13 @@ export function SP500Benchmark({ initialWealth }: BenchmarkProps) {
         if (!initialWealth || snapshots.length === 0 || sp500History.length === 0) return [];
 
         const todayStr = new Date().toISOString().split('T')[0];
-        const liveVal = initialWealth;
-        const delta = Math.abs(liveVal - (dbValue || 0)) > 1000 ? liveVal - (dbValue || 0) : 0;
 
         // 2. Map snapshots to chart points and apply correction offset only to PAST points
         const reconciledPoints = snapshots.map(s => {
             const isLive = s.id === 'live-now' || s.snapshot_date === todayStr;
             return {
                 date: s.snapshot_date,
-                yours: Math.round(isLive ? s.net_worth : (s.net_worth + delta)),
+                yours: Math.round(s.net_worth),
                 label: isLive ? "היום" : format(parseISO(s.snapshot_date), "dd MMM", { locale: he })
             };
         });

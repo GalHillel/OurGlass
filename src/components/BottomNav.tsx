@@ -228,8 +228,8 @@ export const BottomNav = () => {
 
     return (
         <>
-            <div className="fixed bottom-0 left-0 right-0 px-4 pb-[env(safe-area-inset-bottom)] pt-3 z-50 pointer-events-none">
-                <nav className="rounded-full flex justify-between items-center px-4 p-2 backdrop-blur-xl bg-[#0c0f1a]/70 border border-white/[0.08] pointer-events-auto shadow-[0_20px_50px_rgba(0,0,0,0.6)] max-w-lg mx-auto relative">
+            <div className="fixed bottom-0 left-0 right-0 px-4 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-3 z-50 pointer-events-none">
+                <nav className="rounded-full flex justify-between items-center px-4 p-2 backdrop-blur-xl bg-black/60 border border-white/10 pointer-events-auto shadow-[0_20px_50px_rgba(0,0,0,0.6)] max-w-lg mx-auto relative">
                     <div className="flex-1 flex justify-around">
                         {leftItems.map(renderNavItem)}
                     </div>
