@@ -80,7 +80,9 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 ```text
 /docs           # Detailed technical documentation
-/database       # SQL schema and migration scripts
+/database       # SQL schema and migration history
+  /schema.sql   # Production-ready schema
+  /migrations   # Development migration history
 /env            # Environment variable templates
 /src
   /app          # Next.js App Router (Pages & API)

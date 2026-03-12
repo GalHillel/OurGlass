@@ -61,6 +61,7 @@ create table if not exists public.profiles (
   income_split_ratio numeric default 0.5,
   onboarding_completed boolean default false,
   role text check (role in ('admin', 'user')) default 'user',
+  dashboard_config jsonb default null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -132,6 +133,11 @@ create table if not exists public.goals (
   type text check (type in ('cash', 'stock', 'pocket_him', 'pocket_her', 'money_market', 'foreign_currency', 'wish')) default 'cash',
   investment_type text,
   growth_rate numeric default 0,
+  annual_interest_percent numeric default 4.5,
+  tax_rate_percent numeric default 0,
+  initial_amount numeric,
+  start_date timestamp with time zone default timezone('utc'::text, now()),
+  exit_dates jsonb default '[]',
   deep_freeze boolean default false,
   owner text check (owner in ('him', 'her', 'joint')),
   target_date date,
@@ -191,7 +197,8 @@ create table if not exists public.wealth_history (
   investments_value numeric not null default 0,
   liabilities_value numeric not null default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique (couple_id, snapshot_date)
 );
 
 -- ───────────────────────────────────────────────────────────────────────────────
@@ -279,6 +286,8 @@ create policy "Couples can delete liabilities" on public.liabilities for delete 
 
 -- Wealth History Policies
 create policy "Couples can read wealth history" on public.wealth_history for select using (couple_id = public.current_couple_id());
+create policy "Couples can insert wealth history" on public.wealth_history for insert with check (couple_id = public.current_couple_id());
+create policy "Couples can update wealth history" on public.wealth_history for update using (couple_id = public.current_couple_id()) with check (couple_id = public.current_couple_id());
 
 -- ───────────────────────────────────────────────────────────────────────────────
 -- FUNCTIONS & PROCEDURES
