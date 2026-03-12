@@ -37,7 +37,3 @@ next-env.d.ts
 .ntvs
 *.njsproj
 *.sln
-
-# Demo persistence
-src/demo/mock-db.ts
-src/demo/localStorageData.json
