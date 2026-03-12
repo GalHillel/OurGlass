@@ -2,9 +2,12 @@
 
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { getNow } from "@/demo/demo-config";
 import { User, AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { Profile } from "@/types";
 import { useDashboardStore } from "@/stores/dashboardStore";
+import { DEMO_MODE } from "@/demo/demo-config";
+import { MOCK_PROFILE, MOCK_USER_ID_GAL } from "@/demo/mock-data";
 
 interface AuthContextType {
     user: User | null;
@@ -21,11 +24,26 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [profile, setProfile] = useState<Profile | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<User | null>(() => {
+        if (DEMO_MODE) {
+            return {
+                id: MOCK_USER_ID_GAL,
+                email: "demo@ourglass.io",
+                user_metadata: { full_name: MOCK_PROFILE.name },
+                aud: 'authenticated',
+                created_at: getNow().toISOString(),
+                app_metadata: {}
+            } as User;
+        }
+        return null;
+    });
+    const [profile, setProfile] = useState<Profile | null>(() => {
+        if (DEMO_MODE) return MOCK_PROFILE;
+        return null;
+    });
+    const [loading, setLoading] = useState(!DEMO_MODE);
     const supabaseRef = useRef(createClient());
-    const profileRef = useRef<Profile | null>(null);
+    const profileRef = useRef<Profile | null>(DEMO_MODE ? MOCK_PROFILE : null);
 
     const initializeFromProfile = useDashboardStore(s => s.initializeFromProfile);
 
@@ -44,6 +62,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, [profile, initializeFromProfile]);
 
     useEffect(() => {
+        if (DEMO_MODE) return;
+
         const supabase = supabaseRef.current;
         const getUser = async () => {
             const { data: { session } } = await supabase.auth.getSession();
@@ -109,7 +129,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return () => {
             subscription.unsubscribe();
         };
-    }, []);
+    }, [initializeFromProfile]);
 
     return (
         <AuthContext.Provider value={{ user, profile, loading, updateProfile }}>

@@ -7,6 +7,9 @@ import { Goal } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { isAssetInvestment } from "@/lib/constants";
 import { netWorthEngine } from "@/lib/networth-engine";
+import { DEMO_MODE } from "@/demo/demo-config";
+import { mockDB } from "@/demo/mock-db";
+import { MOCK_COUPLE_ID } from "@/demo/mock-data";
 
 
 
@@ -28,21 +31,28 @@ export const useWealth = () => {
             }
 
             const supabase = supabaseRef.current;
-            const coupleId = profile.couple_id;
+            const coupleId = DEMO_MODE ? MOCK_COUPLE_ID : profile.couple_id;
             try {
-                await fetch("/api/yield/accrue", { method: "POST" });
+                if (!DEMO_MODE) {
+                    await fetch("/api/yield/accrue", { method: "POST" });
+                }
             } catch {
                 // ignore accrual failures
             }
 
-            // Use select('*') to be resilient to missing columns if migration hasn't run yet
-            const { data: goals, error } = await supabase
-                .from('goals')
-                .select('*')
-                .eq('couple_id', coupleId)
-                .order('created_at', { ascending: true });
-
-            if (error) throw error;
+            let goals;
+            if (DEMO_MODE) {
+                goals = mockDB.getAssets();
+            } else {
+                const { data: goalsData, error } = await supabase
+                    .from('goals')
+                    .select('*')
+                    .eq('couple_id', coupleId)
+                    .order('created_at', { ascending: true });
+                
+                if (error) throw error;
+                goals = goalsData;
+            }
 
             const stockSymbols = (goals ?? [])
                 .filter(g => g.type === 'stock' && g.symbol)
@@ -58,7 +68,7 @@ export const useWealth = () => {
             let livePrices: Record<string, { price: number; changePercent: number }> = {};
             let usdToIls = 3.65; // fallback
 
-            if (hasUsdAssets) {
+            if (hasUsdAssets && !DEMO_MODE) {
                 try {
                     const origin = typeof window !== 'undefined' ? window.location.origin : '';
                     const apiUrl = `${origin}/api/market-data`;

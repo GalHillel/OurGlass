@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FinancialContext, Goal, Liability, Transaction, Subscription, WishlistItem, WealthSnapshot } from "@/types";
 import { isLiabilityActive } from "@/hooks/useWealthData";
 import { getBillingPeriodForDate } from "@/lib/billing";
+import { getNow } from "@/demo/demo-config";
 import { triggerHaptic } from "@/utils/haptics";
 
 const toSafeNumber = (value: unknown): number => {
@@ -55,7 +56,7 @@ function generateDynamicInsight(context: FinancialContext | null, firstName: str
     return `${firstName}, רוצה סיכום חכם של החודש? ✨`;
 }
 
-export const AIChatButton = ({ viewingDate = new Date() }: { viewingDate?: Date }) => {
+export const AIChatButton = ({ viewingDate = getNow() }: { viewingDate?: Date }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [context, setContext] = useState<FinancialContext | null>(null);
     const [error, setError] = useState(false);

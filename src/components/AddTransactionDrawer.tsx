@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { DEMO_MODE, getNow } from "@/demo/demo-config";
+import { mockDB } from "@/demo/mock-db";
+import { MOCK_COUPLE_ID } from "@/demo/mock-data";
 import {
     Drawer,
     DrawerContent,
@@ -83,8 +86,8 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
     const [selectedCategory, setSelectedCategory] = useState<string>("אחר");
     const [moodRating, setMoodRating] = useState<number | null>(null);
     const [payer, setPayer] = useState<'him' | 'her' | 'joint'>('him');
-    const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
-    const [time, setTime] = useState<string>(new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }));
+    const [date, setDate] = useState<string>(getNow().toISOString().split('T')[0]);
+    const [time, setTime] = useState<string>(getNow().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }));
     const [installments, setInstallments] = useState<number>(1);
     const [loading, setLoading] = useState(false);
 
@@ -99,6 +102,20 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
 
     const saveMutation = useMutation({
         mutationFn: async (payload: SavePayload) => {
+            if (DEMO_MODE) {
+                if (payload.txs) {
+                    payload.txs.forEach(tx => mockDB.addTransaction(tx as unknown as Transaction));
+                    return payload.txs;
+                } else if (payload.txData) {
+                    if (initialData) {
+                        return mockDB.updateTransaction(initialData.id, payload.txData as Partial<Transaction>);
+                    } else {
+                        return mockDB.addTransaction(payload.txData as unknown as Transaction);
+                    }
+                }
+                return;
+            }
+
             if (payload.txs) {
                 const { data, error } = await supabase
                     .from('transactions')
@@ -145,7 +162,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                     const optimisticTx = {
                         ...payload.txData,
                         id: (payload.txData as { id?: string }).id ?? crypto.randomUUID(),
-                        created_at: new Date().toISOString()
+                        created_at: getNow().toISOString()
                     };
                     return Array.isArray(old) ? [optimisticTx, ...old] : [optimisticTx];
                 });
@@ -269,21 +286,33 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
 
         try {
             setLoading(true);
-            if (!user?.id) throw new Error("Missing user");
-            if (!coupleId) throw new Error("Missing couple_id");
-            const { error } = await supabase.from('wishlist').insert({
+            const cid = DEMO_MODE ? MOCK_COUPLE_ID : coupleId;
+            const uid = DEMO_MODE ? (user?.id ?? "demo-user") : user?.id;
+
+            if (!uid) throw new Error("Missing user");
+            if (!cid) throw new Error("Missing couple_id");
+
+            const wishData = {
                 name: `❄️ [מוקפא] ${itemName}`,
                 price: numericAmount,
-                status: 'pending',
-                couple_id: coupleId,
-                requested_by: user.id,
+                status: 'pending' as const,
+                couple_id: cid,
+                requested_by: uid,
                 approved_by: null,
                 saved_amount: 0,
                 priority: 0,
                 link: null,
-            });
+                id: crypto.randomUUID(),
+                created_at: getNow().toISOString(),
+                description: ""
+            };
 
-            if (error) throw error;
+            if (DEMO_MODE) {
+                mockDB.addWish(wishData);
+            } else {
+                const { error } = await supabase.from('wishlist').insert(wishData);
+                if (error) throw error;
+            }
 
             toast.success("הוקפא בהצלחה! 🧊", { description: "ההוצאה הועברה לרשימת המשאלות ל-24 שעות." });
             const confetti = (await import("canvas-confetti")).default;
@@ -347,7 +376,7 @@ export const AddTransactionDrawer = ({ isOpen, onClose, category, initialData, o
                 // Set default payer to the active app identity, or fallback to 'him'
                 setPayer(appIdentity || "him");
 
-                const now = new Date();
+                const now = getNow();
                 setDate(now.toISOString().split("T")[0]);
                 setTime(now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }));
                 setInstallments(1);

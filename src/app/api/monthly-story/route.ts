@@ -1,5 +1,6 @@
 import { generateText } from "ai";
 import { createClient } from "@/utils/supabase/server";
+import { getNow } from "@/demo/demo-config";
 import { getBillingPeriodForDate } from "@/lib/billing";
 import { primaryModel } from "@/lib/ai-router";
 import { NextResponse } from "next/server";
@@ -32,7 +33,7 @@ export async function GET(req: Request) {
         const coupleId = profile?.couple_id;
         if (!coupleId) return NextResponse.json({ error: "No couple found" }, { status: 400 });
 
-        const { start, end } = getBillingPeriodForDate(new Date());
+        const { start, end } = getBillingPeriodForDate(getNow());
 
         // Fetch everything for the month
         const [txs, subs] = await Promise.all([

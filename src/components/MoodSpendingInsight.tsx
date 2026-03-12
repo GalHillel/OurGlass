@@ -8,6 +8,7 @@ import { Transaction, Subscription, Liability } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
+import { DEMO_MODE } from "@/demo/demo-config";
 
 interface MoodInsight {
     type: "info" | "warning" | "success";
@@ -67,6 +68,12 @@ export function MoodSpendingInsight({ transactions, subscriptions, liabilities }
         queryKey: ['mood-insight', chartData, subscriptions, liabilities],
         queryFn: async () => {
             if (chartData.length < 2) return null;
+            if (DEMO_MODE) {
+                return {
+                    type: "info",
+                    text: "הוצאתם 40% יותר ב-5 ימים האחרונים כשהייתם במצב רוח 'עצוב'. שימו לב לקניות רגשיות! 💔"
+                };
+            }
             const res = await fetch('/api/mood-insight', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

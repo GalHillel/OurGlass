@@ -18,6 +18,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { triggerHaptic } from "@/utils/haptics";
 import { cn, formatAmount } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
+import { DEMO_MODE } from "@/demo/demo-config";
 
 interface StockPortfolioProps {
     assets?: Goal[];
@@ -119,25 +120,26 @@ export const StockPortfolio = ({ assets = [], usdToIls = 3.65 }: StockPortfolioP
             // 2. Fetch Live Price for Auto-Calculation
             let initialValueILS = 0;
 
-            // Only fetch if adding new or if we want to overwrite cost (user didn't specify behavior, but "Auto-Price" implies we calculate it now)
-            // For now, let's always calculate it based on current market price as the "Cost Basis" if it's a new add. 
-            // If editing, we might want to keep original... but the prompt says "Refactor... Remove Manual Input... Implement handleAdd Logic".
-            // So for new adds: Calculate. For edits: If we removed input, we might lose original cost if we don't be careful. 
-            // However, the prompt is focused on "Add Stock" crash mostly. Let's assume for Edit we keep existing if not changing?
-            // Actually, for simplicity and following the "Auto-Price" instruction strictly:
-
-            const res = await fetch('/api/market-data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ symbols: [symbolInput.toUpperCase()] })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                const stockData = data.stocks[symbolInput.toUpperCase()];
-                const rate = data.usdToIls || 3.65;
-                const price = stockData?.price || 0;
+            if (DEMO_MODE) {
+                const { MOCK_MARKET_DATA } = await import("@/demo/mock-market-data");
+                const stockData = MOCK_MARKET_DATA[symbolInput.toUpperCase() as keyof typeof MOCK_MARKET_DATA];
+                const rate = MOCK_MARKET_DATA.USDILS || 3.7;
+                const price = typeof stockData === 'number' ? stockData : 0;
                 initialValueILS = price * quantity * rate;
+            } else {
+                const res = await fetch('/api/market-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbols: [symbolInput.toUpperCase()] })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    const stockData = data.stocks[symbolInput.toUpperCase()];
+                    const rate = data.usdToIls || 3.65;
+                    const price = stockData?.price || 0;
+                    initialValueILS = price * quantity * rate;
+                }
             }
 
             const payload = {

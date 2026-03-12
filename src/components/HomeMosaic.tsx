@@ -75,6 +75,7 @@ import { PAYERS, CURRENCY_SYMBOL } from "@/lib/constants";
 import { format, subMonths, addMonths } from "date-fns";
 import { he } from "date-fns/locale";
 import { getBillingPeriodForDate } from "@/lib/billing";
+import { getNow } from "@/demo/demo-config";
 
 import { useShallow } from 'zustand/react/shallow';
 
@@ -117,7 +118,7 @@ export const HomeMosaic = React.memo(({
 
     const safeViewingDate = (viewingDate instanceof Date && !Number.isNaN(viewingDate.getTime()))
         ? viewingDate
-        : new Date();
+        : getNow();
 
     // -- Calculations for Tiles --
     const budgetUsedPercent = Math.min(100, Math.round((totalExpenses / budget) * 100));
@@ -154,15 +155,11 @@ export const HomeMosaic = React.memo(({
                             />
                         </div>
 
-                        {/* Integrated Billing Cycle Navigation */}
+                        {/* Integrated Billing Cycle Navigation - DISABLED in Demo */}
                         <div className="mt-4 px-2 flex items-center justify-between">
                             <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onViewingDateChange(prev => subMonths(prev, 1));
-                                    triggerHaptic();
-                                }}
-                                className="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-90 transition-all border border-white/10"
+                                disabled
+                                className="p-2.5 rounded-2xl bg-white/5 opacity-10 cursor-not-allowed border border-white/10"
                             >
                                 <ChevronRight className="w-4 h-4 text-white/60" />
                             </button>
@@ -175,12 +172,8 @@ export const HomeMosaic = React.memo(({
                                 </span>
                             </div>
                             <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onViewingDateChange(prev => addMonths(prev, 1));
-                                    triggerHaptic();
-                                }}
-                                className="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-90 transition-all border border-white/10"
+                                disabled
+                                className="p-2.5 rounded-2xl bg-white/5 opacity-10 cursor-not-allowed border border-white/10"
                             >
                                 <ChevronLeft className="w-4 h-4 text-white/60" />
                             </button>

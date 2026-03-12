@@ -7,6 +7,7 @@ import { User, Users, Heart } from "lucide-react";
 import { cn, formatAmount } from "@/lib/utils";
 import { isLiabilityActive } from "@/hooks/useWealthData";
 import { PAYERS, CURRENCY_SYMBOL } from "@/lib/constants";
+import { getNow } from "@/demo/demo-config";
 import { useAppStore } from "@/stores/appStore";
 
 interface PartnerStatsProps {
@@ -17,7 +18,7 @@ interface PartnerStatsProps {
     viewingDate?: Date;
 }
 
-export const PartnerStats = ({ transactions, subscriptions = [], liabilities = [], viewingDate = new Date() }: PartnerStatsProps) => {
+export const PartnerStats = ({ transactions, subscriptions = [], liabilities = [], viewingDate = getNow() }: PartnerStatsProps) => {
     const isStealthMode = useAppStore(s => s.isStealthMode);
 
     const stats = useMemo(() => {

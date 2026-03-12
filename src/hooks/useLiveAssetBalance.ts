@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Goal } from "@/types";
 import { calculateLiveBalance } from "@/lib/wealth-utils";
+import { getNow } from "@/demo/demo-config";
 
 /**
  * useLiveAssetBalance - High-Performance Live UI Ticker
@@ -18,7 +19,7 @@ export function useLiveAssetBalance(asset: Goal) {
         const baseAmount = Number(asset.initial_amount || asset.current_amount || 0);
         return calculateLiveBalance(
             baseAmount,
-            asset.last_accrual_timestamp || asset.start_date || asset.created_at || new Date().toISOString(),
+            asset.last_accrual_timestamp || asset.start_date || asset.created_at || getNow().toISOString(),
             asset.annual_interest_percent || asset.interest_rate || 0,
             0, // Mandate: Before Taxes or Fees
             asset.exit_dates || []
@@ -35,7 +36,7 @@ export function useLiveAssetBalance(asset: Goal) {
             const baseAmount = Number(asset.initial_amount || asset.current_amount || 0);
             const nextBalance = calculateLiveBalance(
                 baseAmount,
-                asset.last_accrual_timestamp || asset.start_date || asset.created_at || new Date().toISOString(),
+                asset.last_accrual_timestamp || asset.start_date || asset.created_at || getNow().toISOString(),
                 asset.annual_interest_percent || asset.interest_rate || 0,
                 0, // Mandate: Before Taxes or Fees
                 asset.exit_dates || []

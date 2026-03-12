@@ -2,6 +2,7 @@
 
 import { Goal, Liability } from "@/types";
 import { calculateLiveBalance } from "@/lib/wealth-utils";
+import { getNow } from "@/demo/demo-config";
 
 /**
  * OURGLASS NET WORTH ENGINE (SINGLE SOURCE OF TRUTH)
@@ -78,7 +79,7 @@ export function netWorthEngine(
                 // MANDATE: Before Fees & Taxes (taxRate = 0)
                 // Use current_amount + last_accrual_timestamp if available, otherwise fallback to initial.
                 const principal = Number(asset.current_amount || asset.initial_amount || 0) || 0;
-                const refDate = asset.last_accrual_timestamp || asset.start_date || asset.created_at || new Date().toISOString();
+                const refDate = asset.last_accrual_timestamp || asset.start_date || asset.created_at || getNow().toISOString();
 
                 const rate = (annualRate === 0 && (asset.type === 'money_market' || asset.type === 'savings')) ? 4.5 : annualRate;
                 const taxRate = 0; // Mandate: Before Deductions

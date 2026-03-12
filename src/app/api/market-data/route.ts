@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from "@/utils/supabase/server";
+import { getNow } from "@/demo/demo-config";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = 'force-dynamic';
@@ -52,7 +53,7 @@ async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Respons
  * Get exchange rate with caching
  */
 async function getExchangeRate(): Promise<{ rate: number; cached: boolean }> {
-    const now = Date.now();
+    const now = getNow().getTime();
 
     // Return cached if still valid
     if (now - exchangeRateCache.lastUpdated < EXCHANGE_RATE_CACHE_DURATION_MS) {
@@ -83,7 +84,7 @@ async function getExchangeRate(): Promise<{ rate: number; cached: boolean }> {
  * Get quote for a single stock with caching
  */
 async function getQuote(symbol: string): Promise<{ price: number; changePercent: number; cached: boolean; error?: string }> {
-    const now = Date.now();
+    const now = getNow().getTime();
     const cached = stockCache.get(symbol);
 
     // Return cached if still valid
@@ -230,7 +231,7 @@ export async function POST(request: Request) {
                 exchangeRateCached,
                 allCached,
                 anyErrors,
-                timestamp: Date.now(),
+                timestamp: getNow().getTime(),
                 cacheDurationMs: CACHE_DURATION_MS
             }
         });

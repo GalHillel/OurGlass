@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useState, useMemo } from "react";
+import { getNow } from "@/demo/demo-config";
 
 import { LucideIcon, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
@@ -21,7 +22,7 @@ interface AppHeaderProps {
 
 export const AppHeader = memo(({ title, subtitle, icon: Icon, iconColor = "text-blue-400", titleColor = "text-blue-500", className, onIconClick }: AppHeaderProps) => {
     const greeting = useMemo(() => {
-        const hour = new Date().getHours();
+        const hour = getNow().getHours();
         if (hour >= 5 && hour < 12) return "בוקר טוב ☕";
         if (hour >= 12 && hour < 17) return "המשך יום מעולה ☀️";
         if (hour >= 17 && hour < 22) return "ערב טוב 🌙";

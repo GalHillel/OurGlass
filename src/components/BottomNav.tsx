@@ -1,6 +1,7 @@
 "use client";
 
 import { Home, Sparkles, Settings, CreditCard, Gem, Gift, Rocket, RefreshCw } from "lucide-react";
+import { getNow } from "@/demo/demo-config";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -67,7 +68,7 @@ export const BottomNav = () => {
                 return null;
             }
 
-            const now = new Date();
+            const now = getNow();
             const { start, end } = getBillingPeriodForDate(now);
             const startOfMonth = start.toISOString();
             const endOfMonth = end.toISOString();

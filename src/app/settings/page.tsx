@@ -20,6 +20,8 @@ import {
 import { triggerHaptic } from "@/utils/haptics";
 import { PAYERS, CURRENCY_SYMBOL } from "@/lib/constants";
 import { CustomizationManager } from "@/components/CustomizationManager";
+import { DEMO_MODE, getNow } from "@/demo/demo-config";
+import { RefreshCw } from "lucide-react";
 
 export default function SettingsPage() {
     const { user, profile, updateProfile } = useAuth();
@@ -60,7 +62,7 @@ export default function SettingsPage() {
                 hourly_wage: parseFloat(hourlyWage) || 0,
                 budget: parseFloat(budget) || 20000,
                 monthly_income: parseFloat(income) || 0,
-                updated_at: new Date().toISOString(),
+                updated_at: getNow().toISOString(),
             };
 
             const { error } = await supabase.from('profiles').upsert(updates);
@@ -276,6 +278,36 @@ export default function SettingsPage() {
                 <LogOut className="w-4 h-4 ml-2" />
                 התנתק
             </Button>
+
+            {DEMO_MODE && (
+                <div className="neon-card p-6 rounded-3xl space-y-4 border-orange-500/20 bg-orange-500/5 relative overflow-hidden mt-6">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                            <RefreshCw className="w-5 h-5 text-orange-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-white">איפוס נתוני דמו</h2>
+                            <p className="text-[10px] text-orange-200/60">חזור למצב ההתחלתי של המדגמים</p>
+                        </div>
+                    </div>
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            if (confirm("האם לאפס את כל נתוני הדמו? פעולה זו תמחק את כל השינויים המקומיים שלך.")) {
+                                localStorage.removeItem('ourglass_demo_db_transactions');
+                                localStorage.removeItem('ourglass_demo_db_assets');
+                                localStorage.removeItem('ourglass_demo_db_subscriptions');
+                                localStorage.removeItem('ourglass_demo_db_wishlist');
+                                localStorage.removeItem('ourglass_demo_welcome_seen');
+                                window.location.reload();
+                            }
+                        }}
+                        className="w-full border-orange-500/20 text-orange-400 hover:bg-orange-500/10 hover:text-orange-300 h-11 rounded-xl transition-all"
+                    >
+                        אפס הכל והתחל מחדש
+                    </Button>
+                </div>
+            )}
 
             {/* Final bottom spacer for edge-to-edge layout accessibility */}
             <div className="h-32 w-full" />

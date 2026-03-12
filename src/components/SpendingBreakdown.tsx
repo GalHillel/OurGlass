@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useAppStore } from "@/stores/appStore";
+import { getNow } from "@/demo/demo-config";
 import { Transaction, Subscription, Liability } from "@/types";
 import { motion } from "framer-motion";
 import {
@@ -54,7 +55,7 @@ interface SpendingBreakdownProps {
     viewingDate?: Date;
 }
 
-export const SpendingBreakdown = ({ transactions, subscriptions, liabilities, viewingDate = new Date() }: SpendingBreakdownProps) => {
+export const SpendingBreakdown = ({ transactions, subscriptions, liabilities, viewingDate = getNow() }: SpendingBreakdownProps) => {
     const isStealthMode = useAppStore(s => s.isStealthMode);
     const { total, items } = useMemo(() => {
         const grouped = new Map<string, number>();

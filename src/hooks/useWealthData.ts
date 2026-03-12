@@ -7,7 +7,7 @@ import { Liability, WealthSnapshot } from "@/types";
 
 const supabase = createClient();
 
-export const isLiabilityActive = (liability: Liability, asOf = new Date()) => {
+export const isLiabilityActive = (liability: Liability, asOf = getNow()) => {
     const remainingAmount = Number(liability.remaining_amount ?? liability.amount ?? liability.current_balance ?? 0);
     if (remainingAmount <= 0) return false;
 
@@ -21,13 +21,20 @@ export const isLiabilityActive = (liability: Liability, asOf = new Date()) => {
 // ── Wealth History (Read-only — populated by pg_cron) ──
 import { useMemo } from "react";
 
+import { DEMO_MODE, getNow } from "@/demo/demo-config";
+import { mockDB } from "@/demo/mock-db";
+import { MOCK_COUPLE_ID } from "@/demo/mock-data";
+
 export function useWealthHistory(days = 90, liveNetWorth?: number) {
     const { profile } = useAuth();
-    const coupleId = profile?.couple_id;
+    const coupleId = DEMO_MODE ? MOCK_COUPLE_ID : profile?.couple_id;
 
     const query = useQuery<WealthSnapshot[]>({
         queryKey: ["wealth-history", coupleId, days],
         queryFn: async () => {
+            if (DEMO_MODE) {
+                return mockDB.getWealthHistory();
+            }
             if (!coupleId) return [];
 
             const { data, error } = await supabase
@@ -40,7 +47,7 @@ export function useWealthHistory(days = 90, liveNetWorth?: number) {
 
             // Apply manual filter for speed/flexibility if not "ALL"
             if (days !== -1) {
-                const since = new Date();
+                const since = getNow();
                 since.setDate(since.getDate() - days);
                 const sinceIso = since.toISOString().split("T")[0];
                 return (data ?? []).filter(s => s.snapshot_date >= sinceIso) as WealthSnapshot[];
@@ -48,7 +55,7 @@ export function useWealthHistory(days = 90, liveNetWorth?: number) {
 
             return (data ?? []) as WealthSnapshot[];
         },
-        enabled: !!coupleId,
+        enabled: !!coupleId || DEMO_MODE,
         staleTime: 5 * 60 * 1000,
     });
 
@@ -61,7 +68,7 @@ export function useWealthHistory(days = 90, liveNetWorth?: number) {
         const snapshots = [...rawSnapshots];
 
         if (liveNetWorth !== undefined && liveNetWorth > 0) {
-            const today = new Date().toISOString().split("T")[0];
+            const today = getNow().toISOString().split("T")[0];
             const lastSnapshot = snapshots[snapshots.length - 1];
 
             if (!lastSnapshot || lastSnapshot.snapshot_date !== today) {
@@ -73,7 +80,7 @@ export function useWealthHistory(days = 90, liveNetWorth?: number) {
                     cash_value: 0,
                     investments_value: 0,
                     liabilities_value: 0,
-                    created_at: new Date().toISOString()
+                    created_at: getNow().toISOString()
                 });
             } else {
                 snapshots[snapshots.length - 1] = {
@@ -92,6 +99,10 @@ export function useSP500History(days = 365) {
     return useQuery<Array<{ date: string; price: number }>>({
         queryKey: ["sp500-history", days],
         queryFn: async () => {
+            if (DEMO_MODE) {
+                const { MOCK_SP500_HISTORY } = await import("@/demo/mock-market-data");
+                return MOCK_SP500_HISTORY;
+            }
             const res = await fetch("/api/market-data/history");
             if (!res.ok) throw new Error("Failed to fetch SP500 history");
             return res.json();
@@ -104,13 +115,17 @@ export function useSP500History(days = 365) {
 
 import { calculateDynamicBalance, estimatePayoffDate } from "@/lib/debt-utils";
 
-export function useLiabilities(asOf: Date = new Date()) {
+export function useLiabilities(asOf: Date = getNow()) {
     const { profile } = useAuth();
-    const coupleId = profile?.couple_id;
+    const coupleId = DEMO_MODE ? MOCK_COUPLE_ID : profile?.couple_id;
 
     return useQuery<Liability[]>({
         queryKey: ["liabilities", coupleId],
         queryFn: async () => {
+            if (DEMO_MODE) {
+                // We don't filter in mockDB for simplicity here, just return all
+                return mockDB.getLiabilities();
+            }
             if (!coupleId) return [];
 
             const { data, error } = await supabase
@@ -162,7 +177,8 @@ export function useAddLiability() {
 
     return useMutation({
         mutationFn: async (liability: Omit<Liability, "id" | "created_at"> & { couple_id?: string }) => {
-            if (!profile?.couple_id) throw new Error("No couple_id");
+            const coupleId = DEMO_MODE ? MOCK_COUPLE_ID : profile?.couple_id;
+            if (!coupleId) throw new Error("No couple_id");
 
             const normalizedPayload = {
                 ...liability,
@@ -172,9 +188,16 @@ export function useAddLiability() {
                 interest_rate: Number(liability.interest_rate ?? 0),
             };
 
-            const {
-                ...dbPayload
-            } = { ...normalizedPayload, couple_id: liability.couple_id ?? profile.couple_id };
+            const dbPayload = { 
+                ...normalizedPayload, 
+                couple_id: liability.couple_id ?? coupleId,
+                id: crypto.randomUUID(),
+                created_at: getNow().toISOString()
+            } as Liability;
+
+            if (DEMO_MODE) {
+                return mockDB.addLiability(dbPayload);
+            }
 
             const { data, error } = await supabase
                 .from("liabilities")
@@ -196,13 +219,13 @@ export function useUpdateLiability() {
 
     return useMutation({
         mutationFn: async ({ id, ...updates }: Partial<Liability> & { id: string }) => {
-            const {
-                ...dbUpdates
-            } = updates;
+            if (DEMO_MODE) {
+                return mockDB.updateLiability(id, updates);
+            }
 
             const { data, error } = await supabase
                 .from("liabilities")
-                .update(dbUpdates)
+                .update(updates)
                 .eq("id", id)
                 .select()
                 .single();
@@ -221,6 +244,10 @@ export function useDeleteLiability() {
 
     return useMutation({
         mutationFn: async (id: string) => {
+            if (DEMO_MODE) {
+                mockDB.deleteLiability(id);
+                return;
+            }
             const { error } = await supabase
                 .from("liabilities")
                 .delete()
@@ -235,7 +262,7 @@ export function useDeleteLiability() {
 }
 
 // ── Derived: Total Liabilities ──
-export function useTotalLiabilities(asOf: Date = new Date()) {
+export function useTotalLiabilities(asOf: Date = getNow()) {
     const { data: liabilities = [] } = useLiabilities(asOf);
 
     const activeLiabilities = liabilities; // Already filtered in hook
@@ -251,7 +278,7 @@ export function useTotalLiabilities(asOf: Date = new Date()) {
 
         if (l.estimated_end_date) {
             const end = new Date(l.estimated_end_date);
-            const now = new Date();
+            const now = getNow();
             estimatedMonths = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.44));
         } else if (payment > 0) {
             estimatedMonths = Math.ceil(remaining / payment);

@@ -1,5 +1,6 @@
 
 import { addMonths, setDate, isAfter, isBefore, differenceInDays } from "date-fns";
+import { getNow } from "@/demo/demo-config";
 
 export interface BillingPeriod {
     start: Date;
@@ -12,7 +13,7 @@ export interface BillingPeriod {
  * If today is on or after the 10th, the period started on the 10th of this month.
  */
 export const getCurrentBillingPeriod = (): BillingPeriod => {
-    const today = new Date();
+    const today = getNow();
     const currentMonth10th = setDate(today, 10);
 
     let start: Date;
@@ -40,7 +41,7 @@ export const getCurrentBillingPeriod = (): BillingPeriod => {
  */
 export const getDaysRemainingInCycle = (): number => {
     const { end } = getCurrentBillingPeriod();
-    return differenceInDays(end, new Date());
+    return differenceInDays(end, getNow());
 };
 
 /**
@@ -48,7 +49,7 @@ export const getDaysRemainingInCycle = (): number => {
  */
 export const getBillingCycleProgress = (): number => {
     const { start, end } = getCurrentBillingPeriod();
-    const today = new Date();
+    const today = getNow();
     const totalDays = differenceInDays(end, start);
     const daysPassed = differenceInDays(today, start);
 

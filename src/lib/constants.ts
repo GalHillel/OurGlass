@@ -1,11 +1,12 @@
+import { DEMO_MODE } from "@/demo/demo-config";
+
 export const CURRENCY_SYMBOL = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || "₪";
 export const LOCALE = process.env.NEXT_PUBLIC_LOCALE || "en-US";
-
 export const APP_NAME = "OurGlass";
 
 export const PAYERS = {
-    HIM: process.env.NEXT_PUBLIC_PARTNER_1_NAME || "בן/בת זוג 1",
-    HER: process.env.NEXT_PUBLIC_PARTNER_2_NAME || "בן/בת זוג 2",
+    HIM: (DEMO_MODE ? "גל" : (process.env.NEXT_PUBLIC_PARTNER_1_NAME || "גל")),
+    HER: (DEMO_MODE ? "מאיה" : (process.env.NEXT_PUBLIC_PARTNER_2_NAME || "מאיה")),
     JOINT: "משותף"
 } as const;
 

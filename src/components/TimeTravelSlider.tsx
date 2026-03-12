@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { format, addMonths } from "date-fns";
+import { getNow } from "@/demo/demo-config";
 import { he } from "date-fns/locale";
 import { triggerHaptic } from "@/utils/haptics";
 
@@ -20,7 +21,7 @@ export const TimeTravelSlider = ({ currentDate, onDateChange }: TimeTravelSlider
             <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
             {offsets.map((offset) => {
-                const date = addMonths(new Date(), offset);
+                const date = addMonths(getNow(), offset);
                 // Simple equality check by month/year
                 const isActive = date.getMonth() === currentDate.getMonth() && date.getFullYear() === currentDate.getFullYear();
 

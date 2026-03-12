@@ -8,6 +8,7 @@ import { SwipeableRow } from "./SwipeableRow";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { useAppStore } from "@/stores/appStore";
 import { formatAmount } from "@/lib/utils";
+import { DEMO_MODE, getNow } from "@/demo/demo-config";
 
 interface GhostSub {
     name: string;
@@ -39,7 +40,7 @@ export function GhostSubscriptions({ onAddGhost }: GhostSubscriptionsProps) {
         if (cached) {
             try {
                 const { data, timestamp } = JSON.parse(cached);
-                if (Date.now() - timestamp < CACHE_EXPIRY) {
+                if (getNow().getTime() - timestamp < CACHE_EXPIRY) {
                     setGhosts(data);
                     setLastUpdated(timestamp);
                     setHasFetched(true);
@@ -56,6 +57,21 @@ export function GhostSubscriptions({ onAddGhost }: GhostSubscriptionsProps) {
         setIsQuotaExceeded(false);
 
         try {
+            if (DEMO_MODE) {
+                await new Promise(r => setTimeout(r, 1500)); // Simulate AI scan
+                const mockGhosts: GhostSub[] = [
+                    { name: "HBO Max", amount: 44.90, frequency: "monthly", confidence: 0.98, reason: "זוהה חיוב חודשי קבוע מכרטיס האשראי" },
+                    { name: "Adobe Creative Cloud", amount: 125, frequency: "monthly", confidence: 0.85, reason: "חיוב חריג שנראה כמו מנוי מקצועי" }
+                ];
+                setGhosts(mockGhosts);
+                setHasFetched(true);
+                const timestamp = getNow().getTime();
+                setLastUpdated(timestamp);
+                localStorage.setItem(CACHE_KEY, JSON.stringify({ data: mockGhosts, timestamp }));
+                setLoading(false);
+                if (force) toast.success("הסריקה הושלמה! נמצאו 2 מנויים.");
+                return;
+            }
             const res = await fetch("/api/ghost-subs");
             if (!res.ok) {
                 const errorText = await res.text();
@@ -71,7 +87,7 @@ export function GhostSubscriptions({ onAddGhost }: GhostSubscriptionsProps) {
             const data = await res.json();
             setGhosts(data);
             setHasFetched(true);
-            const timestamp = Date.now();
+            const timestamp = getNow().getTime();
             setLastUpdated(timestamp);
 
             // Save to cache

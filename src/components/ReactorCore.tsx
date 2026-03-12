@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useAppStore } from "@/stores/appStore";
 import { motion, AnimatePresence } from "framer-motion";
+import { getNow } from "@/demo/demo-config"; // Added this import
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { cn, formatAmount } from "@/lib/utils";
 import { triggerHaptic } from "@/utils/haptics";
@@ -24,7 +25,7 @@ export const ReactorCore = ({ income, budget, expenses, balance, burnRateStatus,
 
     const { percentage, projectedBalance, daysRemaining } = useMemo(() => {
         const totalDays = Math.max(1, Math.ceil((cycleEnd.getTime() - cycleStart.getTime()) / (1000 * 60 * 60 * 24)));
-        const days = Math.max(1, Math.min(totalDays, Math.ceil((new Date().getTime() - cycleStart.getTime()) / (1000 * 60 * 60 * 24))));
+        const days = Math.max(1, Math.min(totalDays, Math.ceil((getNow().getTime() - cycleStart.getTime()) / (1000 * 60 * 60 * 24))));
         const avg = expenses / days;
         const projected = income - (avg * totalDays);
         const pct = Math.min(Math.max((balance / (budget || income || 1)) * 100, 0), 100);

@@ -2,6 +2,7 @@
 
 import { Activity } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DEMO_MODE } from "@/demo/demo-config";
 
 interface StockTickerProps {
     userSymbols?: string[];
@@ -22,6 +23,21 @@ export const StockTicker = ({ userSymbols = [] }: StockTickerProps) => {
     useEffect(() => {
         const fetchStocks = async () => {
             try {
+                if (DEMO_MODE) {
+                    const { MOCK_MARKET_DATA } = await import("@/demo/mock-market-data");
+                    const allSymbols = Array.from(new Set([...DEFAULT_INDICES, ...userSymbols])).filter(Boolean);
+                    const stockList = allSymbols.map(sym => {
+                        const price = MOCK_MARKET_DATA[sym.toUpperCase() as keyof typeof MOCK_MARKET_DATA] || 150;
+                        return {
+                            symbol: sym.replace('-USD', ''),
+                            price: typeof price === 'number' ? price : 150,
+                            changePercent: (Math.random() * 2) - 0.5 // Slight positive bias for demo
+                        };
+                    });
+                    setStocks(stockList);
+                    setLoading(false);
+                    return;
+                }
                 // Combine defaults with user symbols, unique only
                 const allSymbols = Array.from(new Set([...DEFAULT_INDICES, ...userSymbols])).filter(Boolean);
 

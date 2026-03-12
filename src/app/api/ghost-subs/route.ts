@@ -3,6 +3,7 @@ import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { createClient } from "@/utils/supabase/server";
 import { subMonths } from "date-fns";
+import { getNow } from "@/demo/demo-config";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
@@ -33,7 +34,7 @@ export async function GET(req: Request) {
         if (!coupleId) return new Response("No couple found", { status: 400 });
 
         // Fetch last 90 days of transactions + all registered subscriptions
-        const ninetyDaysAgo = subMonths(new Date(), 3).toISOString();
+        const ninetyDaysAgo = subMonths(getNow(), 3).toISOString();
 
         const [txs, subs] = await Promise.all([
             supabase

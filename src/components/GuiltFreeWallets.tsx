@@ -1,13 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Wallet, User } from "lucide-react";
+import { cn, formatAmount } from "@/lib/utils";
+import { getNow } from "@/demo/demo-config";
+import { Wallet, User, Info, Sparkles, TrendingUp, TrendingDown, Target } from "lucide-react";
 import { useGuiltFreeWallets } from "@/hooks/useJointFinance";
 import { Skeleton } from "@/components/ui/skeleton";
 import CountUp from "react-countup";
 import { PAYERS, CURRENCY_SYMBOL } from "@/lib/constants";
 
-export function GuiltFreeWallets({ viewingDate = new Date() }: { viewingDate?: Date }) {
+export function GuiltFreeWallets({ viewingDate = getNow() }: { viewingDate?: Date }) {
     const { data, isLoading } = useGuiltFreeWallets(viewingDate);
 
     if (isLoading) {

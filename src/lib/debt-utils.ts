@@ -1,4 +1,5 @@
 import { differenceInMonths, addMonths } from "date-fns";
+import { getNow } from "@/demo/demo-config";
 
 /**
  * Calculates the current remaining balance of a loan based on its initial terms and time passed.
@@ -9,7 +10,7 @@ export function calculateDynamicBalance(
     monthlyPayment: number,
     interestRateYearly: number,
     startDate: string | Date,
-    targetDate: Date = new Date()
+    targetDate: Date = getNow()
 ): number {
     const start = new Date(startDate);
     const now = targetDate;
@@ -70,5 +71,5 @@ export function estimatePayoffDate(
         months++;
     }
 
-    return addMonths(new Date(), months);
+    return addMonths(getNow(), months);
 }

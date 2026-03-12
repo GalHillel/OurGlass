@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { BarChart3, ChevronDown, TrendingUp, TrendingDown } from "lucide-react";
 import { useWealthHistory, useSP500History } from "@/hooks/useWealthData";
+import { getNow } from "@/demo/demo-config";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { he } from "date-fns/locale";
@@ -23,7 +24,7 @@ export function SP500Benchmark({ initialWealth }: BenchmarkProps) {
     const chartData = useMemo(() => {
         if (!initialWealth || snapshots.length === 0 || sp500History.length === 0) return [];
 
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = getNow().toISOString().split('T')[0];
         const liveVal = initialWealth;
         const delta = Math.abs(liveVal - (dbValue || 0)) > 1000 ? liveVal - (dbValue || 0) : 0;
 
@@ -33,7 +34,7 @@ export function SP500Benchmark({ initialWealth }: BenchmarkProps) {
             return {
                 date: s.snapshot_date,
                 yours: Math.round(isLive ? s.net_worth : (s.net_worth + delta)),
-                label: isLive ? "היום" : format(parseISO(s.snapshot_date), "dd MMM", { locale: he })
+                label: isLive ? "היום" : (s.snapshot_date ? format(parseISO(s.snapshot_date), "dd MMM", { locale: he }) : "")
             };
         });
 

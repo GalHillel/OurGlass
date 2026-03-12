@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Gift, EyeOff, PartyPopper } from "lucide-react";
+import { Sparkles, Calendar, Lock, Gift, ChevronRight, Rocket, PartyPopper, EyeOff } from "lucide-react";
+import { getNow } from "@/demo/demo-config";
 import { Transaction } from "@/types";
 import { cn, formatDate } from "@/lib/utils";
 import { hapticSuccess, hapticHeavy } from "@/utils/haptics";
@@ -49,7 +50,7 @@ export function SurpriseReveal({ transaction, isRecipient }: SurpriseRevealProps
 
     const canReveal =
         !transaction.surprise_reveal_date ||
-        new Date(transaction.surprise_reveal_date) <= new Date();
+        new Date(transaction.surprise_reveal_date) <= getNow();
 
     const particles = useMemo(() => generateParticles(), []);
 

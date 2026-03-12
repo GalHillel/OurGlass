@@ -5,6 +5,7 @@ import { WishlistItem } from "@/types";
 import { triggerHaptic } from "@/utils/haptics";
 import { cn, formatAmount, formatDate } from "@/lib/utils";
 import Image from 'next/image';
+import { getNow } from "@/demo/demo-config";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { differenceInHours } from 'date-fns';
 import { CURRENCY_SYMBOL, LOCALE } from "@/lib/constants";
@@ -186,7 +187,7 @@ export const WishlistCard = ({ item, onAction, onClick }: WishlistCardProps) => 
                             )}
 
                             {/* Impulse Control Alert */}
-                            {item.price > 500 && differenceInHours(new Date(), new Date(item.created_at)) < 24 && (
+                            {item.price > 500 && differenceInHours(getNow(), new Date(item.created_at)) < 24 && (
                                 <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-3 flex items-center justify-between" dir="rtl">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center animate-pulse">
@@ -195,7 +196,7 @@ export const WishlistCard = ({ item, onAction, onClick }: WishlistCardProps) => 
                                         <div>
                                             <p className="text-[11px] font-bold text-orange-200">בקרת אימפולסיביות פעילה</p>
                                             <p className="text-[9px] text-orange-200/60">
-                                                נשארו עוד {24 - differenceInHours(new Date(), new Date(item.created_at))} שעות למחשבה.
+                                                נשארו עוד {24 - differenceInHours(getNow(), new Date(item.created_at))} שעות למחשבה.
                                             </p>
                                         </div>
                                     </div>

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
+import { getNow, DEMO_MODE } from "@/demo/demo-config";
 import {
   Utensils,
   Bus,
@@ -98,6 +99,7 @@ interface CategoryBreakdownProps {
   selectedCategory?: string | null;
   onCategorySelect?: (category: string | null) => void;
   viewingDate?: Date;
+  isCompact?: boolean;
 }
 
 export const CategoryBreakdown = ({
@@ -106,8 +108,10 @@ export const CategoryBreakdown = ({
   liabilities = [],
   selectedCategory,
   onCategorySelect,
-  viewingDate = new Date()
+  viewingDate,
+  isCompact = false
 }: CategoryBreakdownProps) => {
+  const viewingDateNormalized = viewingDate || getNow();
   const isStealthMode = useAppStore(s => s.isStealthMode);
   const { total, rows } = useMemo(() => {
     // Track amount and whether category has transactions
@@ -181,29 +185,31 @@ export const CategoryBreakdown = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.35 }}
-      className="neon-card p-4 rounded-2xl"
+      className={cn(!isCompact && "neon-card p-4 rounded-2xl")}
     >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <PieChart className="w-5 h-5 text-blue-400" />
-          <h3 className="text-sm font-bold text-white">הוצאות לפי קטגוריה</h3>
+      {!isCompact && (
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <PieChart className="w-5 h-5 text-blue-400" />
+            <h3 className="text-sm font-bold text-white">הוצאות לפי קטגוריה</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            {selectedCategory && (
+              <button
+                onClick={() => onCategorySelect?.(null)}
+                className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full hover:bg-blue-500/30 transition-colors"
+              >
+                הצג הכל
+              </button>
+            )}
+            <span className="text-xs text-white/50">
+              סה״כ {formatAmount(total, isStealthMode, CURRENCY_SYMBOL)}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {selectedCategory && (
-            <button
-              onClick={() => onCategorySelect?.(null)}
-              className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full hover:bg-blue-500/30 transition-colors"
-            >
-              הצג הכל
-            </button>
-          )}
-          <span className="text-xs text-white/50">
-            סה״כ {formatAmount(total, isStealthMode, CURRENCY_SYMBOL)}
-          </span>
-        </div>
-      </div>
+      )}
       <div className="space-y-3">
-        {rows.map(({ name, sum, hasTransactions }, i) => {
+        {rows.slice(0, isCompact ? 3 : undefined).map(({ name, sum, hasTransactions }, i) => {
           const pct = total > 0 ? (sum / total) * 100 : 0;
           const Icon = getIconForCategory(name);
           const isSelected = selectedCategory === name;

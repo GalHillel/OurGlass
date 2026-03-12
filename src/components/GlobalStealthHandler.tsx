@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useAppStore } from "@/stores/appStore";
+import { getNow } from "@/demo/demo-config";
 import { triggerHaptic } from "@/utils/haptics";
 import { toast } from "sonner";
 import { Shield, ShieldOff } from "lucide-react";
@@ -16,7 +17,7 @@ export function GlobalStealthHandler() {
         const TRIPLE_TAP_DELAY = 500; // Total window for 3 taps
 
         const handleTap = () => {
-            const currentTime = new Date().getTime();
+            const currentTime = getNow().getTime();
 
             if (currentTime - lastTapTime > TRIPLE_TAP_DELAY) {
                 tapCount = 0;

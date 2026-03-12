@@ -34,6 +34,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/AuthProvider";
 import { useQueryClient } from "@tanstack/react-query";
 import { PAYERS, CURRENCY_SYMBOL } from "@/lib/constants";
+import { DEMO_MODE, getNow } from "@/demo/demo-config";
+import { mockDB } from "@/demo/mock-db";
 
 export const CATEGORIES = [
     { id: 'אוכל', label: 'אוכל', icon: Utensils, color: 'text-orange-400', bg: 'bg-orange-500/20', border: 'border-orange-500/30' },
@@ -122,17 +124,32 @@ export function AddSubscriptionDialog({
                 active: true,
             };
 
-            if (editingSub) {
-                const { error } = await supabase
-                    .from('subscriptions')
-                    .update(payload)
-                    .eq('id', editingSub.id);
-                if (error) throw error;
-                toast.success("המנוי עודכן בהצלחה");
+            if (DEMO_MODE) {
+                if (editingSub) {
+                    mockDB.updateSubscription(editingSub.id, payload as Partial<Subscription>);
+                    toast.success("המנוי עודכן בהצלחה (Demo)");
+                } else {
+                    const newSub = {
+                        ...payload,
+                        id: crypto.randomUUID(),
+                        created_at: getNow().toISOString()
+                    } as Subscription;
+                    mockDB.addSubscription(newSub);
+                    toast.success("מנוי חדש נוסף (Demo)");
+                }
             } else {
-                const { error } = await supabase.from('subscriptions').insert(payload);
-                if (error) throw error;
-                toast.success("מנוי חדש נוסף");
+                if (editingSub) {
+                    const { error } = await supabase
+                        .from('subscriptions')
+                        .update(payload)
+                        .eq('id', editingSub.id);
+                    if (error) throw error;
+                    toast.success("המנוי עודכן בהצלחה");
+                } else {
+                    const { error } = await supabase.from('subscriptions').insert(payload);
+                    if (error) throw error;
+                    toast.success("מנוי חדש נוסף");
+                }
             }
 
             // Invalidate queries to refresh global state

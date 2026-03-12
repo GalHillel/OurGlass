@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, Star, Shield, Zap, TrendingDown, Target, Gift, Lock, CheckCircle2, ShieldCheck, Coins, Flame } from "lucide-react";
 import { Transaction, Subscription, Liability } from "@/types";
 import { useQuery } from "@tanstack/react-query";
+import { DEMO_MODE } from "@/demo/demo-config";
 
 const ICON_MAP = {
     Trophy, Star, Shield, Zap, TrendingDown, Target, Gift, Lock, ShieldCheck, Coins, Flame
@@ -62,6 +63,13 @@ export function QuestsAndBadges({ transactions, subscriptions, liabilities, bala
     const { data: quests = [], isLoading: isLoadingQuests } = useQuery<Quest[]>({
         queryKey: ['ai-challenges', transactions.length, balance, subscriptions.length, liabilities.length, xpData],
         queryFn: async () => {
+            if (DEMO_MODE) {
+                return [
+                    { id: "q1", title: "שבוע ללא וולט", description: "הזמינו פחות מ-2 משלוחים השבוע", icon: "TrendingDown", progress: 65, completed: false, xp: 50, color: "orange" },
+                    { id: "q2", title: "חוסך מתמיד", description: "העבירו כסף לחיסכון פעם אחת לפחות", icon: "PiggyBank", progress: 100, completed: true, xp: 100, color: "emerald" },
+                    { id: "q3", title: "שליטה בתקציב", description: "הישארו מתחת ל-80% מהתקציב החודשי", icon: "Target", progress: 82, completed: false, xp: 150, color: "blue" }
+                ] as Quest[];
+            }
             const res = await fetch('/api/quests', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

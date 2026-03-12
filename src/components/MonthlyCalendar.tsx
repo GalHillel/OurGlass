@@ -15,9 +15,11 @@ interface CalendarProps {
     onDateSelect: (date: Date | null) => void;
 }
 
+import { getNow } from "@/demo/demo-config";
+
 export const MonthlyCalendar = ({ transactions, selectedDate, onDateSelect }: CalendarProps) => {
     const isStealthMode = useAppStore(s => s.isStealthMode);
-    const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [currentMonth, setCurrentMonth] = useState(getNow());
 
     const startDate = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 }); // Sunday start
     const endDate = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 0 });
@@ -53,13 +55,13 @@ export const MonthlyCalendar = ({ transactions, selectedDate, onDateSelect }: Ca
             <div className="glass p-6 rounded-3xl border border-white/10 shadow-xl">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
-                    <button onClick={handlePrevMonth} className="p-2 hover:bg-white/5 rounded-full text-white/60 hover:text-white transition-colors">
+                    <button disabled className="p-2 opacity-10 cursor-not-allowed text-white/60 transition-colors">
                         <ChevronRight className="w-5 h-5" />
                     </button>
                     <h2 className="text-xl font-bold text-white capitalize">
                         {format(currentMonth, 'MMMM yyyy', { locale: he })}
                     </h2>
-                    <button onClick={handleNextMonth} className="p-2 hover:bg-white/5 rounded-full text-white/60 hover:text-white transition-colors">
+                    <button disabled className="p-2 opacity-10 cursor-not-allowed text-white/60 transition-colors">
                         <ChevronLeft className="w-5 h-5" />
                     </button>
                 </div>

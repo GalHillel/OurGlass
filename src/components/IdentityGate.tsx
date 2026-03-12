@@ -73,7 +73,7 @@ export const IdentityGate = ({ children }: { children: React.ReactNode }) => {
                         <span className="text-xl font-bold text-white/80 group-hover:text-white transition-colors">{PAYERS.HIM}</span>
                     </motion.button>
 
-                    {/* IRIS */}
+                    {/* MAYA */}
                     <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}

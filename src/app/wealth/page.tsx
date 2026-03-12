@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Goal, WealthSnapshot } from "@/types";
+import { getNow } from "@/demo/demo-config";
 import { useWealth } from "@/hooks/useWealth";
 import { useTotalLiabilities } from "@/hooks/useWealthData";
 import { useLiveTotalWealth } from "@/hooks/useLiveTotalWealth";
@@ -145,7 +146,7 @@ export default function WealthPage() {
     useEffect(() => {
         if (!loading && (assets?.length || 0) > 0 && liveNetWorthRef.current > 0 && profile?.couple_id) {
             const syncSnapshot = async () => {
-                const today = new Date();
+                const today = getNow();
                 const todayStr = today.toISOString().split('T')[0];
 
                 const { count, error: countError } = await supabase
@@ -170,7 +171,7 @@ export default function WealthPage() {
                 if (needsBackfill) {
                     const backfillData: Omit<WealthSnapshot, "id" | "created_at">[] = [];
                     for (let i = 7; i >= 1; i--) {
-                        const d = new Date();
+                        const d = getNow();
                         d.setDate(d.getDate() - i);
                         backfillData.push({
                             couple_id: profile.couple_id!,

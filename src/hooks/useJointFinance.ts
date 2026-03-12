@@ -7,15 +7,18 @@ import { Transaction, Subscription, Liability } from "@/types";
 import { getBillingPeriodForDate } from "@/lib/billing";
 import { useTotalLiabilities } from "@/hooks/useWealthData";
 
+import { DEMO_MODE, getNow } from "@/demo/demo-config";
+import { mockDB } from "@/demo/mock-db";
+import { MOCK_COUPLE_ID } from "@/demo/mock-data";
+
 /**
  * MANDATE 1: CENTRALIZED CASHFLOW ENGINE
  * Unifies Transactions, Subscriptions, and Debt Payments into a single source of truth.
  */
-export function useGlobalCashflow(viewingDate: Date = new Date()) {
+export function useGlobalCashflow(viewingDate: Date = getNow()) {
     const supabase = createClient();
     const { profile } = useAuth();
-    const coupleId = profile?.couple_id;
-    console.log("[useGlobalCashflow] profile:", profile?.id, "coupleId:", coupleId);
+    const coupleId = DEMO_MODE ? MOCK_COUPLE_ID : profile?.couple_id;
     const { monthlyPayments: debtMonthlyPayments } = useTotalLiabilities(viewingDate);
 
     const { start, end } = getBillingPeriodForDate(viewingDate);
@@ -23,6 +26,38 @@ export function useGlobalCashflow(viewingDate: Date = new Date()) {
     return useQuery({
         queryKey: ["global-cashflow", coupleId, viewingDate.toISOString().slice(0, 7), debtMonthlyPayments],
         queryFn: async () => {
+            if (DEMO_MODE) {
+                const txs = mockDB.getTransactions().filter(t => t.date >= start.toISOString() && t.date < end.toISOString());
+                const subs = mockDB.getSubscriptions();
+
+                const totalExpenseTransactions = txs.reduce((sum, tx) => {
+                    if (tx.type === 'income' || tx.type === 'transfer') return sum;
+                    return sum + Number(tx.amount);
+                }, 0);
+                const totalIncomeTransactions = txs.reduce((sum, tx) => {
+                    if (tx.type !== 'income') return sum;
+                    return sum + Number(tx.amount);
+                }, 0);
+
+                const activeSubscriptions = subs.filter((s) => s.active !== false);
+                const totalSubscriptions = activeSubscriptions.reduce((sum, s) => sum + Number(s.amount), 0);
+                const totalFixed = totalSubscriptions + (debtMonthlyPayments || 0);
+                const totalSpent = totalExpenseTransactions + totalFixed;
+                const budget = profile?.budget || 20000;
+                const balance = Math.round((budget - totalSpent + totalIncomeTransactions) * 100) / 100;
+
+                return {
+                    totalTransactions: totalExpenseTransactions,
+                    totalFixed,
+                    totalSpent,
+                    balance,
+                    totalSubscriptions,
+                    totalIncome: totalIncomeTransactions,
+                    debtMonthlyPayments,
+                    budget
+                };
+            }
+
             if (!coupleId) return {
                 totalTransactions: 0,
                 totalFixed: 0,
@@ -48,27 +83,8 @@ export function useGlobalCashflow(viewingDate: Date = new Date()) {
                         .eq("couple_id", coupleId)
                 ]);
 
-                if (txsResult.error) {
-                    const err = txsResult.error;
-                    console.error("!!! [useGlobalCashflow] TRANSACTIONS FETCH FAILED !!!",
-                        "Message:", err.message,
-                        "Code:", err.code,
-                        "Details:", err.details,
-                        "Hint:", err.hint
-                    );
-                    throw err;
-                }
-                if (subsResult.error) {
-                    console.error("[useGlobalCashflow] subs error:", {
-                        message: subsResult.error.message,
-                        code: subsResult.error.code,
-                        details: subsResult.error.details,
-                        hint: subsResult.error.hint
-                    });
-                    throw subsResult.error;
-                }
-
-                console.log("[useGlobalCashflow] data fetched:", txsResult.data?.length, "txs,", subsResult.data?.length, "subs");
+                if (txsResult.error) throw txsResult.error;
+                if (subsResult.error) throw subsResult.error;
 
                 const txs = (txsResult.data ?? []) as Array<{ amount: number | string; type?: string | null }>;
                 const totalExpenseTransactions = txs.reduce((sum: number, tx) => {
@@ -121,15 +137,20 @@ export function useGlobalCashflow(viewingDate: Date = new Date()) {
     });
 }
 
-export function useTransactions(viewingDate: Date) {
+export function useTransactions(viewingDate: Date = getNow()) {
     const supabase = createClient();
     const { profile } = useAuth();
-    const coupleId = profile?.couple_id;
+    const coupleId = DEMO_MODE ? MOCK_COUPLE_ID : profile?.couple_id;
     const { start, end } = getBillingPeriodForDate(viewingDate);
 
     return useQuery<Transaction[]>({
         queryKey: ["transactions", coupleId, viewingDate.toISOString().slice(0, 7)],
         queryFn: async () => {
+            if (DEMO_MODE) {
+                return mockDB.getTransactions()
+                    .filter(t => t.date >= start.toISOString() && t.date < end.toISOString())
+                    .sort((a, b) => b.date.localeCompare(a.date));
+            }
             if (!coupleId) return [];
             const { data, error } = await supabase
                 .from('transactions')
@@ -139,16 +160,7 @@ export function useTransactions(viewingDate: Date) {
                 .lt('date', end.toISOString())
                 .order('date', { ascending: false });
 
-            if (error) {
-                console.error("!!! [useTransactions] FETCH FAILED !!!",
-                    "Message:", error.message,
-                    "Code:", error.code,
-                    "Details:", error.details,
-                    "Hint:", error.hint
-                );
-                throw error;
-            }
-            console.log("[useTransactions] fetched:", data?.length, "txs");
+            if (error) throw error;
             return data as Transaction[];
         },
         enabled: true,
@@ -158,11 +170,14 @@ export function useTransactions(viewingDate: Date) {
 export function useSubscriptions() {
     const supabase = createClient();
     const { profile } = useAuth();
-    const coupleId = profile?.couple_id;
+    const coupleId = DEMO_MODE ? MOCK_COUPLE_ID : profile?.couple_id;
 
     return useQuery<Subscription[]>({
         queryKey: ["subscriptions", coupleId],
         queryFn: async () => {
+            if (DEMO_MODE) {
+                return mockDB.getSubscriptions();
+            }
             if (!coupleId) return [];
             const { data, error } = await supabase
                 .from('subscriptions')
@@ -179,11 +194,14 @@ export function useSubscriptions() {
 export function useLiabilities() {
     const supabase = createClient();
     const { profile } = useAuth();
-    const coupleId = profile?.couple_id;
+    const coupleId = DEMO_MODE ? MOCK_COUPLE_ID : profile?.couple_id;
 
     return useQuery<Liability[]>({
         queryKey: ["liabilities", coupleId],
         queryFn: async () => {
+            if (DEMO_MODE) {
+                return mockDB.getLiabilities();
+            }
             if (!coupleId) return [];
             const { data, error } = await supabase
                 .from('liabilities')
@@ -209,36 +227,40 @@ interface SettleUpData {
 /**
  * Calculate the Settle Up for a given billing period.
  */
-export function useSettleUp(viewingDate: Date = new Date()) {
+export function useSettleUp(viewingDate: Date = getNow()) {
     const supabase = createClient();
     const { profile } = useAuth();
-    const coupleId = profile?.couple_id;
+    const coupleId = DEMO_MODE ? MOCK_COUPLE_ID : profile?.couple_id;
     const splitRatio = profile?.income_split_ratio ?? 0.5;
 
     return useQuery<SettleUpData>({
         queryKey: ["settle-up", coupleId, viewingDate.toISOString().slice(0, 7)],
         queryFn: async () => {
-            if (!coupleId) {
-                return {
+            const { start, end } = getBillingPeriodForDate(viewingDate);
+
+            let txsAll: Transaction[] = [];
+
+            if (DEMO_MODE) {
+                txsAll = mockDB.getTransactions().filter(t => t.date >= start.toISOString() && t.date < end.toISOString());
+            } else {
+                if (!coupleId) return {
                     himTotal: 0, herTotal: 0, jointTotal: 0,
                     splitRatio, himOwes: 0,
                     transactions: { him: [], her: [], joint: [] },
                 };
+
+                const { data, error } = await supabase
+                    .from("transactions")
+                    .select("*")
+                    .eq("couple_id", coupleId)
+                    .gte("date", start.toISOString())
+                    .lt("date", end.toISOString())
+                    .order("date", { ascending: false });
+
+                if (error) throw error;
+                txsAll = (data ?? []) as Transaction[];
             }
 
-            const { start, end } = getBillingPeriodForDate(viewingDate);
-
-            const { data, error } = await supabase
-                .from("transactions")
-                .select("*")
-                .eq("couple_id", coupleId)
-                .gte("date", start.toISOString())
-                .lt("date", end.toISOString())
-                .order("date", { ascending: false });
-
-            if (error) throw error;
-
-            const txsAll = (data ?? []) as Transaction[];
             const txs = txsAll.filter((t) => (t.type ?? 'expense') === 'expense');
 
             const him = txs.filter((t) => t.payer === "him");
@@ -270,35 +292,39 @@ export function useSettleUp(viewingDate: Date = new Date()) {
 /**
  * Guilt-Free Wallets: Calculate remaining pocket money for each partner
  */
-export function useGuiltFreeWallets(viewingDate: Date = new Date()) {
+export function useGuiltFreeWallets(viewingDate: Date = getNow()) {
     const supabase = createClient();
     const { profile } = useAuth();
-    const coupleId = profile?.couple_id;
-    const pocketHim = profile?.pocket_him ?? 0;
-    const pocketHer = profile?.pocket_her ?? 0;
+    const coupleId = DEMO_MODE ? MOCK_COUPLE_ID : profile?.couple_id;
+    const pocketHim = profile?.pocket_him ?? 1500;
+    const pocketHer = profile?.pocket_her ?? 1500;
 
     const { activeLiabilities = [] } = useTotalLiabilities(viewingDate);
 
     return useQuery({
         queryKey: ["guilt-free", coupleId, viewingDate.toISOString().slice(0, 7), activeLiabilities.length],
         queryFn: async () => {
-            if (!coupleId) {
-                return { himRemaining: pocketHim, herRemaining: pocketHer, himSpent: 0, herSpent: 0 };
+            const { start, end } = getBillingPeriodForDate(viewingDate);
+            let txs: Array<{ amount: number | string; payer?: string | null; type?: string | null }> = [];
+
+            if (DEMO_MODE) {
+                txs = mockDB.getTransactions()
+                    .filter(t => t.date >= start.toISOString() && t.date < end.toISOString() && (t.payer === 'him' || t.payer === 'her'));
+            } else {
+                if (!coupleId) return { himRemaining: pocketHim, herRemaining: pocketHer, himSpent: 0, herSpent: 0 };
+
+                const { data, error } = await supabase
+                    .from("transactions")
+                    .select("amount, payer, type")
+                    .eq("couple_id", coupleId)
+                    .gte("date", start.toISOString())
+                    .lt("date", end.toISOString())
+                    .in("payer", ["him", "her"]);
+
+                if (error) throw error;
+                txs = (data ?? []) as unknown as Array<{ amount: number | string; payer?: string | null; type?: string | null }>;
             }
 
-            const { start, end } = getBillingPeriodForDate(viewingDate);
-
-            const { data, error } = await supabase
-                .from("transactions")
-                .select("amount, payer, type")
-                .eq("couple_id", coupleId)
-                .gte("date", start.toISOString())
-                .lt("date", end.toISOString())
-                .in("payer", ["him", "her"]);
-
-            if (error) throw error;
-
-            const txs = (data ?? []) as unknown as Array<{ amount: number | string; payer?: string | null; type?: string | null }>;
             const expenses = txs.filter((t) => (t.type ?? 'expense') === 'expense');
             const himSpentTransactions = expenses.filter((t) => t.payer === "him").reduce((s, t) => s + Number(t.amount), 0);
             const herSpentTransactions = expenses.filter((t) => t.payer === "her").reduce((s, t) => s + Number(t.amount), 0);

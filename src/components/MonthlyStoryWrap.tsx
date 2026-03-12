@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DEMO_MODE } from "@/demo/demo-config";
 
 interface StorySlide {
     title: string;
@@ -26,6 +27,17 @@ export function MonthlyStoryWrap({ onClose }: MonthlyStoryWrapProps) {
     useEffect(() => {
         async function fetchStory() {
             try {
+                if (DEMO_MODE) {
+                    await new Promise(r => setTimeout(r, 1200));
+                    const mockStory: StorySlide[] = [
+                        { title: "חודש של צמיחה", description: "הנכסים שלכם גדלו ב-2.4% החודש בזכות השקעות חכמות.", emoji: "📈", colorGlow: "from-emerald-500/30" },
+                        { title: "שליטה בהוצאות", description: "הוצאתם 1,200₪ פחות על קניות ספונטניות לעומת חודש שעבר.", emoji: "🎯", colorGlow: "from-blue-500/30" },
+                        { title: "גל ומאיה, קדימה ליעד!", description: "אתם במרחק 3 חודשים בלבד מהיעד הבא שלכם.", emoji: "🎉", colorGlow: "from-purple-500/30" }
+                    ];
+                    setSlides(mockStory);
+                    setLoading(false);
+                    return;
+                }
                 const res = await fetch("/api/monthly-story");
                 const text = await res.text();
 

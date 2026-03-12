@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/AuthProvider";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
+import { DEMO_MODE, getNow } from "@/demo/demo-config";
+import { mockDB } from "@/demo/mock-db";
 
 const assetSchema = z.object({
     name: z.string().min(2, "שם הנכס חייב להכיל לפחות 2 תווים"),
@@ -50,7 +52,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData, usdToI
     const [interestRate, setInterestRate] = useState("");
     const [taxRate, setTaxRate] = useState(0);
     const [initialDeposit, setInitialDeposit] = useState("");
-    const [investmentDate, setInvestmentDate] = useState(new Date().toISOString().split('T')[0]);
+    const [investmentDate, setInvestmentDate] = useState(getNow().toISOString().split('T')[0]);
     const [exitDates, setExitDates] = useState<{ date: string; amount: number }[]>([]);
     const [loading, setLoading] = useState(false);
     const { profile } = useAuth();
@@ -112,7 +114,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData, usdToI
                 setInterestRate(initialData.annual_interest_percent?.toString() || initialData.interest_rate?.toString() || "");
                 setTaxRate(initialData.tax_rate_percent || 0);
                 setInitialDeposit(initialData.initial_amount?.toString() || "");
-                setInvestmentDate(initialData.start_date?.split('T')[0] || initialData.last_interest_calc?.split('T')[0] || new Date().toISOString().split('T')[0]);
+                setInvestmentDate(initialData.start_date?.split('T')[0] || initialData.last_interest_calc?.split('T')[0] || getNow().toISOString().split('T')[0]);
                 setExitDates(initialData.exit_dates || []);
             } else {
                 setName("");
@@ -125,7 +127,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData, usdToI
                 setInterestRate("");
                 setTaxRate(0);
                 setInitialDeposit("");
-                setInvestmentDate(new Date().toISOString().split('T')[0]);
+                setInvestmentDate(getNow().toISOString().split('T')[0]);
                 setExitDates([]);
             }
         }
@@ -159,7 +161,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData, usdToI
                 investment_type: validated.type,
                 annual_interest_percent: validated.annual_interest_percent,
                 interest_rate: validated.annual_interest_percent,
-                last_updated: new Date().toISOString(),
+                last_updated: getNow().toISOString(),
                 couple_id: profile?.couple_id || null,
                 currency: isForeignCurrency ? 'USD' : undefined,
                 initial_amount: validated.initial_amount,
@@ -169,16 +171,33 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData, usdToI
                 symbol: validated.symbol ?? undefined,
             };
 
-            if (initialData) {
-                const { error } = await supabase.from('goals').update(payload).eq('id', initialData.id);
-                if (error) throw error;
-                toast.success("הנכס עודכן");
+            if (DEMO_MODE) {
+                if (initialData) {
+                    mockDB.updateAsset(initialData.id, payload as Partial<Goal>);
+                    toast.success("הנכס עודכן (Demo)");
+                } else {
+                    const newAsset = {
+                        ...payload,
+                        id: crypto.randomUUID(),
+                        created_at: getNow().toISOString(),
+                        target_amount: (validated.initial_amount || 1) * 2,
+                        growth_rate: validated.annual_interest_percent,
+                    } as Goal;
+                    mockDB.addAsset(newAsset);
+                    toast.success("נכס חדש נוסף (Demo)");
+                }
             } else {
-                payload.target_amount = (validated.initial_amount || 1) * 2;
-                payload.growth_rate = validated.annual_interest_percent;
-                const { error } = await supabase.from('goals').insert(payload);
-                if (error) throw error;
-                toast.success("נכס חדש נוסף");
+                if (initialData) {
+                    const { error } = await supabase.from('goals').update(payload).eq('id', initialData.id);
+                    if (error) throw error;
+                    toast.success("הנכס עודכן");
+                } else {
+                    payload.target_amount = (validated.initial_amount || 1) * 2;
+                    payload.growth_rate = validated.annual_interest_percent;
+                    const { error } = await supabase.from('goals').insert(payload);
+                    if (error) throw error;
+                    toast.success("נכס חדש נוסף");
+                }
             }
 
             queryClient.invalidateQueries({ queryKey: ['wealthData'] });
@@ -298,7 +317,7 @@ export const AddAssetDialog = ({ isOpen, onClose, onSuccess, initialData, usdToI
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => setExitDates([...exitDates, { date: new Date().toISOString().split('T')[0], amount: 0 }])}
+                                                onClick={() => setExitDates([...exitDates, { date: getNow().toISOString().split('T')[0], amount: 0 }])}
                                                 className="h-7 text-[10px] bg-white/5 hover:bg-white/10"
                                             >
                                                 הוסף משיכה +

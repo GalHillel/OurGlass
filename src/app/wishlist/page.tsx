@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
-import { WishlistItem } from "@/types";
+import { WishlistItem, Transaction } from "@/types";
 import { Plus, Sparkles } from "lucide-react";
 import { useDashboardStore } from "@/stores/dashboardStore";
 import { EmptyState } from "@/components/EmptyState";
@@ -27,6 +27,9 @@ import { SwipeableRow } from "@/components/SwipeableRow";
 import { motion, AnimatePresence } from "framer-motion";
 import { getHebrewError } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
+import { DEMO_MODE, getNow } from "@/demo/demo-config";
+import { mockDB } from "@/demo/mock-db";
+import { MOCK_COUPLE_ID } from "@/demo/mock-data";
 
 export default function WishlistPage() {
     const { features } = useDashboardStore();
@@ -57,6 +60,12 @@ export default function WishlistPage() {
                 setRealNumberBalance(0);
                 return;
             }
+            if (DEMO_MODE) {
+                setItems(mockDB.getWishlist());
+                setRealNumberBalance(2500); // Static representative balance for demo
+                return;
+            }
+
             const { data, error } = await supabase
                 .from('wishlist')
                 .select('*')
@@ -67,7 +76,7 @@ export default function WishlistPage() {
             setItems(data || []);
 
             // Fetch balance logic (simplified for oracle)
-            const startOfMonth = new Date();
+            const startOfMonth = getNow();
             startOfMonth.setDate(1);
             startOfMonth.setHours(0, 0, 0, 0);
 
@@ -81,11 +90,11 @@ export default function WishlistPage() {
                 .select('amount, active')
                 .eq('couple_id', coupleId);
 
-            const totalExpenses = txData?.reduce((sum: number, tx: { amount: number; type?: string | null }) => {
+            const totalExpenses = txData?.reduce((sum, tx) => {
                 if (tx.type !== 'expense') return sum;
                 return sum + Number(tx.amount);
             }, 0) || 0;
-            const totalFixed = subData?.reduce((sum: number, sub: { amount: number; active?: boolean }) => sum + (sub.active === false ? 0 : Number(sub.amount)), 0) || 0;
+            const totalFixed = subData?.reduce((sum, sub) => sum + (sub.active === false ? 0 : Number(sub.amount)), 0) || 0;
             const budget = profile?.budget || 20000;
 
             setRealNumberBalance(budget - totalFixed - totalExpenses);
@@ -109,18 +118,31 @@ export default function WishlistPage() {
         }
 
         try {
-            const { error } = await supabase.from('wishlist').insert({
+            const itemData = {
                 name: newItemName,
                 price: parseFloat(newItemPrice),
                 link: newItemLink,
                 description: newItemDescription,
-                status: 'pending',
-                couple_id: coupleId
-            });
+                status: 'pending' as const,
+                couple_id: DEMO_MODE ? MOCK_COUPLE_ID : coupleId
+            };
 
-            if (error) throw error;
-
-            toast.success("נוסף לרשימת המשאלות");
+            if (DEMO_MODE) {
+                mockDB.addWish({
+                    ...itemData,
+                    id: crypto.randomUUID(),
+                    created_at: getNow().toISOString(),
+                    saved_amount: 0,
+                    priority: 1,
+                    requested_by: profile?.id || null,
+                    approved_by: null,
+                } as WishlistItem);
+                toast.success("נוסף לרשימת המשאלות (Demo)");
+            } else {
+                const { error } = await supabase.from('wishlist').insert(itemData);
+                if (error) throw error;
+                toast.success("נוסף לרשימת המשאלות");
+            }
             setIsDialogOpen(false);
             setNewItemName("");
             setNewItemPrice("");
@@ -138,8 +160,12 @@ export default function WishlistPage() {
         toast.success("הפריט הוסר");
 
         try {
-            const { error } = await supabase.from('wishlist').delete().eq('id', id).eq('couple_id', coupleId);
-            if (error) throw error;
+            if (DEMO_MODE) {
+                mockDB.deleteWish(id);
+            } else {
+                const { error } = await supabase.from('wishlist').delete().eq('id', id).eq('couple_id', coupleId);
+                if (error) throw error;
+            }
         } catch (error: unknown) {
             const err = error as { message?: string };
             toast.error("שגיאה במחיקה", { description: err.message });
@@ -156,49 +182,58 @@ export default function WishlistPage() {
             confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
             toast.success(`ויתרת והרווחת! $${CURRENCY_SYMBOL}${reward} הועברו לחיסכון הכללי 🏆`);
 
-            // Find or Create 'General Savings'
-            let { data: savings } = await supabase
-                .from('goals')
-                .select('*')
-                .eq('couple_id', coupleId)
-                .eq('name', 'General Savings')
-                .single();
-
-            // If explicit General Savings doesn't exist, try to find any 'cash' goal
-            if (!savings) {
-                const { data: anyCash } = await supabase
+            if (DEMO_MODE) {
+                // Mock reward logic
+                const savings = mockDB.getAssets().find(a => a.name === 'General Savings' || a.type === 'cash');
+                if (savings) {
+                    mockDB.updateAsset(savings.id, { current_amount: (savings.current_amount || 0) + reward });
+                }
+                mockDB.deleteWish(item.id);
+            } else {
+                // Find or Create 'General Savings'
+                let { data: savings } = await supabase
                     .from('goals')
                     .select('*')
                     .eq('couple_id', coupleId)
-                    .eq('type', 'cash')
-                    .limit(1)
+                    .eq('name', 'General Savings')
                     .single();
-                if (anyCash) {
-                    savings = anyCash;
-                } else {
-                    // Create new
-                    const { data: newSavings, error } = await supabase.from('goals').insert({
-                        name: 'General Savings',
-                        current_amount: 0,
-                        target_amount: 100000,
-                        type: 'cash',
-                        currency: 'ILS',
-                        couple_id: coupleId
-                    }).select().single();
-                    if (error) throw error;
-                    savings = newSavings;
+
+                // If explicit General Savings doesn't exist, try to find any 'cash' goal
+                if (!savings) {
+                    const { data: anyCash } = await supabase
+                        .from('goals')
+                        .select('*')
+                        .eq('couple_id', coupleId)
+                        .eq('type', 'cash')
+                        .limit(1)
+                        .single();
+                    if (anyCash) {
+                        savings = anyCash;
+                    } else {
+                        // Create new
+                        const { data: newSavings, error } = await supabase.from('goals').insert({
+                            name: 'General Savings',
+                            current_amount: 0,
+                            target_amount: 100000,
+                            type: 'cash',
+                            currency: 'ILS',
+                            couple_id: coupleId
+                        }).select().single();
+                        if (error) throw error;
+                        savings = newSavings;
+                    }
                 }
-            }
 
-            // Update Savings
-            if (savings) {
-                await supabase.from('goals').update({
-                    current_amount: (Number(savings.current_amount) || 0) + reward
-                }).eq('id', savings.id).eq('couple_id', coupleId);
-            }
+                // Update Savings
+                if (savings) {
+                    await supabase.from('goals').update({
+                        current_amount: (Number(savings.current_amount) || 0) + reward
+                    }).eq('id', savings.id).eq('couple_id', coupleId);
+                }
 
-            // Delete Wishlist Item
-            await supabase.from('wishlist').delete().eq('id', item.id).eq('couple_id', coupleId);
+                // Delete Wishlist Item
+                await supabase.from('wishlist').delete().eq('id', item.id).eq('couple_id', coupleId);
+            }
 
         } catch (e: unknown) {
             const err = e as { message?: string };
@@ -228,12 +263,16 @@ export default function WishlistPage() {
             if (newSaved < 0) return;
 
             // 1. Update Wishlist
-            const { error: wishError } = await supabase
-                .from('wishlist')
-                .update({ saved_amount: newSaved })
-                .eq('id', item.id)
-                .eq('couple_id', coupleId);
-            if (wishError) throw wishError;
+            if (DEMO_MODE) {
+                mockDB.updateWish(item.id, { saved_amount: newSaved });
+            } else {
+                const { error: wishError } = await supabase
+                    .from('wishlist')
+                    .update({ saved_amount: newSaved })
+                    .eq('id', item.id)
+                    .eq('couple_id', coupleId);
+                if (wishError) throw wishError;
+            }
 
             // 2. Create Transaction
             // Positive amount in drawer logic means 'moving money'. BUT Transaction table...
@@ -256,17 +295,34 @@ export default function WishlistPage() {
 
             const txType = type === 'deposit' ? 'expense' : 'income';
 
-            const { error: txError } = await supabase.from('transactions').insert({
+            const txPayload: Transaction = {
+                id: crypto.randomUUID(),
                 idempotency_key: crypto.randomUUID(),
                 type: txType,
                 amount,
                 description: description,
-                date: new Date().toISOString(),
-                category_id: null, // "Savings" category ideally
+                date: getNow().toISOString(),
+                category_id: null,
+                category: "wishlist",
+                user_id: profile?.id || null,
+                couple_id: DEMO_MODE ? MOCK_COUPLE_ID : coupleId,
                 is_surprise: false,
-                couple_id: coupleId
-            });
-            if (txError) throw txError;
+                surprise_reveal_date: null,
+                location_lat: null,
+                location_lng: null,
+                mood_rating: 5,
+                receipt_url: null,
+                is_auto_generated: false,
+                tags: ["wishlist"],
+                created_at: getNow().toISOString()
+            };
+
+            if (DEMO_MODE) {
+                mockDB.addTransaction(txPayload as Transaction);
+            } else {
+                const { error: txError } = await supabase.from('transactions').insert(txPayload);
+                if (txError) throw txError;
+            }
 
             // 3. Celebration & Feedback
             if (type === 'deposit') {
@@ -326,24 +382,45 @@ export default function WishlistPage() {
 
                                 try {
                                     // 1. Transaction (Expense)
-                                    await supabase.from('transactions').insert({
+                                    const txPayload: Transaction = {
+                                        id: crypto.randomUUID(),
                                         idempotency_key: crypto.randomUUID(),
-                                        type: 'expense',
+                                        type: 'expense' as const,
                                         amount: amount,
                                         description: `עיגול לטובה: ${targetItem.name}`,
-                                        date: new Date().toISOString(),
+                                        date: getNow().toISOString(),
                                         category_id: null,
+                                        category: "wishlist",
+                                        user_id: profile?.id || null,
+                                        couple_id: DEMO_MODE ? MOCK_COUPLE_ID : coupleId,
                                         is_surprise: false,
-                                        couple_id: coupleId
-                                    });
+                                        surprise_reveal_date: null,
+                                        location_lat: null,
+                                        location_lng: null,
+                                        mood_rating: 5,
+                                        receipt_url: null,
+                                        is_auto_generated: false,
+                                        tags: ["round-up"],
+                                        created_at: getNow().toISOString()
+                                    };
+
+                                    if (DEMO_MODE) {
+                                        mockDB.addTransaction(txPayload as Transaction);
+                                    } else {
+                                        await supabase.from('transactions').insert(txPayload);
+                                    }
 
                                     // 2. Wishlist Update
                                     const newSaved = (targetItem.saved_amount || 0) + amount;
-                                    await supabase
-                                        .from('wishlist')
-                                        .update({ saved_amount: newSaved })
-                                        .eq('id', targetItem.id)
-                                        .eq('couple_id', coupleId);
+                                    if (DEMO_MODE) {
+                                        mockDB.updateWish(targetItem.id, { saved_amount: newSaved });
+                                    } else {
+                                        await supabase
+                                            .from('wishlist')
+                                            .update({ saved_amount: newSaved })
+                                            .eq('id', targetItem.id)
+                                            .eq('couple_id', coupleId);
+                                    }
 
                                     toast.success(`הועברו $${CURRENCY_SYMBOL}${amount} ל-${targetItem.name}!`);
                                     confetti({ particleCount: 150, spread: 60, origin: { y: 0.6 } });

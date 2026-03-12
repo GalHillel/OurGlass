@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { TrendingUp, TrendingDown, Calendar, ChevronDown } from "lucide-react";
 import { useWealthHistory } from "@/hooks/useWealthData";
+import { getNow } from "@/demo/demo-config";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { he } from "date-fns/locale";
@@ -34,7 +35,7 @@ export function NetWorthHistory({ liveNetWorth }: NetWorthHistoryProps) {
     const chartData = useMemo(() => {
         if (snapshots.length === 0) return [];
 
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = getNow().toISOString().split('T')[0];
         const liveVal = liveNetWorth ?? dbValue ?? 0;
         const delta = Math.abs(liveVal - (dbValue ?? 0)) > 1000 ? liveVal - (dbValue ?? 0) : 0;
 
@@ -46,7 +47,7 @@ export function NetWorthHistory({ liveNetWorth }: NetWorthHistoryProps) {
                 cash: s.cash_value,
                 investments: s.investments_value,
                 liabilities: s.liabilities_value,
-                label: format(parseISO(s.snapshot_date), "dd MMM", { locale: he }),
+                label: s.snapshot_date ? format(parseISO(s.snapshot_date), "dd MMM", { locale: he }) : "",
             };
         });
     }, [snapshots, liveNetWorth, dbValue]);

@@ -1,4 +1,5 @@
 import { CURRENCY_SYMBOL } from "@/lib/constants";
+import { getNow } from "@/demo/demo-config";
 /**
  * Wealth Utilities — Money Market Fund & Compound Interest Calculations
  *
@@ -31,7 +32,7 @@ export function calculateLiveBalance(
     annualRate: number,
     taxRatePercent: number | null,
     exitDates: ExitDate[] | null,
-    currentDate: Date | string = new Date()
+    currentDate: Date | string = getNow()
 ): number {
     if (!initialAmount || initialAmount <= 0) return 0;
 

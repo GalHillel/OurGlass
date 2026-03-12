@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getNow } from "@/demo/demo-config";
 import { Lightbulb } from "lucide-react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 
@@ -18,14 +19,15 @@ const TIPS = [
 export const FinancialWisdom = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [tip] = useState(() => {
-        const dayOfYear = Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24);
+        const now = getNow();
+        const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24);
         return TIPS[dayOfYear % TIPS.length];
     });
     const STORAGE_KEY = 'last_daily_tip_date';
 
     useEffect(() => {
         // Check if seen today
-        const today = new Date().toDateString();
+        const today = getNow().toDateString();
         const lastSeen = localStorage.getItem(STORAGE_KEY);
 
         if (lastSeen !== today) {
@@ -46,7 +48,7 @@ export const FinancialWisdom = () => {
 
     const handleDismiss = () => {
         setIsVisible(false);
-        localStorage.setItem(STORAGE_KEY, new Date().toDateString());
+        localStorage.setItem(STORAGE_KEY, getNow().toDateString());
     };
 
     const handleDragEnd = (_: unknown, info: PanInfo) => {

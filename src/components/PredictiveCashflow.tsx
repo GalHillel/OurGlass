@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { TrendingUp, AlertTriangle } from "lucide-react";
 import { Transaction, Subscription, Liability } from "@/types";
+import { getNow } from "@/demo/demo-config";
 import { getBillingPeriodForDate, getDaysRemainingInCycle } from "@/lib/billing";
 import { differenceInDays, addDays, format, isSameDay } from "date-fns";
 import { he } from "date-fns/locale";
@@ -25,8 +26,8 @@ interface PredictiveCashflowProps {
  */
 export function PredictiveCashflow({ balance, budget, transactions, subscriptions, liabilities }: PredictiveCashflowProps) {
     const chartData = useMemo(() => {
-        const { start, end } = getBillingPeriodForDate(new Date());
-        const today = new Date();
+        const { start, end } = getBillingPeriodForDate(getNow());
+        const today = getNow();
         const daysIntoCycle = Math.max(1, differenceInDays(today, start));
         const remaining = differenceInDays(end, today);
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from "@/utils/supabase/server";
+import { getNow } from "@/demo/demo-config";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = 'force-dynamic';
@@ -26,7 +27,7 @@ export async function GET(req: Request) {
     }
 
     const data = [];
-    const now = new Date();
+    const now = getNow();
 
     // Baseline SPX around 5,000 1 year ago
     let currentPrice = 5000;
@@ -43,7 +44,7 @@ export async function GET(req: Request) {
     const rand = mulberry32(1337);
 
     for (let i = 365; i >= 0; i--) {
-        const date = new Date(now);
+        const date = getNow();
         date.setDate(date.getDate() - i);
 
         // Add some realistic daily volatility (-1% to +1.2%)

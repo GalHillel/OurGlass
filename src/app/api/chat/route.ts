@@ -3,6 +3,7 @@ import { streamText, convertToModelMessages, type UIMessage, tool } from 'ai';
 import { z } from 'zod';
 import { createClient } from "@/utils/supabase/server";
 import { FinancialContext } from "@/types";
+import { getNow } from "@/demo/demo-config";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 // Allow streaming responses up to 30 seconds
@@ -145,7 +146,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
               payer,
               user_id: user.id,
               couple_id: coupleId,
-              date: date || new Date().toISOString(),
+              date: date || getNow().toISOString(),
               mood_rating,
               is_surprise: false,
               tags: null,
@@ -261,7 +262,7 @@ Current Route: ${context?.currentRoute || 'Unknown'}
             currency,
             institution,
             couple_id: coupleId,
-            last_updated: new Date().toISOString(),
+            last_updated: getNow().toISOString(),
           };
 
           const { data, error } = await supabase.from('goals').insert(payload).select().single();

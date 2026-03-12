@@ -1,9 +1,11 @@
+import { getNow } from "@/demo/demo-config";
+
 type Bucket = { count: number; resetAt: number };
 
 const buckets = new Map<string, Bucket>();
 
 function now() {
-  return Date.now();
+  return getNow().getTime();
 }
 
 export function getClientIp(req: Request): string {

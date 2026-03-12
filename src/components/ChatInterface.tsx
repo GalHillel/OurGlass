@@ -8,9 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Send, Sparkles, X, ArrowDown, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FinancialContext, Transaction } from "@/types";
+import { DEMO_MODE } from "@/demo/demo-config";
+import { getMockAIResponse } from "@/demo/mock-ai";
 import { useAppStore } from "@/stores/appStore";
 import { hapticConfirm } from "@/utils/haptics";
 import { PAYERS } from "@/lib/constants";
+
+interface ChatMessage {
+    id: string;
+    role: 'user' | 'assistant' | 'system' | 'data';
+    content: string;
+    parts?: { type: string; text: string }[];
+}
 
 interface ChatInterfaceProps {
     context: FinancialContext;
@@ -157,6 +166,33 @@ export const ChatInterface = ({ context, onClose }: ChatInterfaceProps) => {
     const handleSubmit = (text?: string) => {
         const msg = text || input.trim();
         if (!msg || isLoading) return;
+
+        if (DEMO_MODE) {
+            // Local AI Mocking Logic
+            const userMessage: ChatMessage = {
+                id: crypto.randomUUID(),
+                role: 'user',
+                content: msg,
+                parts: [{ type: 'text', text: msg }]
+            };
+            setMessages([...messages, userMessage as UIMessage]);
+            setInput('');
+            if (textareaRef.current) textareaRef.current.style.height = 'auto';
+            
+            // Simulate AI delay and response
+            setTimeout(() => {
+                const response = getMockAIResponse(msg);
+                const aiResponse: ChatMessage = {
+                    id: crypto.randomUUID(),
+                    role: 'assistant',
+                    content: response,
+                    parts: [{ type: 'text', text: response }]
+                };
+                setMessages(prev => [...prev, aiResponse as UIMessage]);
+            }, 1000);
+            return;
+        }
+
         sendMessage({ text: msg }, { body: { context, chatId } });
         setInput('');
         if (textareaRef.current) textareaRef.current.style.height = 'auto';

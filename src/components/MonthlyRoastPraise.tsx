@@ -5,6 +5,7 @@ import { Sparkles, PartyPopper } from "lucide-react";
 import { Transaction, Subscription, Liability } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DEMO_MODE, getNow } from "@/demo/demo-config";
 
 interface MonthlyRoastProps {
     transactions: Transaction[];
@@ -32,7 +33,7 @@ export function MonthlyRoastPraise({ transactions, subscriptions, liabilities, b
     const { data: insights, isLoading, isError } = useQuery<Insight[]>({
         queryKey: ['ai-insights', transactions.length, balance, budget, monthlyIncome],
         queryFn: async () => {
-            const todayString = new Date().toDateString();
+            const todayString = getNow().toDateString();
             const lastSeenDate = localStorage.getItem(STORAGE_KEY + '_date');
             const cachedData = localStorage.getItem(STORAGE_KEY + '_data');
 
@@ -46,6 +47,14 @@ export function MonthlyRoastPraise({ transactions, subscriptions, liabilities, b
             }
 
             if (transactions.length === 0) return [];
+
+            if (DEMO_MODE) {
+                return [
+                    { type: "praise", text: "צמצמתם את ההוצאות על וולט ב-30% השבוע. הארנק שלכם (והגוף שלכם) מודה לכם! 🥗", emoji: "🥗" },
+                    { type: "roast", text: "נראה שסטארבקס הוא המשקיע העיקרי בכם החודש. אולי כדאי לקנות מכונת קפה? ☕", emoji: "☕" },
+                    { type: "praise", text: "החזרתם את ההלוואה לפני הזמן! אתם בדרך לחופש כלכלי אמיתי. 🚀", emoji: "🚀" }
+                ];
+            }
 
             const res = await fetch('/api/insights', {
                 method: 'POST',

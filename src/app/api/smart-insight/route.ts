@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from "@/utils/supabase/server";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
+import { getNow } from "@/demo/demo-config";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { transactions = [], monthlyIncome = 0, hourlyWage = 0, subscriptions = [], liabilities = [] } = body;
 
-        const today = new Date();
+        const today = getNow();
         const dayOfMonth = today.getDate();
 
         // Summarize data to save tokens

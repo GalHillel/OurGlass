@@ -2,13 +2,19 @@
 
 import { AddTransactionDrawer } from "@/components/AddTransactionDrawer";
 import { TransactionList } from "@/components/TransactionList";
+import { HomeTransactionFeed } from "@/components/HomeTransactionFeed";
 import { HomeMosaic } from "@/components/HomeMosaic";
+import { QuickActions } from "@/components/QuickActions";
+import { CategoryBreakdown } from "@/components/CategoryBreakdown";
+import { MonthlyCalendar } from "@/components/MonthlyCalendar";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { HomeMosaicSkeleton } from "@/components/HomeMosaicSkeleton";
 import { normalizeCategory } from "@/components/CategoryBreakdown";
 import { getBillingPeriodForDate } from "@/lib/billing";
 import { calculateBurnRate } from "@/lib/utils";
 import { useState } from "react";
+import { getNow } from "@/demo/demo-config";
 
 
 import { Transaction } from "@/types";
@@ -21,7 +27,7 @@ import { useGlobalCashflow } from "@/hooks/useJointFinance";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, isSameDay, differenceInDays } from "date-fns";
 import { he } from "date-fns/locale";
-import { Calendar, X } from "lucide-react";
+import { Calendar, X, Zap, PieChart, CalendarDays, ChevronRight } from "lucide-react";
 import { useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -51,7 +57,7 @@ export default function Home() {
   // Removed local balance state to avoid sync issues. Use cashflow.balance directly in UI.
   // comparisonDiff removed as it was unused
 
-  const [viewingDate, setViewingDate] = useState(new Date());
+  const [viewingDate, setViewingDate] = useState(getNow());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedFilterCategory, setSelectedFilterCategory] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -73,10 +79,10 @@ export default function Home() {
 
   const burnRateData = useMemo(() => {
     const { start, end } = getBillingPeriodForDate(viewingDate);
-    const isCurrentMonth = viewingDate.getMonth() === new Date().getMonth() && viewingDate.getFullYear() === new Date().getFullYear();
+    const isCurrentMonth = viewingDate.getMonth() === getNow().getMonth() && viewingDate.getFullYear() === getNow().getFullYear();
     if (!isCurrentMonth || !cashflow) return { status: 'safe' as const, projectedDate: null };
 
-    const daysIntoPeriod = Math.max(1, differenceInDays(new Date(), start) + 1);
+    const daysIntoPeriod = Math.max(1, differenceInDays(getNow(), start) + 1);
     const currentBalance = cashflow.balance;
 
     const fixedAmounts = new Set([
@@ -93,7 +99,7 @@ export default function Home() {
 
     const totalVariableExpenses = variableTransactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
     const avgDaily = totalVariableExpenses / daysIntoPeriod;
-    const daysRemaining = Math.max(0, differenceInDays(end, new Date()));
+    const daysRemaining = Math.max(0, differenceInDays(end, getNow()));
 
     return calculateBurnRate(currentBalance, daysRemaining, avgDaily);
   }, [viewingDate, cashflow, transactions, subscriptions, liabilities]);
@@ -172,7 +178,7 @@ export default function Home() {
                     monthlyIncome={profile?.monthly_income || cashflow?.budget || 20000}
                     totalExpenses={cashflow?.totalSpent ?? 0}
                     daysInMonth={differenceInDays(getBillingPeriodForDate(viewingDate).end, getBillingPeriodForDate(viewingDate).start)}
-                    daysPassed={Math.max(1, differenceInDays(new Date(), getBillingPeriodForDate(viewingDate).start))}
+                    daysPassed={Math.max(1, differenceInDays(getNow(), getBillingPeriodForDate(viewingDate).start))}
                     assets={assets}
                     transactions={transactions}
                     subscriptions={subscriptions}
@@ -198,6 +204,121 @@ export default function Home() {
             </div>
           )}
         </PullToRefresh>
+
+        {/* Premium Bento Grid - Opening Tiles */}
+        {!loading && cashflow?.balance !== undefined && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="w-full max-w-md px-4 grid grid-cols-2 gap-3 mb-2"
+          >
+            {/* Quick Add Tile */}
+            <Dialog>
+                <DialogTrigger asChild>
+                    <motion.div 
+                        whileTap={{ scale: 0.95 }}
+                        className="col-span-1 glass-panel p-5 relative overflow-hidden group cursor-pointer"
+                    >
+                        <div className="absolute inset-0 bg-cyan-400/5 group-hover:bg-cyan-400/10 transition-colors" />
+                        <div className="flex justify-between items-start mb-4 relative z-10">
+                            <div className="p-2 bg-cyan-500/20 rounded-xl">
+                                <Zap className="w-5 h-5 text-cyan-300" />
+                            </div>
+                        </div>
+                        <div className="relative z-10">
+                            <h3 className="text-[10px] font-black text-cyan-100/40 uppercase tracking-[0.2em]">פעולה מהירה</h3>
+                            <div className="text-lg font-black text-white mt-1">הוצאה חדשה</div>
+                        </div>
+                    </motion.div>
+                </DialogTrigger>
+                <DialogContent showCloseButton={false} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm w-[90vw] rounded-[2rem] border-white/10 bg-slate-900/90 backdrop-blur-xl shadow-2xl p-6 overflow-visible">
+                    <DialogTitle className="text-center text-white text-lg font-bold mb-1">פעולה מהירה</DialogTitle>
+                    <div className="mt-2 overflow-x-auto" style={{ touchAction: 'pan-x' }}>
+                        <h3 className="text-center text-white/60 text-sm mb-6">בחר קטגוריה להוספה מהירה</h3>
+                        <QuickActions onAction={handleQuickAdd} />
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Daily Calendar Tile */}
+            <Dialog>
+                <DialogTrigger asChild>
+                    <motion.div 
+                        whileTap={{ scale: 0.95 }}
+                        className="col-span-1 glass-panel p-5 relative overflow-hidden group cursor-pointer"
+                    >
+                        <div className="absolute inset-0 bg-indigo-400/5 group-hover:bg-indigo-400/10 transition-colors" />
+                        <div className="flex justify-between items-start mb-4 relative z-10">
+                            <div className="p-2 bg-indigo-500/20 rounded-xl">
+                                <CalendarDays className="w-5 h-5 text-indigo-300" />
+                            </div>
+                        </div>
+                        <div className="relative z-10">
+                            <h3 className="text-[10px] font-black text-indigo-100/40 uppercase tracking-[0.2em]">לוח הוצאות</h3>
+                            <div className="text-lg font-black text-white mt-1">לפי יום</div>
+                        </div>
+                    </motion.div>
+                </DialogTrigger>
+                <DialogContent showCloseButton={false} className="block fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-md w-[95vw] rounded-[2rem] border-white/10 bg-slate-900/95 backdrop-blur-xl shadow-2xl p-0 overflow-hidden h-[80vh]">
+                    <DialogTitle className="sr-only">לוח הוצאות</DialogTitle>
+                    <div className="h-full flex flex-col p-4">
+                        <div className="flex-1 overflow-y-auto">
+                            <MonthlyCalendar
+                                transactions={transactions}
+                                selectedDate={selectedDate}
+                                onDateSelect={handleDateSelect}
+                            />
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Category Breakdown Tile (Full Width) */}
+            <Dialog>
+                <DialogTrigger asChild>
+                    <motion.div 
+                        whileTap={{ scale: 0.95 }}
+                        className="col-span-2 glass-panel p-5 relative overflow-hidden group cursor-pointer"
+                    >
+                        <div className="absolute inset-0 bg-rose-400/5 group-hover:bg-rose-400/10 transition-colors" />
+                        <div className="flex justify-between items-center relative z-10">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-rose-500/20 rounded-xl">
+                                    <PieChart className="w-5 h-5 text-rose-300" />
+                                </div>
+                                <div>
+                                    <h3 className="text-[10px] font-black text-rose-100/40 uppercase tracking-[0.2em]">פילוג הוצאות</h3>
+                                    <div className="text-lg font-black text-white mt-0.5">קטגוריות מובילות</div>
+                                </div>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-white/20 group-hover:text-white/50 transition-colors" />
+                        </div>
+                    </motion.div>
+                </DialogTrigger>
+                <DialogContent showCloseButton={false} className="block fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-md w-[95vw] rounded-[2rem] border-white/10 bg-slate-900/95 backdrop-blur-xl shadow-2xl p-0 overflow-hidden h-[80vh]">
+                    <DialogTitle className="sr-only">קטגוריות</DialogTitle>
+                    <div className="h-full flex flex-col p-6">
+                        <div className="flex-1 overflow-y-auto">
+                            <CategoryBreakdown
+                                transactions={transactions}
+                                subscriptions={subscriptions}
+                                liabilities={liabilities}
+                                selectedCategory={selectedFilterCategory}
+                                onCategorySelect={handleCategorySelect}
+                                viewingDate={viewingDate}
+                            />
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Guilt-Free Wallets - Full Width */}
+            <div className="col-span-2 flex flex-col h-full mt-2">
+              <GuiltFreeWallets viewingDate={viewingDate} />
+            </div>
+          </motion.div>
+        )}
 
         {/* Active Filters */}
         {(selectedDate || selectedFilterCategory) && (
@@ -226,36 +347,34 @@ export default function Home() {
           </div>
         )}
 
-        {/* Transactions */}
-        <LayoutGroup key={selectedFilterCategory ?? 'all'}>
-          <TransactionList
-            key={selectedFilterCategory ?? 'all'}
-            transactions={filteredTransactions}
-            subscriptions={subscriptions}
-            onRefresh={handleTransactionAdded}
-            activeFilter={selectedFilterCategory}
-            activeDateFilter={selectedDate} // Pass date filter
-            currentPayer={appIdentity ?? undefined}
-            onEdit={(tx) => {
+        {/* Recent Feed (Visible by default) */}
+        {!selectedDate && !selectedFilterCategory && (
+          <HomeTransactionFeed 
+            transactions={transactions} 
+            onEdit={(tx: Transaction) => {
               setEditingTransaction(tx);
               setIsDrawerOpen(true);
-            }}
+            }} 
           />
-        </LayoutGroup>
+        )}
 
-        {/* Phase 4-6: Insights & Bento Box Gamification Layout */}
-        {!loading && cashflow?.balance !== undefined && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="w-full max-w-md px-4 grid grid-cols-2 gap-3"
-          >
-            {/* Guilt-Free Wallets - Full Width (since SettleUp was moved) */}
-            <div className="col-span-2 flex flex-col h-full">
-              <GuiltFreeWallets viewingDate={viewingDate} />
-            </div>
-          </motion.div>
+        {/* Transactions (Full List / Filtered) */}
+        {(selectedDate || selectedFilterCategory) && (
+          <LayoutGroup key={selectedFilterCategory ?? 'all'}>
+            <TransactionList
+              key={selectedFilterCategory ?? 'all'}
+              transactions={filteredTransactions}
+              subscriptions={subscriptions}
+              onRefresh={handleTransactionAdded}
+              activeFilter={selectedFilterCategory}
+              activeDateFilter={selectedDate} // Pass date filter
+              currentPayer={appIdentity ?? undefined}
+              onEdit={(tx) => {
+                setEditingTransaction(tx);
+                setIsDrawerOpen(true);
+              }}
+            />
+          </LayoutGroup>
         )}
 
         {/* Final bottom spacer for edge-to-edge layout accessibility */}

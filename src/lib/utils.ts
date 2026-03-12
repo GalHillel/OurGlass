@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { getNow } from "@/demo/demo-config"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -29,11 +30,11 @@ export function getHebrewError(error: unknown): string {
  * @returns Object with status and projected date
  */
 export function calculateBurnRate(currentBalance: number, daysRemaining: number, averageDailySpend: number): { status: 'safe' | 'warning' | 'critical'; daysUntilZero: number; projectedDate: Date | null } {
-  if (currentBalance <= 0) return { status: 'critical', daysUntilZero: 0, projectedDate: new Date() };
+  if (currentBalance <= 0) return { status: 'critical', daysUntilZero: 0, projectedDate: getNow() };
   if (averageDailySpend <= 0) return { status: 'safe', daysUntilZero: 999, projectedDate: null };
 
   const daysUntilZero = currentBalance / averageDailySpend;
-  const projectedDate = new Date();
+  const projectedDate = getNow();
   projectedDate.setDate(projectedDate.getDate() + Math.ceil(daysUntilZero));
 
   let status: 'safe' | 'warning' | 'critical' = 'safe';
